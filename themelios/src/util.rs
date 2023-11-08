@@ -77,16 +77,15 @@ pub impl Writer {
 
 	fn sized_string<const N: usize, E>(&mut self, s: &str) -> StrictResult<(), E>
 	where
-		E: From<EncodeError> + From<CastError>,
+		E: From<EncodeError> + From<ValueError>,
 	{
 		let s = encode(s)?;
 		if s.len() > N {
-			CastSnafu {
-				type_: std::any::type_name::<[u8; N]>(),
-				value: format!("{s:?}"),
-			}
-			.fail()?;
-		};
+			Err(ValueError::new(
+				std::any::type_name::<[u8; N]>(),
+				format!("{s:?}"),
+			))?
+		}
 		let mut buf = [0; N];
 		buf[..s.len()].copy_from_slice(&s);
 		self.array::<N>(buf);
@@ -115,21 +114,26 @@ pub fn list<V, E>(n: usize, mut f: impl FnMut() -> Result<V, E>) -> Result<Vec<V
 
 #[derive(Debug, Snafu)]
 #[snafu(display("cannot represent {value} as {type_}"))]
-pub struct CastError {
+pub struct ValueError {
 	type_: &'static str,
 	value: String,
 }
 
-pub fn cast<A, B>(a: A) -> Result<B, CastError>
+impl ValueError {
+	pub fn new(type_: &'static str, value: impl ToString) -> Self {
+		Self {
+			type_,
+			value: value.to_string(),
+		}
+	}
+}
+
+pub fn cast<A, B>(a: A) -> Result<B, ValueError>
 where
 	A: std::fmt::Debug + Clone,
 	B: TryFrom<A>,
 {
-	a.clone().try_into().map_err(|_| {
-		CastSnafu {
-			type_: std::any::type_name::<B>(),
-			value: format!("{:?}", a),
-		}
-		.build()
-	})
+	a.clone()
+		.try_into()
+		.map_err(|_| ValueError::new(std::any::type_name::<B>(), format!("{:?}", a)))
 }

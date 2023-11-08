@@ -39,15 +39,16 @@ macro_rules! newtype {
 	};
 }
 
-newtype!(NameId(u16));
-newtype!(BgmId(u16));
-newtype!(SoundId(u32));
-newtype!(ItemId(u16));
-newtype!(RecipeId(u16));
-newtype!(TownId(u16));
-newtype!(ShopId(u8));
-newtype!(MagicId(u16));
 newtype!(BattleId(u32));
+newtype!(BgmId(u16));
+newtype!(ItemId(u16));
+newtype!(MagicId(u16));
+newtype!(NameId(u16));
+newtype!(QuestId(u16));
+newtype!(RecipeId(u16));
+newtype!(ShopId(u8));
+newtype!(SoundId(u32));
+newtype!(TownId(u16));
 
 newtype!(Flag(u16));
 

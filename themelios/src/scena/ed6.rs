@@ -7,12 +7,7 @@ use crate::scena::code::Code;
 use crate::types::*;
 use crate::util::{self, cast, list, ReaderExt as _, WriterExt as _};
 
-use super::code;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct FuncId(pub u16, pub u16);
-
-newtype!(ChipId(u16));
+use super::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Scena {
@@ -52,7 +47,7 @@ pub enum WriteError {
 	#[snafu(context(false))]
 	Gospel { source: gospel::write::Error },
 	#[snafu(context(false))]
-	Cast { source: util::CastError },
+	Value { source: util::ValueError },
 	#[snafu(context(false))]
 	Code { source: code::WriteError },
 	#[snafu(context(false))]
@@ -246,9 +241,6 @@ impl Scena {
 	}
 }
 
-newtype!(EntryId(u16));
-newtype!(EntryFlags(u16));
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Entry {
 	// [Entry]
@@ -311,9 +303,6 @@ impl Entry {
 		Ok(())
 	}
 }
-
-newtype!(LocalCharId(u16));
-newtype!(CharFlags(u16));
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Npc {
@@ -406,9 +395,6 @@ impl Monster {
 	}
 }
 
-newtype!(EventId(u16));
-newtype!(EventFlags(u16));
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Event {
 	// [Event]
@@ -439,9 +425,6 @@ impl Event {
 		f.u16(self.unk1);
 	}
 }
-
-newtype!(LookPointId(u16));
-newtype!(LookPointFlags(u16));
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LookPoint {

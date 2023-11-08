@@ -11,3 +11,4 @@ strict_result = "1.2.0"
 snafu = { version = "0.7.5", features = ["backtraces-impl-std"] }
 extend = "1.2.0"
 falcom-sjis = "0.1.0"
+num_enum = "0.7.1"
