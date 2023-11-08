@@ -1,0 +1,13 @@
+[package]
+name = "themelios"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+gospel = "0.1.1"
+strict_result = "1.2.0"
+snafu = { version = "0.7.5", features = ["backtraces-impl-std"] }
+extend = "1.2.0"
+falcom-sjis = "0.1.0"
