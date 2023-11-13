@@ -79,7 +79,6 @@ pub enum Term {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Expr(pub Vec<Term>);
 
-
 #[derive(Debug, Snafu)]
 pub enum ReadError {
 	#[snafu(context(false))]

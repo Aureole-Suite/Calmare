@@ -57,7 +57,7 @@ impl CharId {
 			CharId::Party2(v) if g == Sc => 246 + v,
 			CharId::Party2(v) => 238 + v,
 			CharId::Custom(v) if g == Azure => 244 + v,
-			CharId::Custom(v) => return Err(ValueError::new("u16", format!("{self:?}"))),
+			CharId::Custom(_) => return Err(ValueError::new("u16", format!("{self:?}"))),
 			CharId::Self_ => 254,
 			CharId::Null => 255,
 			CharId::Name(v) => 257 + v.0,

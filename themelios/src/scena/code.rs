@@ -33,6 +33,16 @@ pub struct Insn {
 	args: Vec<Operand>,
 }
 
+impl Insn {
+	fn read(f: &mut Reader, iset: &InsnTable) -> Result<Insn, ReadError> {
+		todo!()
+	}
+
+	fn write(f: &mut Writer, iset: &InsnTable, insn: &Insn) -> Result<(), WriteError> {
+		todo!()
+	}
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Operand {
 	Address(usize),
