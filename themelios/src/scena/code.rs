@@ -23,6 +23,14 @@ pub enum WriteError {
 	Bar,
 }
 
+#[derive(Debug, Snafu)]
+pub enum NormalizeError {
+	#[snafu(display("duplicate label: {label}"))]
+	DuplicateLabel { label: usize },
+	#[snafu(display("undefined label: {label}"))]
+	UndefinedLabel { label: usize },
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Code(pub Vec<Insn>);
 
@@ -67,10 +75,94 @@ impl Code {
 			insns2.push(insn);
 		}
 		insns2.push(Insn::new("_label", vec![Arg::Label(f.pos())]));
-		Ok(Code(insns2))
+		let mut code = Code(insns2);
+		code.normalize().unwrap();
+		Ok(code)
 	}
 
 	pub fn write(code: &mut Writer, insn: &InsnSet, func: &Code) -> Result<(), WriteError> {
 		todo!()
 	}
+
+	pub fn normalize(&mut self) -> Result<(), NormalizeError> {
+		use std::collections::{BTreeMap, BTreeSet};
+
+		let mut used = BTreeSet::new();
+		let mut defined = BTreeSet::new();
+		let mut duplicate = None;
+		// No mutations here; if the code is malformed, we don't want mutations
+		each_label(
+			&mut self.0,
+			&mut |df| {
+				if !defined.insert(*df) {
+					duplicate = duplicate.or(Some(*df))
+				}
+				true
+			},
+			&mut |rf| {
+				used.insert(*rf);
+			},
+		);
+
+		if let Some(label) = duplicate {
+			return DuplicateLabelSnafu { label } .fail()
+		}
+		if let Some(&label) = used.difference(&defined).next() {
+			return UndefinedLabelSnafu { label } .fail()
+		}
+
+		let mut order = BTreeMap::new();
+		each_label(
+			&mut self.0,
+			&mut |df| {
+				if used.contains(df) {
+					let v = order.len();
+					order.insert(*df, v);
+					*df = v;
+					true
+				} else {
+					false
+				}
+			},
+			&mut |_| {},
+		);
+		each_label(
+			&mut self.0,
+			&mut |_| true,
+			&mut |rf| *rf = order[rf],
+		);
+
+		Ok(())
+	}
+}
+
+fn each_label(
+	insns: &mut Vec<Insn>,
+	on_def: &mut impl FnMut(&mut usize) -> bool,
+	on_ref: &mut impl FnMut(&mut usize),
+) {
+	fn do_args(
+		args: &mut [Arg],
+		on_def: &mut impl FnMut(&mut usize) -> bool,
+		on_ref: &mut impl FnMut(&mut usize),
+	) {
+		for a in args {
+			match a {
+				Arg::Label(rf) => on_ref(rf),
+				Arg::Code(code) => each_label(code, on_def, on_ref),
+				Arg::Tuple(args) => do_args(args, on_def, on_ref),
+				// Expr can contain Insn, but those never contain labels
+				_ => {}
+			}
+		}
+	}
+	insns.retain_mut(
+		|insn| match (insn.name.as_str(), insn.args.as_mut_slice()) {
+			("_label", [Arg::Label(df)]) => on_def(df),
+			(_, args) => {
+				do_args(args, on_def, on_ref);
+				true
+			}
+		},
+	);
 }
