@@ -2,11 +2,8 @@ use gospel::read::Reader;
 use gospel::write::Writer;
 use snafu::prelude::*;
 
-use crate::scena::insn_set as iset;
-
-pub mod expr;
-pub mod insn;
-use insn::Insn;
+use crate::scena::insn::{self, Insn, Arg};
+use crate::scena::insn_set::InsnSet;
 
 #[derive(Debug, Snafu)]
 pub enum ReadError {
@@ -15,7 +12,7 @@ pub enum ReadError {
 		end: usize,
 	},
 	Insn {
-		context: Vec<(usize, insn::Insn)>,
+		context: Vec<(usize, Insn)>,
 		pos: usize,
 		source: insn::ReadError,
 	},
@@ -44,11 +41,7 @@ impl std::ops::DerefMut for Code {
 }
 
 impl Code {
-	pub fn read(
-		f: &mut Reader,
-		insn: &iset::InsnSet,
-		end: Option<usize>,
-	) -> Result<Code, ReadError> {
+	pub fn read(f: &mut Reader, insn: &InsnSet, end: Option<usize>) -> Result<Code, ReadError> {
 		let end = end.expect("inferred end is not yet supported");
 
 		let mut insns = Vec::new();
@@ -70,14 +63,14 @@ impl Code {
 
 		let mut insns2 = Vec::with_capacity(insns.len() * 2 + 1);
 		for (pos, insn) in insns {
-			insns2.push(Insn::new("_label", vec![insn::Arg::Address(pos)]));
+			insns2.push(Insn::new("_label", vec![Arg::Address(pos)]));
 			insns2.push(insn);
 		}
-		insns2.push(Insn::new("_label", vec![insn::Arg::Address(f.pos())]));
+		insns2.push(Insn::new("_label", vec![Arg::Address(f.pos())]));
 		Ok(Code(insns2))
 	}
 
-	pub fn write(code: &mut Writer, insn: &iset::InsnSet, func: &Code) -> Result<(), WriteError> {
+	pub fn write(code: &mut Writer, insn: &InsnSet, func: &Code) -> Result<(), WriteError> {
 		todo!()
 	}
 }

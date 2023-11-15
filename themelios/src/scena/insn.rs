@@ -32,7 +32,9 @@ impl Insn {
 		(&self.name, &self.args)
 	}
 
-	pub(crate) fn read(f: &mut Reader, iset: &iset::InsnSet) -> Result<Insn, ReadError> {}
+	pub(crate) fn read(f: &mut Reader, iset: &iset::InsnSet) -> Result<Insn, ReadError> {
+		todo!()
+	}
 
 	pub(crate) fn write(
 		f: &mut Writer,
