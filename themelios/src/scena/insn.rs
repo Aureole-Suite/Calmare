@@ -2,12 +2,13 @@ use gospel::read::Reader;
 use gospel::write::Writer;
 use snafu::prelude::*;
 
-use super::expr::Expr;
-use crate::scena::{insn_set as iset, CharId, EventId, FuncId, LookPointId};
+use crate::scena::{
+	code::Code, expr::Expr, insn_set as iset, CharId, EventId, FuncId, LookPointId,
+};
 use crate::types::*;
 
-#[derive(Debug, Snafu)]
-pub enum ReadError {}
+mod read;
+pub use read::ReadError;
 
 #[derive(Debug, Snafu)]
 pub enum WriteError {
@@ -33,7 +34,7 @@ impl Insn {
 	}
 
 	pub(crate) fn read(f: &mut Reader, iset: &iset::InsnSet) -> Result<Insn, ReadError> {
-		todo!()
+		read::read(f, iset)
 	}
 
 	pub(crate) fn write(
@@ -96,7 +97,7 @@ pub enum Arg {
 	Attr(u8),
 	CharAttr(CharId, u8),
 
-	Code(Vec<Insn>),
+	Code(Code),
 	Expr(Expr),
 
 	QuestTask(u16),

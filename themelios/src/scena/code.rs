@@ -2,7 +2,7 @@ use gospel::read::Reader;
 use gospel::write::Writer;
 use snafu::prelude::*;
 
-use crate::scena::insn::{self, Insn, Arg};
+use crate::scena::insn::{self, Arg, Insn};
 use crate::scena::insn_set::InsnSet;
 
 #[derive(Debug, Snafu)]

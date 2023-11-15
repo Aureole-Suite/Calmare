@@ -4,6 +4,11 @@ _def:
 - &FileId {u32: FileId}
 - &CharId {u16: Time}
 - &Address {u16: Address}
+
+switch_table_size: u16
+switch_table_type: [u16, *Address]
+fork_loop_next: NextFrame
+
 insns:
 -
 - Return: []

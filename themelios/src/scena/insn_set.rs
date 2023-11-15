@@ -14,6 +14,9 @@ pub enum Game {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct InsnSet {
 	pub game: Game,
+	pub switch_table_size: IntArg,
+	pub switch_table_type: Arg,
+	pub fork_loop_next: String,
 	#[serde_as(as = "[_; 256]")]
 	pub insns: [Insn; 256],
 }
@@ -27,7 +30,7 @@ pub enum Insn {
 	},
 	Match {
 		head: Vec<Arg>,
-		on: Arg,
+		on: IntArg,
 		cases: Vec<Insn>,
 	},
 }
@@ -236,7 +239,7 @@ impl<'de> Deserialize<'de> for Insn {
 					Match {
 						#[serde(default)]
 						head: Vec<Arg>,
-						on: Arg,
+						on: IntArg,
 						cases: Vec<Insn>,
 					},
 				}
