@@ -91,29 +91,28 @@ impl Code {
 		let mut defined = BTreeSet::new();
 		let mut duplicate = None;
 		// No mutations here; if the code is malformed, we don't want mutations
-		each_label(
-			&mut self.0,
+		visit_labels(
+			self,
 			&mut |df| {
-				if !defined.insert(*df) {
-					duplicate = duplicate.or(Some(*df))
+				if !defined.insert(df) {
+					duplicate = duplicate.or(Some(df))
 				}
-				true
 			},
 			&mut |rf| {
-				used.insert(*rf);
+				used.insert(rf);
 			},
 		);
 
 		if let Some(label) = duplicate {
-			return DuplicateLabelSnafu { label } .fail()
+			return DuplicateLabelSnafu { label }.fail();
 		}
 		if let Some(&label) = used.difference(&defined).next() {
-			return UndefinedLabelSnafu { label } .fail()
+			return UndefinedLabelSnafu { label }.fail();
 		}
 
 		let mut order = BTreeMap::new();
-		each_label(
-			&mut self.0,
+		visit_labels_mut(
+			self,
 			&mut |df| {
 				if used.contains(df) {
 					let v = order.len();
@@ -126,17 +125,13 @@ impl Code {
 			},
 			&mut |_| {},
 		);
-		each_label(
-			&mut self.0,
-			&mut |_| true,
-			&mut |rf| *rf = order[rf],
-		);
+		visit_labels_mut(self, &mut |_| true, &mut |rf| *rf = order[rf]);
 
 		Ok(())
 	}
 }
 
-fn each_label(
+fn visit_labels_mut(
 	insns: &mut Vec<Insn>,
 	on_def: &mut impl FnMut(&mut usize) -> bool,
 	on_ref: &mut impl FnMut(&mut usize),
@@ -149,7 +144,7 @@ fn each_label(
 		for a in args {
 			match a {
 				Arg::Label(rf) => on_ref(rf),
-				Arg::Code(code) => each_label(code, on_def, on_ref),
+				Arg::Code(code) => visit_labels_mut(code, on_def, on_ref),
 				Arg::Tuple(args) => do_args(args, on_def, on_ref),
 				// Expr can contain Insn, but those never contain labels
 				_ => {}
@@ -165,4 +160,24 @@ fn each_label(
 			}
 		},
 	);
+}
+
+fn visit_labels(insns: &[Insn], on_def: &mut impl FnMut(usize), on_ref: &mut impl FnMut(usize)) {
+	fn do_args(args: &[Arg], on_def: &mut impl FnMut(usize), on_ref: &mut impl FnMut(usize)) {
+		for a in args {
+			match a {
+				Arg::Label(rf) => on_ref(*rf),
+				Arg::Code(code) => visit_labels(code, on_def, on_ref),
+				Arg::Tuple(args) => do_args(args, on_def, on_ref),
+				// Expr can contain Insn, but those never contain labels
+				_ => {}
+			}
+		}
+	}
+	for insn in insns {
+		match (insn.name.as_str(), insn.args.as_slice()) {
+			("_label", [Arg::Label(df)]) => on_def(*df),
+			(_, args) => do_args(args, on_def, on_ref),
+		}
+	}
 }
