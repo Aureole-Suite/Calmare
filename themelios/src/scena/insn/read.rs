@@ -180,6 +180,19 @@ fn read_misc(
 				out.push(Arg::Int(0))
 			}
 		}
+
+		T::EffPlayPos => {
+			let pos = Pos3 {
+				x: f.i32()?,
+				y: f.i32()?,
+				z: f.i32()?,
+			};
+			if matches!(out[0], Arg::Char(CharId::Null)) {
+				out.push(Arg::Pos3(pos))
+			} else {
+				out.push(Arg::RPos3(pos))
+			}
+		}
 	}
 	Ok(())
 }
@@ -228,7 +241,7 @@ fn read_int_arg(
 	Ok(match ty {
 		T::Int => Arg::Int(v),
 
-		T::Addr => Arg::Address(cast(v)?),
+		T::Address => Arg::Address(cast(v)?),
 
 		T::Time => Arg::Scalar(cast(v)?, Unit::Time),
 		T::Length => Arg::Scalar(cast(v)?, Unit::Length),

@@ -74,7 +74,7 @@ pub enum IntType {
 	#[serde(skip)]
 	Int,
 
-	Addr,
+	Address,
 
 	Time,
 	Length,
@@ -144,6 +144,7 @@ pub enum MiscArg {
 	QuestList,    // QuestId...
 	Menu,         // TString...
 	FcPartyEquip, // Slot to put item in: u8 if quartz, Const(0) otherwise (u8 post-FC)
+	EffPlayPos,
 }
 
 impl<'de> Deserialize<'de> for Arg {
