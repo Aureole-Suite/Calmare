@@ -24,7 +24,7 @@ pub enum ReadError {
 	Expr {
 		source: Box<crate::scena::expr::ReadError>,
 	},
-	#[snafu(whatever)]
+	#[snafu(whatever, display("{message}"))]
 	Whatever { message: String },
 }
 
@@ -174,7 +174,7 @@ fn read_misc(
 		}
 
 		T::FcPartyEquip => {
-			if matches!(out[0], Arg::Item(ItemId(600..=799))) {
+			if matches!(out[1], Arg::Item(ItemId(600..=799))) {
 				out.push(Arg::Int(f.u8()? as _))
 			} else {
 				out.push(Arg::Int(0))

@@ -149,8 +149,8 @@ insns:
 - _76: [{u16: ObjectId}, u32, u16, i32, i32, i32, u8, u8]
 - MapColor: [{u32: Color}, {u32: Color}]
 - _78: [{u24: Color}]
-- _79: [{u8: ObjectId}]
-- _7A: [{u8: ObjectId}]
+- _79: [{u8: ObjectId}, u16]
+- _7A: [{u8: ObjectId}, u16]
 - _7B: []
 - Shake: [[u32, u32, u32], *Time]
 -
