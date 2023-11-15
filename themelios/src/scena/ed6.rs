@@ -39,7 +39,7 @@ pub enum ReadError {
 	Decode { source: util::DecodeError },
 	#[snafu(context(false))]
 	Code { source: code::ReadError },
-	#[snafu(whatever)]
+	#[snafu(whatever, display("{message}"))]
 	Whatever { message: String },
 }
 

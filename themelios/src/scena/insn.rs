@@ -104,6 +104,7 @@ pub enum Arg {
 
 	Flag(Flag),
 	Var(u16),
+	Global(u8),
 	Attr(u8),
 	CharAttr(CharId, u8),
 

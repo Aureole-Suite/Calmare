@@ -4,9 +4,9 @@ use snafu::prelude::*;
 
 use crate::scena::{insn_set as iset, CharId};
 use crate::types::Flag;
-use crate::util::ValueError;
+use crate::util::{cast, ValueError};
 
-use super::insn::Insn;
+use super::insn::{Arg, Insn};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OpKind {
@@ -66,15 +66,10 @@ impl Op {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Term {
-	Const(u32) = 0x00,
+	Arg(Arg),
 	Op(Op),
-	Insn(Box<Insn>) = 0x1C,
-	Flag(Flag) = 0x1E,
-	Var(u16) = 0x1F,
-	Attr(u8) = 0x20,
-	CharAttr(CharId, u8) = 0x21,
-	Rand = 0x22, // random 15-bit number
-	Global(u8) = 0x23,
+	Insn(Box<Insn>),
+	Rand, // random 15-bit number
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -98,6 +93,8 @@ pub enum WriteError {
 	Value { source: ValueError },
 	#[snafu(context(false))]
 	Insn { source: super::insn::WriteError },
+	#[snafu(whatever, display("{message}"))]
+	Whatever { message: String },
 }
 
 impl Expr {
@@ -109,15 +106,18 @@ impl Expr {
 				Term::Op(op)
 			} else {
 				match op {
-					0x00 => Term::Const(f.u32()?),
+					0x00 => Term::Arg(Arg::Int(f.u32()? as i64)),
 					0x01 => break,
 					0x1C => Term::Insn(Box::new(Insn::read(f, iset)?)),
-					0x1E => Term::Flag(Flag(f.u16()?)),
-					0x1F => Term::Var(f.u16()?),
-					0x20 => Term::Attr(f.u8()?),
-					0x21 => Term::CharAttr(CharId::from_u16(iset.game, f.u16()?)?, f.u8()?),
+					0x1E => Term::Arg(Arg::Flag(Flag(f.u16()?))),
+					0x1F => Term::Arg(Arg::Var(f.u16()?)),
+					0x20 => Term::Arg(Arg::Attr(f.u8()?)),
+					0x21 => Term::Arg(Arg::CharAttr(
+						CharId::from_u16(iset.game, f.u16()?)?,
+						f.u8()?,
+					)),
 					0x22 => Term::Rand,
-					0x23 => Term::Global(f.u8()?),
+					0x23 => Term::Arg(Arg::Global(f.u8()?)),
 					op => Err(ValueError::new("Expr", format!("0x{op:02X}")))?,
 				}
 			};
@@ -129,28 +129,28 @@ impl Expr {
 	pub fn write(f: &mut Writer, iset: &iset::InsnSet, v: &Expr) -> Result<(), WriteError> {
 		for term in &v.0 {
 			match *term {
-				Term::Const(n) => {
+				Term::Arg(Arg::Int(n)) => {
 					f.u8(0x00);
-					f.u32(n);
+					f.u32(cast(n)?);
 				}
 				Term::Op(op) => f.u8(op.into()),
 				Term::Insn(ref insn) => {
 					f.u8(0x1C);
 					Insn::write(f, iset, insn)?;
 				}
-				Term::Flag(v) => {
+				Term::Arg(Arg::Flag(Flag(v))) => {
 					f.u8(0x1E);
-					f.u16(v.0);
+					f.u16(v);
 				}
-				Term::Var(v) => {
+				Term::Arg(Arg::Var(v)) => {
 					f.u8(0x1F);
 					f.u16(v);
 				}
-				Term::Attr(v) => {
+				Term::Arg(Arg::Attr(v)) => {
 					f.u8(0x20);
 					f.u8(v);
 				}
-				Term::CharAttr(id, v) => {
+				Term::Arg(Arg::CharAttr(id, v)) => {
 					f.u8(0x21);
 					f.u16(id.to_u16(iset.game)?);
 					f.u8(v);
@@ -158,10 +158,11 @@ impl Expr {
 				Term::Rand => {
 					f.u8(0x22);
 				}
-				Term::Global(v) => {
+				Term::Arg(Arg::Global(v)) => {
 					f.u8(0x23);
 					f.u8(v);
 				}
+				Term::Arg(ref v) => whatever!("cannot use {v:?} in Expr"),
 			}
 		}
 		f.u8(0x01);
