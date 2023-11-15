@@ -2,10 +2,11 @@ use gospel::read::{Le as _, Reader};
 use gospel::write::{Le as _, Writer};
 use snafu::prelude::*;
 
+use crate::scena::{insn_set as iset, CharId};
 use crate::types::Flag;
-use crate::util::{self, ValueError};
+use crate::util::ValueError;
 
-use super::{CharId, Insn, InsnTable};
+use super::insn::Insn;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OpKind {
@@ -86,7 +87,7 @@ pub enum ReadError {
 	#[snafu(context(false))]
 	Value { source: ValueError },
 	#[snafu(context(false))]
-	Code { source: super::ReadError },
+	Insn { source: super::insn::ReadError },
 }
 
 #[derive(Debug, Snafu)]
@@ -96,11 +97,11 @@ pub enum WriteError {
 	#[snafu(context(false))]
 	Value { source: ValueError },
 	#[snafu(context(false))]
-	Code { source: super::WriteError },
+	Insn { source: super::insn::WriteError },
 }
 
 impl Expr {
-	pub fn read(f: &mut Reader, iset: &InsnTable) -> Result<Expr, ReadError> {
+	pub fn read(f: &mut Reader, iset: &iset::InsnSet) -> Result<Expr, ReadError> {
 		let mut terms = Vec::new();
 		loop {
 			let op = f.u8()?;
@@ -125,7 +126,7 @@ impl Expr {
 		Ok(Expr(terms))
 	}
 
-	pub fn write(f: &mut Writer, iset: &InsnTable, v: &Expr) -> Result<(), WriteError> {
+	pub fn write(f: &mut Writer, iset: &iset::InsnSet, v: &Expr) -> Result<(), WriteError> {
 		for term in &v.0 {
 			match *term {
 				Term::Const(n) => {

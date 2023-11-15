@@ -129,16 +129,17 @@ pub enum MiscArg {
 	TString,
 	Text,
 
-	Expr,
-	SwitchTable, // (u16, Address)...
 	Pos2,
 	Pos3,
 	RPos3,
-	Fork,
-	ForkLoop,
 
-	QuestList, // QuestId...
-	Menu, // TString...
+	Expr,
+	Fork,        // Code
+	ForkLoop,    // Code
+	SwitchTable, // (u16, Address)...
+
+	QuestList,    // QuestId...
+	Menu,         // TString...
 	FcPartyEquip, // Slot to put item in: u8 if quartz, Const(0) otherwise (u8 post-FC)
 }
 

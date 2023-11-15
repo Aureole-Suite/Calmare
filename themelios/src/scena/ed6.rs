@@ -4,6 +4,7 @@ use snafu::prelude::*;
 use strict_result::Strict;
 
 use crate::scena::code::Code;
+use crate::scena::{insn_set as iset, FuncId};
 use crate::types::*;
 use crate::util::{self, cast, list, ReaderExt as _, WriterExt as _};
 
@@ -55,7 +56,7 @@ pub enum WriteError {
 }
 
 impl Scena {
-	pub fn read(insn: &code::InsnTable, data: &[u8]) -> Result<Scena, ReadError> {
+	pub fn read(insn: &iset::InsnSet, data: &[u8]) -> Result<Scena, ReadError> {
 		let mut f = Reader::new(data);
 
 		let path = f.sized_string::<10, _>()?;
@@ -150,7 +151,7 @@ impl Scena {
 		})
 	}
 
-	pub fn write(insn: &code::InsnTable, scena: &Scena) -> Result<Vec<u8>, WriteError> {
+	pub fn write(insn: &iset::InsnSet, scena: &Scena) -> Result<Vec<u8>, WriteError> {
 		let mut f = Writer::new();
 
 		f.sized_string::<10, _>(&scena.path)?;

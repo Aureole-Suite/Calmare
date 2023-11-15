@@ -2,114 +2,23 @@ use gospel::read::Reader;
 use gospel::write::Writer;
 use snafu::prelude::*;
 
-use crate::types::*;
-
-use self::expr::Expr;
-
-use super::*;
+use crate::scena::insn_set as iset;
 
 pub mod expr;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Code;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct InsnTable {
-	pub game: Game,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Insn {
-	name: String,
-	args: Vec<Operand>,
-}
-
-impl Insn {
-	fn read(f: &mut Reader, iset: &InsnTable) -> Result<Insn, ReadError> {
-		todo!()
-	}
-
-	fn write(f: &mut Writer, iset: &InsnTable, insn: &Insn) -> Result<(), WriteError> {
-		todo!()
-	}
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Operand {
-	Address(usize),
-
-	Int(i64), // easier to have a single integer type encompassing everything
-	String(String),
-
-	Scalar(i32, Unit),
-	Angle32(i32),
-	Color(u32),
-
-	Pos2(Pos2),
-	Pos3(Pos3),
-	RPos3(Pos3),
-
-	TString(TString),
-	Text(TString),
-
-	Tuple(Vec<Operand>),
-	File(FileId),
-
-	Battle(BattleId), // This one's weird since it's global in Sky but local in CB
-	Bgm(BgmId),
-	Item(ItemId),
-	Magic(MagicId),
-	Name(NameId),
-	Quest(QuestId),
-	Recipe(RecipeId),
-	Shop(ShopId),
-	Sound(SoundId),
-	Town(TownId),
-
-	Func(FuncId),
-	LookPoint(LookPointId),
-	Event(EventId),
-	Entrance(u16), // defined in ._en file
-	Object(u16),   // defined in ._op file
-
-	ForkId(u16),
-	MenuId(u16),
-	EffId(u8),
-	EffInstanceId(u8),
-	ChipId(u16),
-
-	Char(CharId),
-
-	Flag(Flag),
-	Var(u16),
-	Attr(u8),
-	CharAttr(CharId, u8),
-
-	Code(Code),
-	Expr(Expr),
-
-	QuestTask(u16),
-	QuestFlags(u8),
-	SystemFlags(u32),
-	LookPointFlags(u16),
-	ObjectFlags(u16),
-	EventFlags(u16),
-	CharFlags(u16),
-	CharFlags2(u16),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Unit {
-	Time,
-	Length,
-	Speed,
-	Angle,
-	AngularSpeed,
-}
+pub mod insn;
+use insn::Insn;
 
 #[derive(Debug, Snafu)]
 pub enum ReadError {
-	Foo,
+	Overshoot {
+		pos: usize,
+		end: usize,
+	},
+	Insn {
+		context: Vec<(usize, insn::Insn)>,
+		pos: usize,
+		source: insn::ReadError,
+	},
 }
 
 #[derive(Debug, Snafu)]
@@ -117,16 +26,58 @@ pub enum WriteError {
 	Bar,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Code(pub Vec<Insn>);
+
+impl std::ops::Deref for Code {
+	type Target = Vec<Insn>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+
+impl std::ops::DerefMut for Code {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.0
+	}
+}
+
 impl Code {
 	pub fn read(
-		start: &mut Reader,
-		insn: &InsnTable,
+		f: &mut Reader,
+		insn: &iset::InsnSet,
 		end: Option<usize>,
 	) -> Result<Code, ReadError> {
-		todo!()
+		let end = end.expect("inferred end is not yet supported");
+
+		let mut insns = Vec::new();
+		while f.pos() < end {
+			let pos = f.pos();
+			let insn = Insn::read(f, insn).with_context(|_| InsnSnafu {
+				pos,
+				context: insns
+					.iter()
+					.rev()
+					.take(8)
+					.rev()
+					.cloned()
+					.collect::<Vec<_>>(),
+			})?;
+			insns.push((pos, insn));
+		}
+		ensure!(f.pos() == end, OvershootSnafu { pos: f.pos(), end });
+
+		let mut insns2 = Vec::with_capacity(insns.len() * 2 + 1);
+		for (pos, insn) in insns {
+			insns2.push(Insn::new("_label", vec![insn::Arg::Address(pos)]));
+			insns2.push(insn);
+		}
+		insns2.push(Insn::new("_label", vec![insn::Arg::Address(f.pos())]));
+		Ok(Code(insns2))
 	}
 
-	pub fn write(code: &mut Writer, insn: &InsnTable, func: &Code) -> Result<(), WriteError> {
+	pub fn write(code: &mut Writer, insn: &iset::InsnSet, func: &Code) -> Result<(), WriteError> {
 		todo!()
 	}
 }
