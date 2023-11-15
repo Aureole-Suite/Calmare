@@ -1,3 +1,13 @@
+[package]
+name = "_"
+version = "0.0.0"
+edition = "2021"
+
+[dev-dependencies]
+themelios.path = "./themelios"
+anyhow = "1.0"
+compact-debug = "0.1.0"
+
 [workspace]
 members = [
 	"themelios",
