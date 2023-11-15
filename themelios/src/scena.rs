@@ -1,9 +1,11 @@
 use crate::{types::NameId, util::ValueError};
 
-use self::code::Game;
-
 pub mod code;
 pub mod ed6;
+
+pub mod insn_set;
+
+use self::insn_set::Game;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FuncId(pub u16, pub u16);

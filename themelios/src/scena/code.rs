@@ -13,15 +13,6 @@ pub mod expr;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Code;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Game {
-	Fc,
-	Sc,
-	Tc,
-	Zero,
-	Azure,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InsnTable {
 	pub game: Game,
@@ -103,6 +94,8 @@ pub enum Operand {
 	LookPointFlags(u16),
 	ObjectFlags(u16),
 	EventFlags(u16),
+	CharFlags(u16),
+	CharFlags2(u16),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
