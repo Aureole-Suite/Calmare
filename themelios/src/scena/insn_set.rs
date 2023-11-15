@@ -295,7 +295,27 @@ where
 	}
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Builtin {
+	Fc,
+}
+
+impl Builtin {
+	pub fn get(self) -> &'static InsnSet {
+		use std::sync::LazyLock;
+		match self {
+			Builtin::Fc => {
+				static SET: LazyLock<InsnSet> = LazyLock::new(|| {
+					serde_yaml::from_str(include_str!("../../insn/fc.yml")).unwrap()
+				});
+				&SET
+			}
+		}
+	}
+}
+
 #[test]
 fn test_parse() {
-	dbg!(serde_yaml::from_str::<InsnSet>(include_str!("../../insn/fc.yml")).unwrap());
+	Builtin::Fc.get();
 }
