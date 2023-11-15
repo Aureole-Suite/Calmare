@@ -15,10 +15,20 @@ pub enum WriteError {
 	Bar,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Insn {
 	pub name: String,
 	pub args: Vec<Arg>,
+}
+
+impl std::fmt::Debug for Insn {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		let mut f = f.debug_tuple(&self.name);
+		for arg in &self.args {
+			f.field(arg);
+		}
+		f.finish()
+	}
 }
 
 impl Insn {
