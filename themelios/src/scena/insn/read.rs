@@ -144,7 +144,7 @@ fn read_misc(
 			ensure_whatever!(
 				insns == [
 					Insn::new(&iset.fork_loop_next, vec![]),
-					Insn::new("_goto", vec![Arg::Address(pos)]),
+					Insn::new("_goto", vec![Arg::Label(pos)]),
 				],
 				"invalid ForkLoop: ended with {insns:?}"
 			);
@@ -241,7 +241,7 @@ fn read_int_arg(
 	Ok(match ty {
 		T::Int => Arg::Int(v),
 
-		T::Address => Arg::Address(cast(v)?),
+		T::Address => Arg::Label(cast(v)?),
 
 		T::Time => Arg::Scalar(cast(v)?, Unit::Time),
 		T::Length => Arg::Scalar(cast(v)?, Unit::Length),

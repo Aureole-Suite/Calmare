@@ -63,10 +63,10 @@ impl Code {
 
 		let mut insns2 = Vec::with_capacity(insns.len() * 2 + 1);
 		for (pos, insn) in insns {
-			insns2.push(Insn::new("_label", vec![Arg::Address(pos)]));
+			insns2.push(Insn::new("_label", vec![Arg::Label(pos)]));
 			insns2.push(insn);
 		}
-		insns2.push(Insn::new("_label", vec![Arg::Address(f.pos())]));
+		insns2.push(Insn::new("_label", vec![Arg::Label(f.pos())]));
 		Ok(Code(insns2))
 	}
 
