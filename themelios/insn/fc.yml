@@ -2,7 +2,7 @@ game: fc
 _def:
 - &Time {u32: Time}
 - &FileId {u32: FileId}
-- &CharId {u16: Time}
+- &CharId {u16: CharId}
 - &Address {u16: Address}
 
 switch_table_size: u16
@@ -15,14 +15,14 @@ insns:
 - _if: [Expr, *Address]
 - _goto: [*Address]
 - _switch: [Expr, SwitchTable, *Address]
-- Call: [{u16: FuncId}]
+- Call: [{u24: FuncId}]
 - NewScene: [*FileId, u8, u8, u8]
 - Hcf: []
-- Sleep: [{u16: Time}]
+- Sleep: [*Time]
 - SystemFlagsSet: [{u32: SystemFlags}]
 - SystemFlagsUnset: [{u32: SystemFlags}]
 - FadeOut: [*Time, {u32: Color}, u8]
-- FadeIn: [*Time, {u32: Color}, u8]
+- FadeIn: [*Time, {u32: Color}]
 - FadeWait: []
 - CrossFade: [*Time]
 - ED6Battle: [{u32: BattleId}, *FileId, u8, u16, {u8: CharId}]
@@ -95,13 +95,13 @@ insns:
 - ItemHas: [{u16: ItemId}, 0]
 - PartyEquip: [{u8: NameId}, {u16: ItemId}, FcPartyEquip]
 - PartyPosition: [{u8: NameId}]
-- ForkFunc: [*CharId, {u8: ForkId}, {u16: FuncId}]
+- ForkFunc: [*CharId, {u8: ForkId}, {u24: FuncId}]
 - ForkQuit: [*CharId, {u8: ForkId}]
 - Fork:     [*CharId, {u16: ForkId}, Fork]
 - ForkLoop: [*CharId, {u16: ForkId}, ForkLoop]
 - ForkWait: [*CharId, {u16: ForkId}]
 - NextFrame: []
-- Event: [{u16: FuncId}]
+- Event: [{u24: FuncId}]
 - _Char4A: [*CharId, u8]
 - _Char4B: [*CharId, u8]
 -
@@ -114,7 +114,7 @@ insns:
 - TextEnd: [*CharId]
 - TextMessage: [{?255: CharId}, Text]
 -
-- TextClose: []
+- TextClose: [u8]
 - MenuSetTitle: [u16, u16, u16, TString]
 - TextWait: []
 - _59: []

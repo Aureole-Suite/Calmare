@@ -45,7 +45,7 @@ fn read_insn<'a>(
 	n: usize,
 ) -> Result<&'a str> {
 	match insns.get(n) {
-		None | Some(iset::Insn::Blank) => todo!(),
+		None | Some(iset::Insn::Blank) => whatever!("unknown instruction {n:02X}"),
 		Some(iset::Insn::Regular { name, args }) => {
 			for arg in args {
 				read_arg(f, out, iset, arg)?;
@@ -212,10 +212,10 @@ fn parse_text_page(f: &mut Reader) -> Result<(TString, bool)> {
 	let mut buf = Vec::new();
 	let more = loop {
 		match f.u8()? {
-			0x00 => break true,
+			0x00 => break false,
 			0x01 => buf.extend(b"\\n"), // newline → line feed
 			0x02 => buf.extend(b"\\f"), // pause → page break
-			0x03 => break false,        // page break
+			0x03 => break true,         // page break
 			0x07 => buf.extend(format!("\\{}C", f.u8()?).as_bytes()),
 			0x0D => buf.extend(b"\\r"),
 			0x1F => buf.extend(format!("\\{}i", f.u16()?).as_bytes()),
