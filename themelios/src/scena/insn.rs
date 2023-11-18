@@ -9,11 +9,9 @@ use crate::types::*;
 
 mod read;
 pub use read::ReadError;
-
-#[derive(Debug, Snafu)]
-pub enum WriteError {
-	Bar,
-}
+mod write;
+pub use write::WriteError;
+pub(crate) use write::InsnWriter;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Insn {

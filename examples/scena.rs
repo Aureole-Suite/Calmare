@@ -8,8 +8,12 @@ fn main() -> anyhow::Result<()> {
 
 	for file in std::env::args().skip(1) {
 		println!("{file}");
-		let scena = ed6::Scena::read(iset, &std::fs::read(file)?)?;
-		println!("{:#?}", scena);
+		let bytes = std::fs::read(file)?;
+		let scena = ed6::Scena::read(iset, &bytes)?;
+		let bytes2 = ed6::Scena::write(iset, &scena)?;
+		if bytes != bytes2 {
+			panic!()
+		}
 	}
 
 	Ok(())

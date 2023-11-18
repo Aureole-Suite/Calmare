@@ -1,3 +1,5 @@
+use std::collections::{BTreeMap, BTreeSet};
+
 use gospel::read::Reader;
 use gospel::write::Writer;
 use snafu::prelude::*;
@@ -20,7 +22,10 @@ pub enum ReadError {
 
 #[derive(Debug, Snafu)]
 pub enum WriteError {
-	Bar,
+	#[snafu(context(false))]
+	Insn {
+		source: insn::WriteError,
+	},
 }
 
 #[derive(Debug, Snafu)]
@@ -80,13 +85,15 @@ impl Code {
 		Ok(code)
 	}
 
-	pub fn write(code: &mut Writer, insn: &InsnSet, func: &Code) -> Result<(), WriteError> {
-		todo!()
+	pub fn write(f: &mut Writer, iset: &InsnSet, code: &Code) -> Result<(), WriteError> {
+		let mut writer = insn::InsnWriter::new(f, iset);
+		for insn in &code.0 {
+			writer.insn(insn)?
+		}
+		Ok(())
 	}
 
 	pub fn normalize(&mut self) -> Result<(), NormalizeError> {
-		use std::collections::{BTreeMap, BTreeSet};
-
 		let mut used = BTreeSet::new();
 		let mut defined = BTreeSet::new();
 		let mut duplicate = None;
