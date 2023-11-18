@@ -91,6 +91,10 @@ fn read_arg(
 			}
 			out.push(Arg::Tuple(values))
 		}
+		iset::Arg::Const(int, w) => {
+			let v = read_int(f, *int)?;
+			ensure_whatever!(v == *w, "{v} != {w}");
+		},
 	}
 	Ok(())
 }

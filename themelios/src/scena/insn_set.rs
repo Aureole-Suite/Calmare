@@ -40,6 +40,7 @@ pub enum Arg {
 	Int(IntArg, IntType),
 	Misc(MiscArg),
 	Tuple(Vec<Arg>),
+	Const(IntArg, i64),
 }
 
 #[allow(non_camel_case_types)]
