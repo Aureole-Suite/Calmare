@@ -15,7 +15,7 @@ pub enum Game {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InsnSet {
 	pub game: Game,
-	pub switch_table_size: IntArg,
+	pub switch_table_size: IntType,
 	pub switch_table_type: Arg,
 	pub fork_loop_next: String,
 	pub insns: [Insn; 256],
@@ -28,7 +28,7 @@ pub struct InsnSet {
 #[serde(remote = "InsnSet")]
 struct InsnSet_inner {
 	pub game: Game,
-	pub switch_table_size: IntArg,
+	pub switch_table_size: IntType,
 	pub switch_table_type: Arg,
 	pub fork_loop_next: String,
 	#[serde_as(as = "[_; 256]")]
@@ -46,21 +46,21 @@ pub enum Insn {
 	},
 	Match {
 		head: Vec<Arg>,
-		on: IntArg,
+		on: IntType,
 		cases: Vec<Insn>,
 	},
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Arg {
-	Int(IntArg, IntType),
+	Int(IntType, IntArg),
 	Misc(MiscArg),
 	Tuple(Vec<Arg>),
 }
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum IntArg {
+pub enum IntType {
 	u8,
 	u16,
 	u24,
@@ -74,8 +74,8 @@ pub enum IntArg {
 // Ugly implementation detail
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(remote = "IntArg")]
-enum IntArg_inner {
+#[serde(remote = "IntType")]
+enum IntType_inner {
 	u8,
 	u16,
 	u24,
@@ -86,7 +86,7 @@ enum IntArg_inner {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-pub enum IntType {
+pub enum IntArg {
 	#[serde(skip)]
 	Int,
 	#[serde(skip)]
@@ -168,20 +168,20 @@ pub enum MiscArg {
 impl<'de> Deserialize<'de> for InsnSet {
 	fn deserialize<D: serde::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
 		let mut iset = InsnSet_inner::deserialize(de)?;
-		make_rev_table(IntArg::u8, &iset.insns, &mut iset.insns_rev, vec![])?;
+		make_rev_table(IntType::u8, &iset.insns, &mut iset.insns_rev, vec![])?;
 		Ok(iset)
 	}
 }
 
 fn make_rev_table<D: serde::de::Error>(
-	ty: IntArg,
+	ty: IntType,
 	insns: &[Insn],
 	insns_rev: &mut BTreeMap<String, Vec<Arg>>,
 	prev_args: Vec<Arg>,
 ) -> Result<(), D> {
 	for (i, insn) in insns.iter().enumerate() {
 		let mut my_args = prev_args.clone();
-		my_args.push(Arg::Int(ty, IntType::Const(i as i64)));
+		my_args.push(Arg::Int(ty, IntArg::Const(i as i64)));
 		match insn {
 			Insn::Blank => {}
 			Insn::Regular { name, args } => {
@@ -217,12 +217,12 @@ impl<'de> Deserialize<'de> for Arg {
 
 			fn visit_i64<E: de::Error>(self, v: i64) -> Result<Self::Value, E> {
 				let de = de::value::I64Deserializer::new(v);
-				Ok(Arg::Int(IntArg::deserialize(de)?, IntType::Int))
+				Ok(Arg::Int(IntType::deserialize(de)?, IntArg::Int))
 			}
 
 			fn visit_u64<E: de::Error>(self, v: u64) -> Result<Self::Value, E> {
 				let de = de::value::U64Deserializer::new(v);
-				Ok(Arg::Int(IntArg::deserialize(de)?, IntType::Int))
+				Ok(Arg::Int(IntType::deserialize(de)?, IntArg::Int))
 			}
 
 			fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
@@ -230,7 +230,7 @@ impl<'de> Deserialize<'de> for Arg {
 				if v.chars().next().is_some_and(|c| c.is_uppercase()) {
 					Ok(Arg::Misc(MiscArg::deserialize(de)?))
 				} else {
-					Ok(Arg::Int(IntArg::deserialize(de)?, IntType::Int))
+					Ok(Arg::Int(IntType::deserialize(de)?, IntArg::Int))
 				}
 			}
 
@@ -244,12 +244,12 @@ impl<'de> Deserialize<'de> for Arg {
 	}
 }
 
-impl<'de> Deserialize<'de> for IntArg {
+impl<'de> Deserialize<'de> for IntType {
 	fn deserialize<D: serde::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
 		use serde::de;
 		struct V;
 		impl<'de> de::Visitor<'de> for V {
-			type Value = IntArg;
+			type Value = IntType;
 
 			fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 				f.write_str("integer type or value")
@@ -257,17 +257,17 @@ impl<'de> Deserialize<'de> for IntArg {
 
 			fn visit_i64<E: de::Error>(self, v: i64) -> Result<Self::Value, E> {
 				let de = de::value::I64Deserializer::new(v);
-				i64::deserialize(de).map(IntArg::Const)
+				i64::deserialize(de).map(IntType::Const)
 			}
 
 			fn visit_u64<E: de::Error>(self, v: u64) -> Result<Self::Value, E> {
 				let de = de::value::U64Deserializer::new(v);
-				i64::deserialize(de).map(IntArg::Const)
+				i64::deserialize(de).map(IntType::Const)
 			}
 
 			fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
 				let de = de::value::StrDeserializer::new(v);
-				IntArg_inner::deserialize(de)
+				IntType_inner::deserialize(de)
 			}
 		}
 		de.deserialize_any(V)
@@ -292,7 +292,7 @@ impl<'de> Deserialize<'de> for Insn {
 					Match {
 						#[serde(default)]
 						head: Vec<Arg>,
-						on: IntArg,
+						on: IntType,
 						cases: Vec<Insn>,
 					},
 				}

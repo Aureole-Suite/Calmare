@@ -62,16 +62,16 @@ fn read_insn<'a>(
 	}
 }
 
-fn read_int(f: &mut Reader, int: iset::IntArg) -> Result<i64> {
+fn read_int(f: &mut Reader, int: iset::IntType) -> Result<i64> {
 	Ok(match int {
-		iset::IntArg::u8 => f.u8()? as i64,
-		iset::IntArg::u16 => f.u16()? as i64,
-		iset::IntArg::u24 => (f.u16()? as i64) | (f.u8()? as i64) << 8,
-		iset::IntArg::u32 => f.u32()? as i64,
-		iset::IntArg::i8 => f.i8()? as i64,
-		iset::IntArg::i16 => f.i16()? as i64,
-		iset::IntArg::i32 => f.i32()? as i64,
-		iset::IntArg::Const(v) => v,
+		iset::IntType::u8 => f.u8()? as i64,
+		iset::IntType::u16 => f.u16()? as i64,
+		iset::IntType::u24 => (f.u16()? as i64) | (f.u8()? as i64) << 8,
+		iset::IntType::u32 => f.u32()? as i64,
+		iset::IntType::i8 => f.i8()? as i64,
+		iset::IntType::i16 => f.i16()? as i64,
+		iset::IntType::i32 => f.i32()? as i64,
+		iset::IntType::Const(v) => v,
 	})
 }
 
@@ -231,11 +231,11 @@ fn parse_text_page(f: &mut Reader) -> Result<(TString, bool)> {
 fn read_int_arg(
 	f: &mut Reader,
 	iset: &iset::InsnSet,
-	int: iset::IntArg,
-	ty: iset::IntType,
+	int: iset::IntType,
+	ty: iset::IntArg,
 ) -> Result<Arg> {
 	use crate::util::cast;
-	use iset::IntType as T;
+	use iset::IntArg as T;
 
 	let v = read_int(f, int)?;
 	Ok(match ty {
