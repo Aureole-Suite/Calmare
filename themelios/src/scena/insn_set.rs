@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -10,15 +12,29 @@ pub enum Game {
 	Azure,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InsnSet {
+	pub game: Game,
+	pub switch_table_size: IntArg,
+	pub switch_table_type: Arg,
+	pub fork_loop_next: String,
+	pub insns: [Insn; 256],
+	pub insns_rev: BTreeMap<String, Vec<Arg>>,
+}
+
+#[allow(non_camel_case_types)]
 #[serde_with::serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct InsnSet {
+#[serde(remote = "InsnSet")]
+struct InsnSet_inner {
 	pub game: Game,
 	pub switch_table_size: IntArg,
 	pub switch_table_type: Arg,
 	pub fork_loop_next: String,
 	#[serde_as(as = "[_; 256]")]
 	pub insns: [Insn; 256],
+	#[serde(skip)]
+	pub insns_rev: BTreeMap<String, Vec<Arg>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -146,6 +162,40 @@ pub enum MiscArg {
 	Menu,         // TString...
 	FcPartyEquip, // Slot to put item in: u8 if quartz, Const(0) otherwise (u8 post-FC)
 	EffPlayPos,
+}
+
+impl<'de> Deserialize<'de> for InsnSet {
+	fn deserialize<D: serde::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
+		let mut iset = InsnSet_inner::deserialize(de)?;
+		make_rev_table(IntArg::u8, &iset.insns, &mut iset.insns_rev, vec![])?;
+		Ok(iset)
+	}
+}
+
+fn make_rev_table<D: serde::de::Error>(
+	ty: IntArg,
+	insns: &[Insn],
+	insns_rev: &mut BTreeMap<String, Vec<Arg>>,
+	prev_args: Vec<Arg>,
+) -> Result<(), D> {
+	for (i, insn) in insns.iter().enumerate() {
+		let mut my_args = prev_args.clone();
+		my_args.push(Arg::Const(ty, i as i64));
+		match insn {
+			Insn::Blank => {}
+			Insn::Regular { name, args } => {
+				my_args.extend(args.iter().cloned());
+				if insns_rev.insert(name.clone(), my_args).is_some() {
+					return Err(D::custom(format!("duplicate instruction {name}")));
+				}
+			}
+			Insn::Match { head, on, cases } => {
+				my_args.extend(head.iter().cloned());
+				make_rev_table(*on, cases, insns_rev, my_args)?;
+			}
+		}
+	}
+	Ok(())
 }
 
 impl<'de> Deserialize<'de> for Arg {
