@@ -46,15 +46,44 @@ impl<'a, 'b> InsnWriter<'a, 'b> {
 	}
 
 	pub fn insn(&mut self, insn: &Insn) -> Result<(), WriteError> {
-		if insn.name == "_label" {
-			let [Arg::Label(label)] = insn.args.as_slice() else {
-				whatever!("")
-			};
-			let here = self.f.here();
-			self.labels.insert(*label, here);
-		} else {
-			todo!()
+		match insn.name.as_str() {
+			"_label" => {
+				let [Arg::Label(label)] = insn.args.as_slice() else {
+					whatever!("malformed label")
+				};
+				let here = self.f.here();
+				self.labels.insert(*label, here);
+			}
+			name => {
+				let Some(iargs) = self.iset.insns_rev.get(name) else {
+					whatever!("unknown instruction {name}")
+				};
+				self.args(&insn.args, iargs)?;
+			}
 		}
 		Ok(())
+	}
+
+	fn args(&mut self, args: &[Arg], iargs: &[iset::Arg]) -> Result<(), WriteError> {
+		let mut iter = args.iter();
+		for arg in iargs {
+			self.arg(arg, &mut iter)?;
+		}
+		if let Some(arg) = iter.next() {
+			whatever!("too many arguments: {arg:?}")
+		};
+		Ok(())
+	}
+
+	fn arg<'c>(
+		&self,
+		arg: &iset::Arg,
+		mut iter: impl Iterator<Item = &'c Arg>,
+	) -> Result<(), WriteError> {
+		match arg {
+			iset::Arg::Int(_, _) => todo!(),
+			iset::Arg::Misc(_) => todo!(),
+			iset::Arg::Tuple(_) => todo!(),
+		}
 	}
 }
