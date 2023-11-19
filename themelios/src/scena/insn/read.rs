@@ -26,11 +26,16 @@ pub enum ReadError {
 	},
 	#[snafu(whatever, display("{message}"))]
 	Whatever { message: String },
+	Insn {
+		context: Vec<(usize, Insn)>,
+		pos: usize,
+		source: Box<ReadError>,
+	},
 }
 
 type Result<T, E = ReadError> = std::result::Result<T, E>;
 
-struct InsnReader<'iset, 'read, 'buf> {
+pub struct InsnReader<'iset, 'read, 'buf> {
 	f: &'read mut Reader<'buf>,
 	iset: &'iset iset::InsnSet,
 }
@@ -41,7 +46,45 @@ pub(crate) fn read(f: &mut Reader, iset: &iset::InsnSet) -> Result<Insn> {
 }
 
 impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
-	fn insn(&mut self) -> Result<Insn> {
+	pub fn new(f: &'read mut Reader<'buf>, iset: &'iset iset::InsnSet) -> Self {
+		Self { f, iset }
+	}
+
+	pub fn code(&mut self, end: Option<usize>) -> Result<Code> {
+		let end = end.expect("inferred end is not yet supported");
+
+		let mut insns = Vec::new();
+		while self.f.pos() < end {
+			let pos = self.f.pos();
+			let insn = self.insn().map_err(Box::new).with_context(|_| InsnSnafu {
+				pos,
+				context: insns
+					.iter()
+					.rev()
+					.take(8)
+					.rev()
+					.cloned()
+					.collect::<Vec<_>>(),
+			})?;
+			insns.push((pos, insn));
+		}
+		ensure_whatever!(
+			self.f.pos() == end,
+			"overshot end: {} > {}",
+			self.f.pos(),
+			end
+		);
+
+		let mut insns2 = Vec::with_capacity(insns.len() * 2 + 1);
+		for (pos, insn) in insns {
+			insns2.push(Insn::new("_label", vec![Arg::Label(pos)]));
+			insns2.push(insn);
+		}
+		insns2.push(Insn::new("_label", vec![Arg::Label(self.f.pos())]));
+		Ok(Code(insns2))
+	}
+
+	pub fn insn(&mut self) -> Result<Insn> {
 		let mut args = Vec::new();
 		let byte = self.f.u8()? as usize;
 		let name = self.insn_inner(&mut args, &self.iset.insns, byte)?;
@@ -86,11 +129,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 		})
 	}
 
-	fn arg(
-		&mut self,
-		out: &mut Vec<Arg>,
-		arg: &iset::Arg,
-	) -> Result<(), ReadError> {
+	fn arg(&mut self, out: &mut Vec<Arg>, arg: &iset::Arg) -> Result<(), ReadError> {
 		match arg {
 			iset::Arg::Int(int, ty) => {
 				let v = self.int(*int)?;
@@ -108,11 +147,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 		Ok(())
 	}
 
-	fn misc(
-		&mut self,
-		out: &mut Vec<Arg>,
-		ty: iset::MiscArg,
-	) -> Result<()> {
+	fn misc(&mut self, out: &mut Vec<Arg>, ty: iset::MiscArg) -> Result<()> {
 		let f = &mut self.f;
 		use iset::MiscArg as T;
 		match ty {
@@ -211,11 +246,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 	}
 }
 
-fn int_arg(
-	iset: &iset::InsnSet,
-	v: i64,
-	ty: iset::IntArg,
-) -> Result<Option<Arg>> {
+fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Option<Arg>> {
 	use crate::util::cast;
 	use iset::IntArg as T;
 

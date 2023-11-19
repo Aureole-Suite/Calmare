@@ -9,6 +9,8 @@ use crate::types::*;
 
 mod read;
 pub use read::ReadError;
+pub(crate) use read::InsnReader;
+
 mod write;
 pub(crate) use write::InsnWriter;
 pub use write::WriteError;
@@ -41,10 +43,12 @@ impl Insn {
 		(&self.name, &self.args)
 	}
 
+	#[deprecated]
 	pub(crate) fn read(f: &mut Reader, iset: &iset::InsnSet) -> Result<Insn, ReadError> {
 		read::read(f, iset)
 	}
 
+	#[deprecated]
 	pub(crate) fn write(
 		f: &mut Writer,
 		iset: &iset::InsnSet,

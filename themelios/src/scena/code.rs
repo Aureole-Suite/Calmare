@@ -9,15 +9,8 @@ use crate::scena::insn_set::InsnSet;
 
 #[derive(Debug, Snafu)]
 pub enum ReadError {
-	Overshoot {
-		pos: usize,
-		end: usize,
-	},
-	Insn {
-		context: Vec<(usize, Insn)>,
-		pos: usize,
-		source: insn::ReadError,
-	},
+	#[snafu(context(false))]
+	Insn { source: insn::ReadError },
 }
 
 #[derive(Debug, Snafu)]
@@ -53,32 +46,7 @@ impl std::ops::DerefMut for Code {
 
 impl Code {
 	pub fn read(f: &mut Reader, insn: &InsnSet, end: Option<usize>) -> Result<Code, ReadError> {
-		let end = end.expect("inferred end is not yet supported");
-
-		let mut insns = Vec::new();
-		while f.pos() < end {
-			let pos = f.pos();
-			let insn = Insn::read(f, insn).with_context(|_| InsnSnafu {
-				pos,
-				context: insns
-					.iter()
-					.rev()
-					.take(8)
-					.rev()
-					.cloned()
-					.collect::<Vec<_>>(),
-			})?;
-			insns.push((pos, insn));
-		}
-		ensure!(f.pos() == end, OvershootSnafu { pos: f.pos(), end });
-
-		let mut insns2 = Vec::with_capacity(insns.len() * 2 + 1);
-		for (pos, insn) in insns {
-			insns2.push(Insn::new("_label", vec![Arg::Label(pos)]));
-			insns2.push(insn);
-		}
-		insns2.push(Insn::new("_label", vec![Arg::Label(f.pos())]));
-		let mut code = Code(insns2);
+		let mut code = insn::InsnReader::new(f, insn).code(end)?;
 		code.normalize().unwrap();
 		Ok(code)
 	}
