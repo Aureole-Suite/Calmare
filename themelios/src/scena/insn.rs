@@ -10,8 +10,8 @@ use crate::types::*;
 mod read;
 pub use read::ReadError;
 mod write;
-pub use write::WriteError;
 pub(crate) use write::InsnWriter;
+pub use write::WriteError;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Insn {

@@ -91,10 +91,6 @@ fn read_arg(
 			}
 			out.push(Arg::Tuple(values))
 		}
-		iset::Arg::Const(int, w) => {
-			let v = read_int(f, *int)?;
-			ensure_whatever!(v == *w, "{v} != {w}");
-		},
 	}
 	Ok(())
 }
@@ -244,6 +240,10 @@ fn read_int_arg(
 	let v = read_int(f, int)?;
 	Ok(match ty {
 		T::Int => Arg::Int(v),
+		T::Const(w) => {
+			ensure_whatever!(v == w, "{v} != {w}");
+			Arg::Int(v)
+		}
 
 		T::Address => Arg::Label(cast(v)?),
 

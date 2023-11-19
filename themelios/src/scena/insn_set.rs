@@ -56,7 +56,6 @@ pub enum Arg {
 	Int(IntArg, IntType),
 	Misc(MiscArg),
 	Tuple(Vec<Arg>),
-	Const(IntArg, i64),
 }
 
 #[allow(non_camel_case_types)]
@@ -90,6 +89,8 @@ enum IntArg_inner {
 pub enum IntType {
 	#[serde(skip)]
 	Int,
+	#[serde(skip)]
+	Const(i64),
 
 	Address,
 
@@ -180,7 +181,7 @@ fn make_rev_table<D: serde::de::Error>(
 ) -> Result<(), D> {
 	for (i, insn) in insns.iter().enumerate() {
 		let mut my_args = prev_args.clone();
-		my_args.push(Arg::Const(ty, i as i64));
+		my_args.push(Arg::Int(ty, IntType::Const(i as i64)));
 		match insn {
 			Insn::Blank => {}
 			Insn::Regular { name, args } => {

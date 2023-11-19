@@ -23,9 +23,7 @@ pub enum ReadError {
 #[derive(Debug, Snafu)]
 pub enum WriteError {
 	#[snafu(context(false))]
-	Insn {
-		source: insn::WriteError,
-	},
+	Insn { source: insn::WriteError },
 }
 
 #[derive(Debug, Snafu)]
