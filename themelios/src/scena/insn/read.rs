@@ -82,7 +82,10 @@ fn read_arg(
 	arg: &iset::Arg,
 ) -> Result<(), ReadError> {
 	match arg {
-		iset::Arg::Int(int, ty) => out.extend(read_int_arg(f, iset, *int, *ty)?),
+		iset::Arg::Int(int, ty) => {
+			let v = read_int(f, *int)?;
+			out.extend(parse_int_arg(f, iset, v, *ty)?)
+		}
 		iset::Arg::Misc(ty) => read_misc(f, out, iset, *ty)?,
 		iset::Arg::Tuple(args) => {
 			let mut values = Vec::new();
@@ -228,16 +231,15 @@ fn parse_text_page(f: &mut Reader) -> Result<(TString, bool)> {
 	Ok((TString(string), more))
 }
 
-fn read_int_arg(
+fn parse_int_arg(
 	f: &mut Reader,
 	iset: &iset::InsnSet,
-	int: iset::IntType,
+	v: i64,
 	ty: iset::IntArg,
 ) -> Result<Option<Arg>> {
 	use crate::util::cast;
 	use iset::IntArg as T;
 
-	let v = read_int(f, int)?;
 	Ok(Some(match ty {
 		T::Int => Arg::Int(v),
 		T::Const(w) => {
