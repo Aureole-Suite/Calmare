@@ -82,7 +82,7 @@ fn read_arg(
 	arg: &iset::Arg,
 ) -> Result<(), ReadError> {
 	match arg {
-		iset::Arg::Int(int, ty) => out.push(read_int_arg(f, iset, *int, *ty)?),
+		iset::Arg::Int(int, ty) => out.extend(read_int_arg(f, iset, *int, *ty)?),
 		iset::Arg::Misc(ty) => read_misc(f, out, iset, *ty)?,
 		iset::Arg::Tuple(args) => {
 			let mut values = Vec::new();
@@ -233,16 +233,16 @@ fn read_int_arg(
 	iset: &iset::InsnSet,
 	int: iset::IntType,
 	ty: iset::IntArg,
-) -> Result<Arg> {
+) -> Result<Option<Arg>> {
 	use crate::util::cast;
 	use iset::IntArg as T;
 
 	let v = read_int(f, int)?;
-	Ok(match ty {
+	Ok(Some(match ty {
 		T::Int => Arg::Int(v),
 		T::Const(w) => {
 			ensure_whatever!(v == w, "{v} != {w}");
-			Arg::Int(v)
+			return Ok(None);
 		}
 
 		T::Address => Arg::Label(cast(v)?),
@@ -302,5 +302,5 @@ fn read_int_arg(
 		T::EventFlags => Arg::EventFlags(cast(v)?),
 		T::CharFlags => Arg::CharFlags(cast(v)?),
 		T::CharFlags2 => Arg::CharFlags2(cast(v)?),
-	})
+	}))
 }
