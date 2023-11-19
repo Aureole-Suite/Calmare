@@ -3,10 +3,10 @@ use snafu::prelude::*;
 
 use super::{Arg, Insn};
 use crate::scena::code::Code;
-use crate::scena::insn::Unit;
-use crate::scena::{expr::Expr, insn_set as iset, CharId, EventId, FuncId, LookPointId};
+use crate::scena::insn::{Unit, Expr};
+use crate::scena::{insn_set as iset, CharId, EventId, FuncId, LookPointId};
 use crate::types::*;
-use crate::util::ReaderExt;
+use crate::util::{ReaderExt, ValueError};
 
 #[derive(Debug, Snafu)]
 pub enum ReadError {
@@ -16,14 +16,6 @@ pub enum ReadError {
 	Decode { source: crate::util::DecodeError },
 	#[snafu(context(false))]
 	Value { source: crate::util::ValueError },
-	#[snafu(context(false))]
-	Code {
-		source: Box<crate::scena::code::ReadError>,
-	},
-	#[snafu(context(false))]
-	Expr {
-		source: Box<crate::scena::expr::ReadError>,
-	},
 	#[snafu(whatever, display("{message}"))]
 	Whatever { message: String },
 	Insn {
@@ -38,11 +30,6 @@ type Result<T, E = ReadError> = std::result::Result<T, E>;
 pub struct InsnReader<'iset, 'read, 'buf> {
 	f: &'read mut Reader<'buf>,
 	iset: &'iset iset::InsnSet,
-}
-
-pub(crate) fn read(f: &mut Reader, iset: &iset::InsnSet) -> Result<Insn> {
-	let mut reader = InsnReader { f, iset };
-	reader.insn()
 }
 
 impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
@@ -170,14 +157,14 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 				z: f.i32()?,
 			})),
 
-			T::Expr => out.push(Arg::Expr(Expr::read(f, self.iset).map_err(Box::new)?)),
+			T::Expr => out.push(Arg::Expr(self.expr()?)),
 
 			T::Fork => {
 				let len = f.u8()? as usize;
 				let pos = f.pos();
-				let code = Code::read(f, self.iset, Some(pos + len)).map_err(Box::new)?;
+				let code = self.code(Some(pos + len))?;
 				if len > 0 {
-					f.check_u8(0)?;
+					self.f.check_u8(0)?;
 				}
 				out.push(Arg::Code(code))
 			}
@@ -185,7 +172,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 			T::ForkLoop => {
 				let len = f.u8()? as usize;
 				let pos = f.pos();
-				let code = Code::read(f, self.iset, Some(pos + len)).map_err(Box::new)?;
+				let code = self.code(Some(pos + len))?;
 
 				let insns = [self.insn()?, self.insn()?];
 				#[rustfmt::skip]
@@ -243,6 +230,36 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 			}
 		}
 		Ok(())
+	}
+
+	fn expr(&mut self) -> Result<Expr> {
+		use crate::scena::insn::{Op, Term};
+		let mut terms = Vec::new();
+		loop {
+			let f = &mut self.f;
+			let op = f.u8()?;
+			let term = if let Ok(op) = Op::try_from(op) {
+				Term::Op(op)
+			} else {
+				match op {
+					0x00 => Term::Arg(Arg::Int(f.u32()? as i64)),
+					0x01 => break,
+					0x1C => Term::Insn(Box::new(self.insn()?)),
+					0x1E => Term::Arg(Arg::Flag(Flag(f.u16()?))),
+					0x1F => Term::Arg(Arg::Var(f.u16()?)),
+					0x20 => Term::Arg(Arg::Attr(f.u8()?)),
+					0x21 => Term::Arg(Arg::CharAttr(
+						CharId::from_u16(self.iset.game, f.u16()?)?,
+						f.u8()?,
+					)),
+					0x22 => Term::Rand,
+					0x23 => Term::Arg(Arg::Global(f.u8()?)),
+					op => Err(ValueError::new("Expr", format!("0x{op:02X}")))?,
+				}
+			};
+			terms.push(term);
+		}
+		Ok(Expr(terms))
 	}
 }
 

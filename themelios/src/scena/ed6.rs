@@ -38,7 +38,7 @@ pub enum ReadError {
 	#[snafu(context(false))]
 	Decode { source: util::DecodeError },
 	#[snafu(context(false))]
-	Code { source: code::ReadError },
+	Insn { source: insn::ReadError },
 	#[snafu(whatever, display("{message}"))]
 	Whatever { message: String },
 }
@@ -50,7 +50,7 @@ pub enum WriteError {
 	#[snafu(context(false))]
 	Value { source: util::ValueError },
 	#[snafu(context(false))]
-	Code { source: code::WriteError },
+	Insn { source: insn::WriteError },
 	#[snafu(context(false))]
 	Encode { source: util::EncodeError },
 }

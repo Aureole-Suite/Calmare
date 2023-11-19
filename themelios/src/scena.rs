@@ -3,7 +3,6 @@ use crate::{types::NameId, util::ValueError};
 pub mod code;
 pub mod ed6;
 
-pub mod expr;
 pub mod insn;
 pub mod insn_set;
 

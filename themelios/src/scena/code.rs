@@ -8,18 +8,6 @@ use crate::scena::insn::{self, Arg, Insn};
 use crate::scena::insn_set::InsnSet;
 
 #[derive(Debug, Snafu)]
-pub enum ReadError {
-	#[snafu(context(false))]
-	Insn { source: insn::ReadError },
-}
-
-#[derive(Debug, Snafu)]
-pub enum WriteError {
-	#[snafu(context(false))]
-	Insn { source: insn::WriteError },
-}
-
-#[derive(Debug, Snafu)]
 pub enum NormalizeError {
 	#[snafu(display("duplicate label: {label}"))]
 	DuplicateLabel { label: usize },
@@ -45,13 +33,13 @@ impl std::ops::DerefMut for Code {
 }
 
 impl Code {
-	pub fn read(f: &mut Reader, insn: &InsnSet, end: Option<usize>) -> Result<Code, ReadError> {
+	pub fn read(f: &mut Reader, insn: &InsnSet, end: Option<usize>) -> Result<Code, insn::ReadError> {
 		let mut code = insn::InsnReader::new(f, insn).code(end)?;
 		code.normalize().unwrap();
 		Ok(code)
 	}
 
-	pub fn write(f: &mut Writer, iset: &InsnSet, code: &Code) -> Result<(), WriteError> {
+	pub fn write(f: &mut Writer, iset: &InsnSet, code: &Code) -> Result<(), insn::WriteError> {
 		let mut writer = insn::InsnWriter::new(f, iset);
 		for insn in &code.0 {
 			writer.insn(insn)?

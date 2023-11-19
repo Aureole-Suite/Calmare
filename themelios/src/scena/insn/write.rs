@@ -3,10 +3,10 @@ use std::collections::BTreeMap;
 use gospel::write::{Label, Le as _, Writer};
 use snafu::prelude::*;
 
-use super::{Arg, Insn};
+use super::{Arg, Insn, Expr};
 use crate::scena::code::Code;
 use crate::scena::insn::Unit;
-use crate::scena::{expr::Expr, insn_set as iset, CharId, EventId, FuncId, LookPointId};
+use crate::scena::{insn_set as iset, CharId, EventId, FuncId, LookPointId};
 use crate::types::*;
 use crate::util::WriterExt;
 
@@ -18,14 +18,6 @@ pub enum WriteError {
 	Encode { source: crate::util::EncodeError },
 	#[snafu(context(false))]
 	Value { source: crate::util::ValueError },
-	#[snafu(context(false))]
-	Code {
-		source: Box<crate::scena::code::WriteError>,
-	},
-	#[snafu(context(false))]
-	Expr {
-		source: Box<crate::scena::expr::WriteError>,
-	},
 	#[snafu(whatever, display("{message}"))]
 	Whatever { message: String },
 }
@@ -85,5 +77,49 @@ impl<'a, 'b> InsnWriter<'a, 'b> {
 			iset::Arg::Misc(_) => todo!(),
 			iset::Arg::Tuple(_) => todo!(),
 		}
+	}
+
+	fn expr(&mut self, expr: &Expr) -> Result<(), WriteError> {
+		use crate::scena::insn::Term;
+		for term in &expr.0 {
+			match *term {
+				Term::Arg(Arg::Int(n)) => {
+					self.f.u8(0x00);
+					self.f.u32(crate::util::cast(n)?);
+				}
+				Term::Op(op) => self.f.u8(op.into()),
+				Term::Insn(ref insn) => {
+					self.f.u8(0x1C);
+					self.insn(insn)?;
+				}
+				Term::Arg(Arg::Flag(Flag(v))) => {
+					self.f.u8(0x1E);
+					self.f.u16(v);
+				}
+				Term::Arg(Arg::Var(v)) => {
+					self.f.u8(0x1F);
+					self.f.u16(v);
+				}
+				Term::Arg(Arg::Attr(v)) => {
+					self.f.u8(0x20);
+					self.f.u8(v);
+				}
+				Term::Arg(Arg::CharAttr(id, v)) => {
+					self.f.u8(0x21);
+					self.f.u16(id.to_u16(self.iset.game)?);
+					self.f.u8(v);
+				}
+				Term::Rand => {
+					self.f.u8(0x22);
+				}
+				Term::Arg(Arg::Global(v)) => {
+					self.f.u8(0x23);
+					self.f.u8(v);
+				}
+				Term::Arg(ref v) => whatever!("cannot use {v:?} in Expr"),
+			}
+		}
+		self.f.u8(0x01);
+		Ok(())
 	}
 }
