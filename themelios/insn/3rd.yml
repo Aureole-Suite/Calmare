@@ -1,4 +1,4 @@
-game: sc
+game: 3rd
 _def:
  - &Time {u32: Time}
  - &FileId {u32: FileId}
@@ -136,8 +136,8 @@ insns:
 - CamPers: [i32, *Time]
 - ObjFrame: [{u16: ObjectId}, u32]
 - ED6ObjPlay: [{u16: ObjectId}, u32]
-- ObjFlagsSet: [{u16: ObjectId}, {u16: ObjectFlags}]
-- ObjFlagsUnset: [{u16: ObjectId}, {u16: ObjectFlags}]
+- ObjFlagsSet: [{u8: ObjectId}, {u32: ObjectFlags}]
+- ObjFlagsUnset: [{u8: ObjectId}, {u32: ObjectFlags}]
 - ObjWait: [{u16: ObjectId}]
 - _74: [{u16: ObjectId}, u32, u16]
 - _75: [{u8: ObjectId}, u32, u8]
@@ -215,8 +215,13 @@ insns:
 - VarWait: [{u16: Var}, u16]
 -
 - ShopOpen: [{u8: ShopId}]
-- PartySave: []
-- PartyLoad: []
+- !match
+  on: u8
+  cases:
+    - MonumentOpen: [u8, u8, u8]
+    - MonumentDisable: [u8, u8, u8]
+    - MonumentEnable: [u8, u8, u8]
+-
 - RecipeLearn: [{u16: RecipeId}]
 - ImageShow: [*FileId, u16, u16, *Time]
 - ImageHide: [*Time]
@@ -252,7 +257,7 @@ insns:
 - _BF: [[u8, u8, u8, u8], {u16: Flag}]
 - Minigame: [u8, i32, i32, i32, i32, i32, i32, i32, i32]
 - _C1: [{u16: ItemId}, u32]
-- Sc_C2: []
+- Tc_C2: [u8, u8]
 - _C3: [u16]
 - !match
   on: u8
@@ -275,8 +280,8 @@ insns:
   - VisHide: [{u8: VisId}, u8]
 - _C8: [u16, u16, String, u8, u16]
 - PartySelect: [u16, PartySelectMandatory, PartySelectOptional]
-- _CA: [{u8: ObjectId}, u8, 0, u32]
-- CharInSlot: [0, {u8: CharId}]
+- _CA: [{u8: ObjectId}, u8, i32, u32]
+- CharInSlot: [u8, {u8: CharId}]
 - !match
   on: u8
   cases:
@@ -302,35 +307,76 @@ insns:
   - CutOnShow: [String]
   - CutInHide: []
 - _DA: []
-- _DB: []
-- _DC: []
+- !match
+  on: u8
+  cases:
+  - TcTeamMemberEnable: [{u8: NameId}]
+  - TcTeamMemberDisable: [{u8: NameId}]
+  - TcTeamMember_2: [u8]
+- !match
+  on: u8
+  cases:
+  - TcTeamUse: [u8]
+  - TcTeamAddMember: [u8, {u8: NameId}]
+  - TcTeamClear: [u8]
+- TcOrganizeTeams: [u8, u8, u8, {u32: TcMembers}, {u32: TcMembers}, {u32: TcMembers}, {u32: TcMembers}]
+- Tc_DE: [u8, u32]
+- Tc_DF: [u8, u16]
+- Tc_E0: [*CharId, u8, u8]
+- IndexInTeam: [{u8: NameId}, u8]
+- !match
+  on: u8
+  cases:
+  - Tc_E2_0: [u8]
+  - Tc_E2_1: []
+  -
+  - Tc_E2_3: [u8]
+  - Tc_E2_4: [u8]
+  - Tc_E2_5: [u16, u16, u16]
+  -
+  - Tc_E2_7: []
+  - Tc_E2_8: []
+  - Tc_E2_9: [u8]
+  - Tc_E2_10: [] # a getter
+  - Tc_E2_11: [u8]
+- !match
+  on: u8
+  cases:
+    - TcEpisodeStart: [u8, u32, u8]
+    - TcEpisodeEnd: [u8]
+    -
+    -
+    - TcEpisode_4: [u8]
+-
+- !match
+  on: u8
+  cases:
+    - Tc_E5_0: [u8, u8, u16, u16]
+    - Tc_E5_1: [u8, u8, u16, u16]
+    - Tc_E5_2: [u8, u8, u32]
+- !match
+  on: u8
+  cases:
+    - Tc_E6_0: [u8]
+    - Tc_E6_1: [u8]
+    - Tc_E6_2: []
+- Tc_E7: [{u8: VisId}, u8, {u32: Color}, *Time]
+-
+-
 - SaveClearData: []
-- PlaceSetNameString: [TString]
--
-- _E0: [{u8: ObjectId}, Pos3]
 -
 -
-- _E3: [u8, *CharId, u8]
-- _E4: [u8, u16]
-- _E5: [*CharId, u8]
-- _E6: [u8]
-- _E7: [{u8: ObjectId}, String, u8, u8, u8, u8, u8]
-- _E8: [*Time]
-- _E9: [u8]
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
 - ScAchievement: [u8, u16, u8]
-- _EB: [u8, u8]
--
--
--
--
--
--
--
--
--
--
--
--
 -
 -
 -

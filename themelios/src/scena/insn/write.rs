@@ -364,6 +364,7 @@ fn int_arg(iset: &iset::InsnSet, arg: &Arg) -> Result<i64, WriteError> {
 		Arg::EventFlags(v) => v as i64,
 		Arg::CharFlags(v) => v as i64,
 		Arg::CharFlags2(v) => v as i64,
+		Arg::TcMembers(v) => v as i64,
 		_ => whatever!("expected integer-valued argument"),
 	})
 }

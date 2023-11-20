@@ -98,10 +98,12 @@ pub enum Arg {
 	QuestFlags(u8),
 	SystemFlags(u32),
 	LookPointFlags(u16),
-	ObjectFlags(u16),
+	ObjectFlags(u32),
 	EventFlags(u16),
 	CharFlags(u16),
 	CharFlags2(u16),
+
+	TcMembers(u32),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

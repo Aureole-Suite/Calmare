@@ -7,6 +7,7 @@ use serde::Deserialize;
 pub enum Game {
 	Fc,
 	Sc,
+	#[serde(rename = "3rd")]
 	Tc,
 	Zero,
 	Azure,
@@ -138,6 +139,8 @@ pub enum IntArg {
 	EventFlags,
 	CharFlags,
 	CharFlags2,
+
+	TcMembers,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -358,24 +361,28 @@ where
 pub enum Builtin {
 	Fc,
 	Sc,
+	Tc,
 }
 
 impl Builtin {
 	pub fn get(self) -> &'static InsnSet {
 		use std::sync::LazyLock;
-		match self {
-			Builtin::Fc => {
-				static SET: LazyLock<InsnSet> = LazyLock::new(|| {
-					serde_yaml::from_str(include_str!("../../insn/fc.yml")).unwrap()
-				});
-				&SET
+		macro_rules! builtin {
+			($($variant:ident => $file:literal),* $(,)?) => {
+				match self {
+					$(Builtin::$variant => {
+						static SET: LazyLock<InsnSet> = LazyLock::new(|| {
+							serde_yaml::from_str(include_str!(concat!("../../insn/", $file))).unwrap()
+						});
+						&SET
+					})*
+				}
 			}
-			Builtin::Sc => {
-				static SET: LazyLock<InsnSet> = LazyLock::new(|| {
-					serde_yaml::from_str(include_str!("../../insn/sc.yml")).unwrap()
-				});
-				&SET
-			}
+		}
+		builtin! {
+			Fc => "fc.yml",
+			Sc => "sc.yml",
+			Tc => "3rd.yml",
 		}
 	}
 }
@@ -384,4 +391,5 @@ impl Builtin {
 fn test_parse() {
 	Builtin::Fc.get();
 	Builtin::Sc.get();
+	Builtin::Tc.get();
 }

@@ -358,6 +358,8 @@ fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Option<Arg>
 		T::EventFlags => Arg::EventFlags(cast(v)?),
 		T::CharFlags => Arg::CharFlags(cast(v)?),
 		T::CharFlags2 => Arg::CharFlags2(cast(v)?),
+
+		T::TcMembers => Arg::TcMembers(cast(v)?),
 	}))
 }
 
