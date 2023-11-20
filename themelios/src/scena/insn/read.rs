@@ -122,7 +122,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 				let v = self.int(*int)?;
 				out.extend(int_arg(self.iset, v, *ty)?)
 			}
-			iset::Arg::Misc(ty) => self.misc(out, *ty)?,
+			iset::Arg::Misc(ty) => self.misc(out, ty)?,
 			iset::Arg::Tuple(args) => {
 				let mut values = Vec::new();
 				for arg in args {
@@ -134,7 +134,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 		Ok(())
 	}
 
-	fn misc(&mut self, out: &mut Vec<Arg>, ty: iset::MiscArg) -> Result<()> {
+	fn misc(&mut self, out: &mut Vec<Arg>, ty: &iset::MiscArg) -> Result<()> {
 		let f = &mut self.f;
 		use iset::MiscArg as T;
 		match ty {
@@ -186,7 +186,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 				out.push(Arg::Code(code))
 			}
 
-			T::SwitchTable => {
+			T::SwitchTable(count, address) => {
 				// TODO reconsider how _switch is structured
 				let count = self.int(self.iset.switch_table_size)? as usize;
 				let mut cs = Vec::with_capacity(count);

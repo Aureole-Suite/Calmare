@@ -14,7 +14,7 @@ insns:
 - Return: []
 - _if: [Expr, *Address]
 - _goto: [*Address]
-- _switch: [Expr, SwitchTable, *Address]
+- _switch: [Expr, !SwitchTable [u8, *Address], *Address]
 - Call: [{u24: FuncId}]
 - NewScene: [*FileId, u8, u8, u8]
 - Hcf: []

@@ -200,7 +200,7 @@ impl<'a, 'b> InsnWriter<'a, 'b> {
 				};
 			}
 
-			T::SwitchTable => {
+			T::SwitchTable(count, address) => {
 				expect!(Arg::Tuple(t) in iter, "switch table");
 			}
 

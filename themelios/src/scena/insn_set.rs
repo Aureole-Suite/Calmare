@@ -144,7 +144,7 @@ pub enum IntArg {
 	CharFlags2,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub enum MiscArg {
 	String,
 	TString,
@@ -157,7 +157,7 @@ pub enum MiscArg {
 	Expr,
 	Fork,        // Code
 	ForkLoop,    // Code
-	SwitchTable, // (u16, Address)...
+	SwitchTable(IntType, Box<Arg>), // count, address
 
 	QuestList,    // QuestId...
 	Menu,         // TString...
@@ -232,6 +232,11 @@ impl<'de> Deserialize<'de> for Arg {
 				} else {
 					Ok(Arg::Int(IntType::deserialize(de)?, IntArg::Int))
 				}
+			}
+
+			fn visit_enum<A: de::EnumAccess<'de>>(self, data: A) -> Result<Self::Value, A::Error> {
+				let de = de::value::EnumAccessDeserializer::new(data);
+				Ok(Arg::Misc(MiscArg::deserialize(de)?))
 			}
 
 			fn visit_map<A: de::MapAccess<'de>>(self, map: A) -> Result<Self::Value, A::Error> {
