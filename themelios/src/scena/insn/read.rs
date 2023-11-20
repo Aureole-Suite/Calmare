@@ -3,7 +3,7 @@ use snafu::prelude::*;
 
 use super::{Arg, Insn};
 use crate::scena::code::Code;
-use crate::scena::insn::{Unit, Expr};
+use crate::scena::insn::{Expr, Unit};
 use crate::scena::{insn_set as iset, CharId, EventId, FuncId, LookPointId};
 use crate::types::*;
 use crate::util::{ReaderExt, ValueError};
@@ -187,6 +187,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 			}
 
 			T::SwitchTable => {
+				// TODO reconsider how _switch is structured
 				let count = self.int(self.iset.switch_table_size)? as usize;
 				let mut cs = Vec::with_capacity(count);
 				for _ in 0..count {
@@ -209,11 +210,12 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 			}
 
 			T::FcPartyEquip => {
-				if matches!(out[1], Arg::Item(ItemId(600..=799))) {
-					out.push(Arg::Int(f.u8()? as _))
+				let int = if matches!(out[1], Arg::Item(ItemId(600..=799))) {
+					iset::IntType::u8
 				} else {
-					out.push(Arg::Int(0))
-				}
+					iset::IntType::Const(0)
+				};
+				self.arg(out, &iset::Arg::Int(int, iset::IntArg::Int))?;
 			}
 
 			T::EffPlayPos => {

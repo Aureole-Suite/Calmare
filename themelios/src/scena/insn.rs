@@ -1,11 +1,9 @@
-use crate::scena::{
-	code::Code, CharId, EventId, FuncId, LookPointId,
-};
+use crate::scena::{code::Code, CharId, EventId, FuncId, LookPointId};
 use crate::types::*;
 
 mod read;
-pub use read::ReadError;
 pub(crate) use read::InsnReader;
+pub use read::ReadError;
 
 mod write;
 pub(crate) use write::InsnWriter;

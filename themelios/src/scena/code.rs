@@ -33,18 +33,18 @@ impl std::ops::DerefMut for Code {
 }
 
 impl Code {
-	pub fn read(f: &mut Reader, insn: &InsnSet, end: Option<usize>) -> Result<Code, insn::ReadError> {
+	pub fn read(
+		f: &mut Reader,
+		insn: &InsnSet,
+		end: Option<usize>,
+	) -> Result<Code, insn::ReadError> {
 		let mut code = insn::InsnReader::new(f, insn).code(end)?;
 		code.normalize().unwrap();
 		Ok(code)
 	}
 
 	pub fn write(f: &mut Writer, iset: &InsnSet, code: &Code) -> Result<(), insn::WriteError> {
-		let mut writer = insn::InsnWriter::new(f, iset);
-		for insn in &code.0 {
-			writer.insn(insn)?
-		}
-		Ok(())
+		insn::InsnWriter::new(f, iset).code(code)
 	}
 
 	pub fn normalize(&mut self) -> Result<(), NormalizeError> {
