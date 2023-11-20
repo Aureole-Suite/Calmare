@@ -1,18 +1,21 @@
 use themelios::scena::ed6;
 use themelios::scena::insn_set::Builtin;
-
 fn main() -> anyhow::Result<()> {
 	unsafe { compact_debug::enable(true) }
 
-	let iset = Builtin::Fc.get();
+	let iset = Builtin::Sc.get();
 
 	for file in std::env::args().skip(1) {
-		println!("{file}");
-		let bytes = std::fs::read(file)?;
+		println!("running {file}");
+		let bytes = std::fs::read(&file)?;
 		let scena = ed6::Scena::read(iset, &bytes)?;
 		let bytes2 = ed6::Scena::write(iset, &scena)?;
 		if bytes != bytes2 {
-			panic!()
+			println!("{file} differs");
+			std::fs::write(
+				format!("/tmp/scena/{}", file.rsplit_once('/').unwrap().1),
+				bytes2,
+			)?;
 		}
 	}
 
