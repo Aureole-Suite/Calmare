@@ -68,7 +68,6 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 			insns2.push(Insn::new("_label", vec![Arg::Label(pos)]));
 			insns2.push(insn);
 		}
-		insns2.push(Insn::new("_label", vec![Arg::Label(self.f.pos())]));
 		Ok(Code(insns2))
 	}
 
@@ -162,14 +161,12 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 
 			T::Fork => {
 				let len = f.u8()? as usize;
+				let pos = f.pos();
+				let code = self.code(Some(pos + len))?;
 				if len > 0 {
-					let pos = f.pos();
-					let code = self.code(Some(pos + len))?;
 					self.f.check_u8(0)?;
-					out.push(Arg::Code(code))
-				} else {
-					out.push(Arg::Code(Code(vec![])))
 				}
+				out.push(Arg::Code(code))
 			}
 
 			T::ForkLoop(next) => {
