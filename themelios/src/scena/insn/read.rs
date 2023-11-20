@@ -226,6 +226,18 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 				}
 			},
 
+			T::TcMembers => {
+				// TODO Not 100% sure this bit→nameid mapping is correct, but let's assume it is for now
+				let mut v = Vec::with_capacity(4);
+				let n = f.u32()?;
+				for i in 0..32 {
+					if n & (1 << i) != 0 {
+						v.push(Arg::Name(NameId(i)));
+					}
+				}
+				out.push(Arg::Tuple(v));
+			}
+
 			T::FcPartyEquip => {
 				let int = if matches!(out[1], Arg::Item(ItemId(600..=799))) {
 					iset::IntType::u8
@@ -358,8 +370,6 @@ fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Option<Arg>
 		T::EventFlags => Arg::EventFlags(cast(v)?),
 		T::CharFlags => Arg::CharFlags(cast(v)?),
 		T::CharFlags2 => Arg::CharFlags2(cast(v)?),
-
-		T::TcMembers => Arg::TcMembers(cast(v)?),
 	}))
 }
 

@@ -139,8 +139,6 @@ pub enum IntArg {
 	EventFlags,
 	CharFlags,
 	CharFlags2,
-
-	TcMembers,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -158,10 +156,11 @@ pub enum MiscArg {
 	ForkLoop(String),               // Code
 	SwitchTable(IntType, Box<Arg>), // count, case
 
-	QuestList,    // QuestId...
-	Menu,         // TString...
+	QuestList, // QuestId...
+	Menu,      // TString...
 	PartySelectMandatory,
 	PartySelectOptional,
+	TcMembers,
 
 	FcPartyEquip,
 	ScPartySetSlot,

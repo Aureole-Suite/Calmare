@@ -319,7 +319,7 @@ insns:
   - TcTeamUse: [u8]
   - TcTeamAddMember: [u8, {u8: NameId}]
   - TcTeamClear: [u8]
-- TcOrganizeTeams: [u8, u8, u8, {u32: TcMembers}, {u32: TcMembers}, {u32: TcMembers}, {u32: TcMembers}]
+- TcOrganizeTeams: [u8, u8, u8, TcMembers, TcMembers, TcMembers, TcMembers]
 - Tc_DE: [u8, u32]
 - Tc_DF: [u8, u16]
 - Tc_E0: [*CharId, u8, u8]

@@ -102,8 +102,6 @@ pub enum Arg {
 	EventFlags(u16),
 	CharFlags(u16),
 	CharFlags2(u16),
-
-	TcMembers(u32),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

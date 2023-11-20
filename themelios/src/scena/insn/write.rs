@@ -5,7 +5,7 @@ use snafu::prelude::*;
 
 use super::{Arg, Expr, Insn};
 use crate::scena::code::Code;
-use crate::scena::{insn_set as iset, EventId, FuncId, LookPointId, CharId};
+use crate::scena::{insn_set as iset, CharId, EventId, FuncId, LookPointId};
 use crate::types::*;
 use crate::util::{cast, ValueError, WriterExt};
 
@@ -244,6 +244,17 @@ impl<'a, 'b> InsnWriter<'a, 'b> {
 				}
 			}
 
+			T::TcMembers => {
+				expect!(Arg::Tuple(val) in iter, "tuple of name[]");
+				let mut n = 0;
+				for val in val {
+					expect!(Arg::Name(NameId(i)) = val, "name[]");
+					ensure_whatever!(*i < 32, "name[] < 32");
+					n |= 1 << i;
+				}
+				f.u32(n);
+			}
+
 			T::Menu => {
 				let mut out = String::new();
 				for val in iter {
@@ -364,7 +375,6 @@ fn int_arg(iset: &iset::InsnSet, arg: &Arg) -> Result<i64, WriteError> {
 		Arg::EventFlags(v) => v as i64,
 		Arg::CharFlags(v) => v as i64,
 		Arg::CharFlags2(v) => v as i64,
-		Arg::TcMembers(v) => v as i64,
 		_ => whatever!("expected integer-valued argument"),
 	})
 }
