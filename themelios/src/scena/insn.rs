@@ -81,6 +81,7 @@ pub enum Arg {
 	EffId(u8),
 	EffInstanceId(u8),
 	ChipId(u16),
+	VisId(u8),
 
 	Char(CharId),
 

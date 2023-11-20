@@ -5,7 +5,7 @@ use snafu::prelude::*;
 
 use super::{Arg, Expr, Insn};
 use crate::scena::code::Code;
-use crate::scena::{insn_set as iset, EventId, FuncId, LookPointId};
+use crate::scena::{insn_set as iset, EventId, FuncId, LookPointId, CharId};
 use crate::types::*;
 use crate::util::{cast, ValueError, WriterExt};
 
@@ -223,12 +223,25 @@ impl<'a, 'b> InsnWriter<'a, 'b> {
 				}
 			}
 
-			T::QuestList => {
+			T::QuestList | T::PartySelectOptional => {
 				for val in iter {
 					let val = int_arg(self.iset, val)?;
 					self.int(iset::IntType::u16, val)?;
 				}
 				self.f.u16(0xFFFF);
+			}
+
+			T::PartySelectMandatory => {
+				expect!(Arg::Tuple(val) in iter, "tuple of 4");
+				ensure_whatever!(val.len() == 4, "expected tuple of 4, got {val:?}");
+				for val in val {
+					if let Arg::Char(CharId::Null) = val {
+						f.u16(0xFF);
+					} else {
+						let val = int_arg(self.iset, val)?;
+						f.u16(cast(val)?);
+					}
+				}
 			}
 
 			T::Menu => {
@@ -244,6 +257,16 @@ impl<'a, 'b> InsnWriter<'a, 'b> {
 			T::FcPartyEquip => {
 				let item = int_arg(self.iset, &args[1])?;
 				let int = if matches!(&item, 600..=799) {
+					iset::IntType::u8
+				} else {
+					iset::IntType::Const(0)
+				};
+				self.arg(args, &iset::Arg::Int(int, iset::IntArg::Int), iter)?;
+			}
+
+			T::ScPartySetSlot => {
+				let item = int_arg(self.iset, &args[1])?;
+				let int = if matches!(&item, 0x7F..=0xFE) {
 					iset::IntType::u8
 				} else {
 					iset::IntType::Const(0)
@@ -326,6 +349,7 @@ fn int_arg(iset: &iset::InsnSet, arg: &Arg) -> Result<i64, WriteError> {
 		Arg::EffId(v) => v as i64,
 		Arg::EffInstanceId(v) => v as i64,
 		Arg::ChipId(v) => v as i64,
+		Arg::VisId(v) => v as i64,
 		Arg::Char(v) => v.to_u16(iset.game)? as i64,
 		Arg::Flag(Flag(v)) => v as i64,
 		Arg::Var(v) => v as i64,

@@ -18,6 +18,7 @@ pub enum ReadError {
 	Value { source: crate::util::ValueError },
 	#[snafu(whatever, display("{message}"))]
 	Whatever { message: String },
+	#[snafu(display("error reading instruction at {pos}, after {context:?}"))]
 	Insn {
 		context: Vec<(usize, Insn)>,
 		pos: usize,
@@ -161,12 +162,14 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 
 			T::Fork => {
 				let len = f.u8()? as usize;
-				let pos = f.pos();
-				let code = self.code(Some(pos + len))?;
 				if len > 0 {
+					let pos = f.pos();
+					let code = self.code(Some(pos + len))?;
 					self.f.check_u8(0)?;
+					out.push(Arg::Code(code))
+				} else {
+					out.push(Arg::Code(Code(vec![])))
 				}
-				out.push(Arg::Code(code))
 			}
 
 			T::ForkLoop(next) => {
@@ -208,8 +211,35 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 				}
 			}
 
+			T::PartySelectMandatory => {
+				let mut v = Vec::with_capacity(4);
+				for _ in 0..4 {
+					match f.u16()? {
+						0xFF => v.push(Arg::Char(CharId::Null)),
+						n => v.push(Arg::Name(NameId(n))),
+					}
+				}
+				out.push(Arg::Tuple(v));
+			}
+
+			T::PartySelectOptional => loop {
+				match f.u16()? {
+					0xFFFF => break,
+					q => out.push(Arg::Name(NameId(q))),
+				}
+			},
+
 			T::FcPartyEquip => {
 				let int = if matches!(out[1], Arg::Item(ItemId(600..=799))) {
+					iset::IntType::u8
+				} else {
+					iset::IntType::Const(0)
+				};
+				self.arg(out, &iset::Arg::Int(int, iset::IntArg::Int))?;
+			}
+
+			T::ScPartySetSlot => {
+				let int = if matches!(out[1], Arg::Int(0x7F..=0xFE)) {
 					iset::IntType::u8
 				} else {
 					iset::IntType::Const(0)
@@ -309,11 +339,13 @@ fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Option<Arg>
 		T::EffId => Arg::EffId(cast(v)?),
 		T::EffInstanceId => Arg::EffInstanceId(cast(v)?),
 		T::ChipId => Arg::ChipId(cast(v)?),
+		T::VisId => Arg::VisId(cast(v)?),
 
 		T::CharId => Arg::Char(CharId::from_u16(iset.game, cast(v)?)?),
 
 		T::Flag => Arg::Flag(Flag(cast(v)?)),
 		T::Var => Arg::Var(cast(v)?),
+		T::Global => Arg::Global(cast(v)?),
 		T::Attr => Arg::Attr(cast(v)?),
 		T::CharAttr => {
 			let char = CharId::from_u16(iset.game, cast(v & 0xFFFF)?)?;

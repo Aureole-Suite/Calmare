@@ -120,11 +120,13 @@ pub enum IntArg {
 	EffId,
 	EffInstanceId,
 	ChipId,
+	VisId,
 
 	CharId,
 
 	Flag,
 	Var,
+	Global,
 	Attr,
 	CharAttr,
 
@@ -155,7 +157,11 @@ pub enum MiscArg {
 
 	QuestList,    // QuestId...
 	Menu,         // TString...
-	FcPartyEquip, // Slot to put item in: u8 if quartz, Const(0) otherwise (u8 post-FC)
+	PartySelectMandatory,
+	PartySelectOptional,
+
+	FcPartyEquip,
+	ScPartySetSlot,
 	EffPlayPos,
 }
 
@@ -351,6 +357,7 @@ where
 #[serde(rename_all = "snake_case")]
 pub enum Builtin {
 	Fc,
+	Sc,
 }
 
 impl Builtin {
@@ -363,6 +370,12 @@ impl Builtin {
 				});
 				&SET
 			}
+			Builtin::Sc => {
+				static SET: LazyLock<InsnSet> = LazyLock::new(|| {
+					serde_yaml::from_str(include_str!("../../insn/sc.yml")).unwrap()
+				});
+				&SET
+			}
 		}
 	}
 }
@@ -370,4 +383,5 @@ impl Builtin {
 #[test]
 fn test_parse() {
 	Builtin::Fc.get();
+	Builtin::Sc.get();
 }
