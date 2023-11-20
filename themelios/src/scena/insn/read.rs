@@ -107,7 +107,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 		Ok(match int {
 			iset::IntType::u8 => f.u8()? as i64,
 			iset::IntType::u16 => f.u16()? as i64,
-			iset::IntType::u24 => (f.u16()? as i64) | (f.u8()? as i64) << 8,
+			iset::IntType::u24 => (f.u16()? as i64) | (f.u8()? as i64) << 16,
 			iset::IntType::u32 => f.u32()? as i64,
 			iset::IntType::i8 => f.i8()? as i64,
 			iset::IntType::i16 => f.i16()? as i64,
@@ -186,14 +186,13 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 				out.push(Arg::Code(code))
 			}
 
-			T::SwitchTable(count, address) => {
-				// TODO reconsider how _switch is structured
-				let count = self.int(self.iset.switch_table_size)? as usize;
+			T::SwitchTable(count, case) => {
+				let count = self.int(*count)? as usize;
 				let mut cs = Vec::with_capacity(count);
 				for _ in 0..count {
-					self.arg(&mut cs, &self.iset.switch_table_type)?;
+					self.arg(&mut cs, case)?;
 				}
-				out.push(Arg::Tuple(cs))
+				out.push(Arg::Tuple(cs));
 			}
 
 			T::QuestList => loop {
@@ -299,10 +298,7 @@ fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Option<Arg>
 		T::SoundId => Arg::Sound(SoundId(cast(v)?)),
 		T::TownId => Arg::Town(TownId(cast(v)?)),
 
-		T::FuncId => {
-			let [a, b] = u16::to_le_bytes(cast(v)?);
-			Arg::Func(FuncId(a as u16, b as u16))
-		}
+		T::FuncId => Arg::Func(FuncId(cast(v & 0xFF)?, cast(v >> 8)?)),
 		T::LookPointId => Arg::LookPoint(LookPointId(cast(v)?)),
 		T::EventId => Arg::Event(EventId(cast(v)?)),
 		T::EntranceId => Arg::Entrance(cast(v)?),

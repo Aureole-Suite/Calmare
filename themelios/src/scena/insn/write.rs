@@ -61,8 +61,8 @@ impl<'a, 'b> InsnWriter<'a, 'b> {
 				let [Arg::Label(label)] = insn.args.as_slice() else {
 					whatever!("malformed label")
 				};
-				let here = self.f.here();
-				self.labels.insert(*label, here);
+				let label = self.label(label);
+				self.f.place(label);
 			}
 			name => {
 				let Some(iargs) = self.iset.insns_rev.get(name) else {
@@ -72,6 +72,10 @@ impl<'a, 'b> InsnWriter<'a, 'b> {
 			}
 		}
 		Ok(())
+	}
+
+	fn label(&mut self, label: &usize) -> Label {
+		*self.labels.entry(*label).or_insert_with(Label::new)
 	}
 
 	fn args(&mut self, args: &[Arg], iargs: &[iset::Arg]) -> Result<(), WriteError> {
@@ -94,6 +98,16 @@ impl<'a, 'b> InsnWriter<'a, 'b> {
 		match iarg {
 			iset::Arg::Int(int, iset::IntArg::Const(val)) => {
 				self.int(*int, *val)?;
+			}
+			iset::Arg::Int(int, iset::IntArg::Address) => {
+				expect!(Arg::Label(l) in iter, "label");
+				let label = self.label(l);
+				match int {
+					iset::IntType::u8 => self.f.label8(label),
+					iset::IntType::u16 => self.f.label16(label),
+					iset::IntType::u32 => self.f.label32(label),
+					_ => whatever!("can't write label as {int:?}"),
+				}
 			}
 			iset::Arg::Int(int, iarg) => {
 				let Some(val) = iter.next() else {
@@ -123,7 +137,7 @@ impl<'a, 'b> InsnWriter<'a, 'b> {
 					Err(ValueError::new("u24", val.to_string()))?
 				}
 				f.u16(val as u16);
-				f.u8((val << 16) as u8);
+				f.u8((val >> 16) as u8);
 			}
 			iset::IntType::u32 => f.u32(cast(val)?),
 			iset::IntType::i8 => f.i8(cast(val)?),
@@ -200,8 +214,13 @@ impl<'a, 'b> InsnWriter<'a, 'b> {
 				};
 			}
 
-			T::SwitchTable(count, address) => {
-				expect!(Arg::Tuple(t) in iter, "switch table");
+			T::SwitchTable(count, case) => {
+				expect!(Arg::Tuple(cs) in iter, "switch table");
+				self.int(*count, cs.len() as i64)?;
+				let mut iter = cs.iter();
+				while !iter.as_slice().is_empty() {
+					self.arg(cs, case, &mut iter)?;
+				}
 			}
 
 			T::QuestList => {
@@ -297,7 +316,7 @@ fn int_arg(iset: &iset::InsnSet, arg: &Arg) -> Result<i64, WriteError> {
 		Arg::Shop(ShopId(v)) => v as i64,
 		Arg::Sound(SoundId(v)) => v as i64,
 		Arg::Town(TownId(v)) => v as i64,
-		Arg::Func(FuncId(a, b)) => u16::from_le_bytes([cast(a)?, cast(b)?]) as i64,
+		Arg::Func(FuncId(a, b)) => (a as i64) | (b as i64) << 8,
 		Arg::LookPoint(LookPointId(v)) => v as i64,
 		Arg::Event(EventId(v)) => v as i64,
 		Arg::Entrance(v) => v as i64,
@@ -312,7 +331,7 @@ fn int_arg(iset: &iset::InsnSet, arg: &Arg) -> Result<i64, WriteError> {
 		Arg::Var(v) => v as i64,
 		Arg::Global(v) => v as i64,
 		Arg::Attr(v) => v as i64,
-		Arg::CharAttr(char, attr) => char.to_u16(iset.game)? as i64 | (attr as i64) >> 16,
+		Arg::CharAttr(char, attr) => char.to_u16(iset.game)? as i64 | (attr as i64) << 16,
 		Arg::QuestTask(v) => v as i64,
 		Arg::QuestFlags(v) => v as i64,
 		Arg::SystemFlags(v) => v as i64,

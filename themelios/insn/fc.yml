@@ -5,8 +5,7 @@ _def:
 - &CharId {u16: CharId}
 - &Address {u16: Address}
 
-switch_table_size: u16
-switch_table_type: [u16, *Address]
+# TODO change ForkLoop to also take an argument
 fork_loop_next: NextFrame
 
 insns:
@@ -14,7 +13,7 @@ insns:
 - Return: []
 - _if: [Expr, *Address]
 - _goto: [*Address]
-- _switch: [Expr, !SwitchTable [u8, *Address], *Address]
+- _switch: [Expr, !SwitchTable [u16, [u16, *Address]], *Address]
 - Call: [{u24: FuncId}]
 - NewScene: [*FileId, u8, u8, u8]
 - Hcf: []
