@@ -4,10 +4,6 @@ _def:
 - &FileId {u32: FileId}
 - &CharId {u16: CharId}
 - &Address {u16: Address}
-
-# TODO change ForkLoop to also take an argument
-fork_loop_next: NextFrame
-
 insns:
 -
 - Return: []
@@ -97,7 +93,7 @@ insns:
 - ForkFunc: [*CharId, {u8: ForkId}, {u24: FuncId}]
 - ForkQuit: [*CharId, {u8: ForkId}]
 - Fork:     [*CharId, {u16: ForkId}, Fork]
-- ForkLoop: [*CharId, {u16: ForkId}, ForkLoop]
+- ForkLoop: [*CharId, {u16: ForkId}, !ForkLoop NextFrame]
 - ForkWait: [*CharId, {u16: ForkId}]
 - NextFrame: []
 - Event: [{u24: FuncId}]

@@ -15,7 +15,6 @@ pub enum Game {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InsnSet {
 	pub game: Game,
-	pub fork_loop_next: String,
 	pub insns: [Insn; 256],
 	pub insns_rev: BTreeMap<String, Vec<Arg>>,
 }
@@ -26,7 +25,6 @@ pub struct InsnSet {
 #[serde(remote = "InsnSet")]
 struct InsnSet_inner {
 	pub game: Game,
-	pub fork_loop_next: String,
 	#[serde_as(as = "[_; 256]")]
 	pub insns: [Insn; 256],
 	#[serde(skip)]
@@ -152,7 +150,7 @@ pub enum MiscArg {
 
 	Expr,
 	Fork,                           // Code
-	ForkLoop,                       // Code
+	ForkLoop(String),               // Code
 	SwitchTable(IntType, Box<Arg>), // count, case
 
 	QuestList,    // QuestId...

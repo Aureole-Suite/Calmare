@@ -169,7 +169,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 				out.push(Arg::Code(code))
 			}
 
-			T::ForkLoop => {
+			T::ForkLoop(next) => {
 				let len = f.u8()? as usize;
 				let pos = f.pos();
 				let code = self.code(Some(pos + len))?;
@@ -178,7 +178,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 				#[rustfmt::skip]
 				ensure_whatever!(
 					insns == [
-						Insn::new(&self.iset.fork_loop_next, vec![]),
+						Insn::new(next, vec![]),
 						Insn::new("_goto", vec![Arg::Label(pos)]),
 					],
 					"invalid ForkLoop: ended with {insns:?}"

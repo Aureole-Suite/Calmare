@@ -195,7 +195,7 @@ impl<'a, 'b> InsnWriter<'a, 'b> {
 				}
 			}
 
-			T::ForkLoop => {
+			T::ForkLoop(next) => {
 				expect!(Arg::Code(c) in iter, "code");
 				let l1 = Label::new();
 				let l2 = Label::new();
@@ -203,7 +203,7 @@ impl<'a, 'b> InsnWriter<'a, 'b> {
 				self.f.place(l1);
 				self.code(c)?;
 				self.f.place(l2);
-				self.insn(&Insn::new(&self.iset.fork_loop_next, vec![]))?;
+				self.insn(&Insn::new(next, vec![]))?;
 				// Ugly hack :( Need a _goto to the start of the block, and this is the only way I have to do that
 				const KEY: usize = usize::MAX;
 				let prev = self.labels.insert(KEY, l1);
