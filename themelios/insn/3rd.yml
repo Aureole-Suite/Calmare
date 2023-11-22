@@ -33,7 +33,7 @@ insns:
   - MapHide: []
   - MapShow: []
   - MapSet: [i32, Pos2, *FileId]
-- Save: []
+- Save: [EvoSave]
 - _18: [u8, u8, u8]
 - EventBegin: [u8]
 - EventEnd: [u8]
@@ -361,27 +361,27 @@ insns:
     - Tc_E6_1: [u8]
     - Tc_E6_2: []
 - Tc_E7: [{u8: VisId}, u8, {u32: Color}, *Time]
--
--
+- Sc_DB: []
+- Sc_DC: []
 - SaveClearData: []
+- PlaceSetNameString: [TString]
+-
+- _E0: [{u8: ObjectId}, Pos3]
 -
 -
+- _E3: [u8, u16, u8]
+- _E4: [u8, u16]
+- TcEvo_F2: [*CharId, u8, u16, u16]
+- EvoVisLipSync: [{u8: VisId}, u8]
 -
--
--
--
--
--
--
--
--
+- _E8: [*Time]
 -
 - ScAchievement: [u8, u16, u8]
--
--
--
--
--
--
--
+- _EB: [u16]
+- TcEvo_F9: [{u16: ObjectId}, u8]
+- TcEvo_FA: [{u16: ObjectId}, u32]
+- TcEvo_FB: [u8, u16, u8]
+- TcEvo_FC: [u8, u8]
+- EvoVoiceLine: [u16]
+- Evo_E6: [Text]
 -
