@@ -385,21 +385,30 @@ fn text(f: &mut Reader, out: &mut Vec<Arg>) -> Result<()> {
 }
 
 fn text_page(f: &mut Reader) -> Result<(TString, bool)> {
-	let mut buf = Vec::new();
+	let mut buf = String::new();
 	let more = loop {
 		match f.u8()? {
 			0x00 => break false,
-			0x01 => buf.extend(b"\\n"), // newline → line feed
-			0x02 => buf.extend(b"\\f"), // pause → page break
-			0x03 => break true,         // page break
-			0x07 => buf.extend(format!("\\{}C", f.u8()?).as_bytes()),
-			0x0D => buf.extend(b"\\r"),
-			0x1F => buf.extend(format!("\\{}i", f.u16()?).as_bytes()),
-			ch @ (0x00..=0x1F) => buf.extend(format!("\\{}x", ch).as_bytes()),
-			b'\\' => buf.extend(b"\\\\"),
-			ch @ 0x20.. => buf.push(ch),
+			0x01 => buf.push_str("\\n"), // newline → line feed
+			0x02 => buf.push_str("\\f"), // pause → page break
+			0x03 => break true,          // page break
+			0x07 => buf.push_str(&format!("\\{}C", f.u8()?)),
+			0x0D => buf.push_str("\\r"),
+			0x1F => buf.push_str(&format!("\\{}i", f.u16()?)),
+			ch @ (0x00..=0x1F) => buf.push_str(&format!("\\{}x", ch)),
+			b'\\' => buf.push_str("\\\\"),
+			ch @ 0x20.. => {
+				let result = falcom_sjis::decode_char_from(ch, || f.u8().ok());
+				match result {
+					Ok(ch) => buf.push(ch),
+					Err(enc) => {
+						for ch in enc {
+							buf.push_str(&format!("\\{}x", ch))
+						}
+					}
+				}
+			}
 		}
 	};
-	let string = crate::util::decode(&buf)?;
-	Ok((TString(string), more))
+	Ok((TString(buf), more))
 }

@@ -393,31 +393,30 @@ fn text<'c>(f: &mut Writer, iter: impl Iterator<Item = &'c Arg>) -> Result<(), W
 }
 
 fn text_page(f: &mut Writer, s: &TString) -> Result<(), WriteError> {
-	let s = crate::util::encode(&s.0)?;
-	let mut iter = s.into_iter();
+	let mut iter = s.chars();
 	while let Some(char) = iter.next() {
-		if char == b'\\' {
+		if char == '\\' {
 			match iter.next() {
-				Some(b'n') => f.u8(0x01),
-				Some(b'f') => f.u8(0x02),
-				Some(b'r') => f.u8(0x0D),
-				Some(b'\\') => f.u8(b'\\'),
-				Some(v @ (b'0'..=b'9')) => {
-					let mut n = (v - b'0') as u32;
+				Some('n') => f.u8(0x01),
+				Some('f') => f.u8(0x02),
+				Some('r') => f.u8(0x0D),
+				Some('\\') => f.u8(b'\\'),
+				Some(v @ ('0'..='9')) => {
+					let mut n = v.to_digit(10).unwrap();
 					loop {
 						match iter.next() {
-							Some(v @ (b'0'..=b'9')) => n = n * 10 + (v - b'0') as u32,
-							Some(b'C') => {
+							Some(v @ ('0'..='9')) => n = n * 10 + v.to_digit(10).unwrap(),
+							Some('C') => {
 								f.u8(0x07);
 								f.u8(cast(n)?);
 								break;
 							}
-							Some(b'i') => {
+							Some('i') => {
 								f.u8(0x1F);
 								f.u16(cast(n)?);
 								break;
 							}
-							Some(b'x') => {
+							Some('x') => {
 								f.u8(cast(n)?);
 								break;
 							}
@@ -429,8 +428,10 @@ fn text_page(f: &mut Writer, s: &TString) -> Result<(), WriteError> {
 				None => whatever!("unterminated escape sequence"),
 				Some(_) => whatever!("illegal escape sequence"),
 			}
+		} else if let Some(enc) = falcom_sjis::encode_char(char) {
+			f.slice(&enc)
 		} else {
-			f.u8(char)
+			whatever!("cannot encode as shift-jis: {char:?}");
 		}
 	}
 	Ok(())

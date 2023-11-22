@@ -169,9 +169,9 @@ dependencies = [
 
 [[package]]
 name = "falcom-sjis"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b865e442ece0a3e193a9b82c74d56be2c57bb1ea81379ceba6b54f0cebedd45a"
+checksum = "b845aacdb8ee098d076c86f06272bf2f7f08e223b040f72c750fb3e249269ece"
 dependencies = [
  "anyhow",
  "gospel",
