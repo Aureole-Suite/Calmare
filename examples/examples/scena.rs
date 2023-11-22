@@ -3,7 +3,7 @@ use themelios::scena::insn_set::Builtin;
 fn main() -> anyhow::Result<()> {
 	unsafe { compact_debug::enable(true) }
 
-	let iset = Builtin::Tc.get();
+	let iset = Builtin::FcEvo.get();
 
 	for file in std::env::args().skip(1) {
 		println!("running {file}");

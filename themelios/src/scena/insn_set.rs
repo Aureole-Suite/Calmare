@@ -359,6 +359,7 @@ where
 #[serde(rename_all = "snake_case")]
 pub enum Builtin {
 	Fc,
+	FcEvo,
 	Sc,
 	Tc,
 }
@@ -380,6 +381,7 @@ impl Builtin {
 		}
 		builtin! {
 			Fc => "fc.yml",
+			FcEvo => "fc_evo.yml",
 			Sc => "sc.yml",
 			Tc => "3rd.yml",
 		}
@@ -389,6 +391,7 @@ impl Builtin {
 #[test]
 fn test_parse() {
 	Builtin::Fc.get();
+	Builtin::FcEvo.get();
 	Builtin::Sc.get();
 	Builtin::Tc.get();
 }
