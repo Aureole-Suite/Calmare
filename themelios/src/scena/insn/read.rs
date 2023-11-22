@@ -238,6 +238,12 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 				out.push(Arg::Tuple(v));
 			}
 
+			T::EvoSave => {
+				if self.iset.variant == iset::Variant::Evo {
+					self.arg(out, &iset::Arg::Int(iset::IntType::u8, iset::IntArg::Int))?;
+				}
+			}
+
 			T::FcPartyEquip => {
 				let int = if matches!(out[1], Arg::Item(ItemId(600..=799))) {
 					iset::IntType::u8

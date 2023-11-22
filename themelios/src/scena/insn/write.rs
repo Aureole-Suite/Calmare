@@ -265,6 +265,16 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				f.string(&out)?;
 			}
 
+			T::EvoSave => {
+				if self.iset.variant == iset::Variant::Evo {
+					self.arg(
+						args,
+						&iset::Arg::Int(iset::IntType::u8, iset::IntArg::Int),
+						iter,
+					)?;
+				}
+			}
+
 			T::FcPartyEquip => {
 				let item = int_arg(self.iset, &args[1])?;
 				let int = if matches!(&item, 600..=799) {

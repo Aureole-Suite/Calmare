@@ -39,7 +39,6 @@ impl<'a> std::ops::Deref for InsnSet<'a> {
 
 pub fn get(game: Game, variant: Variant) -> InsnSet<'static> {
 	let builtin = match (game, variant) {
-		(Game::Fc, Variant::Evo) => Builtin::FcEvo,
 		(Game::Fc, _) => Builtin::Fc,
 		(Game::Sc, _) => Builtin::Sc,
 		(Game::Tc, _) => Builtin::Tc,
@@ -200,6 +199,7 @@ pub enum MiscArg {
 	PartySelectOptional,
 	TcMembers,
 
+	EvoSave,
 	FcPartyEquip,
 	ScPartySetSlot,
 	EffPlayPos,
@@ -397,7 +397,6 @@ where
 #[serde(rename_all = "snake_case")]
 pub enum Builtin {
 	Fc,
-	FcEvo,
 	Sc,
 	Tc,
 }
@@ -419,7 +418,6 @@ impl Builtin {
 		}
 		builtin! {
 			Fc => "fc.yml",
-			FcEvo => "fc_evo.yml",
 			Sc => "sc.yml",
 			Tc => "3rd.yml",
 		}
@@ -429,7 +427,6 @@ impl Builtin {
 #[test]
 fn test_parse() {
 	Builtin::Fc.get();
-	Builtin::FcEvo.get();
 	Builtin::Sc.get();
 	Builtin::Tc.get();
 }

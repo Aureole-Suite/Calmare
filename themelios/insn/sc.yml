@@ -33,7 +33,7 @@ insns:
   - MapHide: []
   - MapShow: []
   - MapSet: [i32, Pos2, *FileId]
-- Save: []
+- Save: [EvoSave]
 - _18: [u8, u8, u8]
 - EventBegin: [u8]
 - EventEnd: [u8]
@@ -319,9 +319,9 @@ insns:
 - _E9: [u8]
 - ScAchievement: [u8, u16, u8]
 - _EB: [u8, u8]
--
--
--
+- EvoVoiceLine: [u16]
+- Evo_E6: [Text]
+- EvoVisLipSync: [{u8: VisId}, u8]
 -
 -
 -
