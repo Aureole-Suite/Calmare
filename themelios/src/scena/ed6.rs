@@ -8,7 +8,7 @@ use crate::scena::{insn_set as iset, FuncId};
 use crate::types::*;
 use crate::util::{self, cast, list, ReaderExt as _, WriterExt as _};
 
-use super::*;
+use super::{CharFlags, ChipId, EntryFlags, EventFlags, LookPointFlags};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Scena {
@@ -38,7 +38,7 @@ pub enum ReadError {
 	#[snafu(context(false))]
 	Decode { source: util::DecodeError },
 	#[snafu(context(false))]
-	Insn { source: insn::ReadError },
+	Insn { source: super::insn::ReadError },
 	#[snafu(whatever, display("{message}"))]
 	Whatever { message: String },
 }
@@ -50,7 +50,7 @@ pub enum WriteError {
 	#[snafu(context(false))]
 	Value { source: util::ValueError },
 	#[snafu(context(false))]
-	Insn { source: insn::WriteError },
+	Insn { source: super::insn::WriteError },
 	#[snafu(context(false))]
 	Encode { source: util::EncodeError },
 }
