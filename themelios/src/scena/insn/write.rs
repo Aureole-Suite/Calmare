@@ -21,9 +21,9 @@ pub enum WriteError {
 	Whatever { message: String },
 }
 
-pub struct InsnWriter<'a, 'b> {
-	f: &'b mut Writer,
-	iset: &'a iset::InsnSet,
+pub struct InsnWriter<'iset, 'write> {
+	f: &'write mut Writer,
+	iset: &'iset iset::InsnSet<'iset>,
 	labels: BTreeMap<usize, Label>,
 }
 
@@ -39,8 +39,8 @@ macro_rules! expect {
 	};
 }
 
-impl<'a, 'b> InsnWriter<'a, 'b> {
-	pub fn new(f: &'b mut Writer, iset: &'a iset::InsnSet) -> Self {
+impl<'iset, 'write> InsnWriter<'iset, 'write> {
+	pub fn new(f: &'write mut Writer, iset: &'iset iset::InsnSet) -> Self {
 		InsnWriter {
 			f,
 			iset,

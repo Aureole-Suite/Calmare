@@ -30,7 +30,7 @@ type Result<T, E = ReadError> = std::result::Result<T, E>;
 
 pub struct InsnReader<'iset, 'read, 'buf> {
 	f: &'read mut Reader<'buf>,
-	iset: &'iset iset::InsnSet,
+	iset: &'iset iset::InsnSet<'iset>,
 }
 
 impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {

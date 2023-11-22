@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use serde::Deserialize;
@@ -13,8 +14,45 @@ pub enum Game {
 	Azure,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Variant {
+	Base,
+	Evo,
+	Kai,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct InsnSet<'a> {
+	pub variant: Variant,
+	#[serde(flatten)]
+	inner: Cow<'a, InsnSetInner>,
+}
+
+impl<'a> std::ops::Deref for InsnSet<'a> {
+	type Target = InsnSetInner;
+
+	fn deref(&self) -> &Self::Target {
+		&self.inner
+	}
+}
+
+pub fn get(game: Game, variant: Variant) -> InsnSet<'static> {
+	let builtin = match (game, variant) {
+		(Game::Fc, Variant::Evo) => Builtin::FcEvo,
+		(Game::Fc, _) => Builtin::Fc,
+		(Game::Sc, _) => Builtin::Sc,
+		(Game::Tc, _) => Builtin::Tc,
+		(Game::Zero, _) => todo!(),
+		(Game::Azure, _) => todo!(),
+	};
+	InsnSet {
+		variant,
+		inner: Cow::Borrowed(builtin.get()),
+	}
+}
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct InsnSet {
+pub struct InsnSetInner {
 	pub game: Game,
 	pub insns: [Insn; 256],
 	pub insns_rev: BTreeMap<String, Vec<Arg>>,
@@ -23,7 +61,7 @@ pub struct InsnSet {
 #[allow(non_camel_case_types)]
 #[serde_with::serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(remote = "InsnSet")]
+#[serde(remote = "InsnSetInner")]
 struct InsnSet_inner {
 	pub game: Game,
 	#[serde_as(as = "[_; 256]")]
@@ -167,7 +205,7 @@ pub enum MiscArg {
 	EffPlayPos,
 }
 
-impl<'de> Deserialize<'de> for InsnSet {
+impl<'de> Deserialize<'de> for InsnSetInner {
 	fn deserialize<D: serde::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
 		let mut iset = InsnSet_inner::deserialize(de)?;
 		make_rev_table(IntType::u8, &iset.insns, &mut iset.insns_rev, vec![])?;
@@ -365,13 +403,13 @@ pub enum Builtin {
 }
 
 impl Builtin {
-	pub fn get(self) -> &'static InsnSet {
+	pub fn get(self) -> &'static InsnSetInner {
 		use std::sync::LazyLock;
 		macro_rules! builtin {
 			($($variant:ident => $file:literal),* $(,)?) => {
 				match self {
 					$(Builtin::$variant => {
-						static SET: LazyLock<InsnSet> = LazyLock::new(|| {
+						static SET: LazyLock<InsnSetInner> = LazyLock::new(|| {
 							serde_yaml::from_str(include_str!(concat!("../../insn/", $file))).unwrap()
 						});
 						&SET
