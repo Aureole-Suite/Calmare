@@ -43,19 +43,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 
 		let mut insns = Vec::new();
 		while self.f.pos() < end {
-			let pos = self.f.pos();
-			insns.push(Insn::new("_label", vec![Arg::Label(pos)]));
-			let insn = self.insn().map_err(Box::new).with_context(|_| InsnSnafu {
-				pos,
-				context: insns
-					.iter()
-					.rev()
-					.take(10)
-					.rev()
-					.cloned()
-					.collect::<Vec<_>>(),
-			})?;
-			insns.push(insn);
+			self.read_insn(&mut insns)?;
 		}
 		ensure_whatever!(
 			self.f.pos() == end,
@@ -65,6 +53,23 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 		);
 
 		Ok(Code(insns))
+	}
+
+	fn read_insn<'a>(&mut self, insns: &'a mut Vec<Insn>) -> Result<&'a mut Insn, ReadError> {
+		let pos = self.f.pos();
+		insns.push(Insn::new("_label", vec![Arg::Label(pos)]));
+		let insn = self.insn().map_err(Box::new).with_context(|_| InsnSnafu {
+			pos,
+			context: insns
+				.iter()
+				.rev()
+				.take(10)
+				.rev()
+				.cloned()
+				.collect::<Vec<_>>(),
+		})?;
+		insns.push(insn);
+		Ok(insns.last_mut().unwrap())
 	}
 
 	pub fn insn(&mut self) -> Result<Insn> {
