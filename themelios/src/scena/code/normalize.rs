@@ -14,14 +14,14 @@ pub enum NormalizeError {
 	UndefinedLabel { label: usize },
 }
 
-pub fn normalize(code: &mut Code) -> Result<(), NormalizeError> {
+pub fn normalize(code: &mut (impl Visitable + VisitableMut)) -> Result<(), NormalizeError> {
 	let used = find_used(code)?;
 	let order = remove_unused(code, &used);
 	rename(code, |l| order[&l]);
 	Ok(())
 }
 
-fn find_used(code: &Code) -> Result<BTreeSet<usize>, NormalizeError> {
+fn find_used(code: &(impl Visitable + VisitableMut)) -> Result<BTreeSet<usize>, NormalizeError> {
 	struct Vis {
 		used: BTreeSet<usize>,
 		defined: BTreeSet<usize>,
@@ -64,7 +64,7 @@ fn find_used(code: &Code) -> Result<BTreeSet<usize>, NormalizeError> {
 	Ok(vis.used)
 }
 
-fn remove_unused(code: &mut Code, used: &BTreeSet<usize>) -> BTreeMap<usize, usize> {
+fn remove_unused(code: &mut (impl Visitable + VisitableMut), used: &BTreeSet<usize>) -> BTreeMap<usize, usize> {
 	struct Vis<'a> {
 		used: &'a BTreeSet<usize>,
 		order: BTreeMap<usize, usize>,
@@ -94,7 +94,7 @@ fn remove_unused(code: &mut Code, used: &BTreeSet<usize>) -> BTreeMap<usize, usi
 	vis.order
 }
 
-fn rename(code: &mut Code, order: impl FnMut(usize) -> usize) {
+fn rename(code: &mut (impl Visitable + VisitableMut), order: impl FnMut(usize) -> usize) {
 	struct Vis<F> {
 		order: F,
 	}
