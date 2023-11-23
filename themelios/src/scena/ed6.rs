@@ -130,7 +130,7 @@ impl Scena {
 			ensure_whatever!(f.pos() == start, "weird function start");
 			let end = funcpos.peek().copied().unwrap_or(code_end);
 			let mut code = InsnReader::new(f, insn).code(end)?;
-			code.normalize().unwrap();
+			crate::scena::code::normalize::normalize(&mut code).unwrap();
 			functions.push(code);
 		}
 
