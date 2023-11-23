@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::ops::ControlFlow;
 
 use gospel::read::Reader;
 use gospel::write::Writer;
@@ -6,6 +7,10 @@ use snafu::prelude::*;
 
 use crate::scena::insn::{self, Arg, Insn};
 use crate::scena::insn_set::InsnSet;
+
+use self::visit::Visitable;
+
+pub mod visit;
 
 #[derive(Debug, Snafu)]
 pub enum NormalizeError {
@@ -92,53 +97,66 @@ impl Code {
 	}
 }
 
+struct LabelVisitor<'a, 'b, FRef, FDef> {
+	on_def: &'a mut FDef,
+	on_ref: &'b mut FRef,
+}
+
+impl<'a, 'b, FRef, FDef> visit::Visit for LabelVisitor<'a, 'b, FRef, FDef>
+where
+	FDef: FnMut(usize),
+	FRef: FnMut(usize),
+{
+	fn visit_insn(&mut self, insn: &Insn) -> ControlFlow<()> {
+		if let ("_label", [Arg::Label(l)]) = (insn.name.as_str(), insn.args.as_slice()) {
+			(self.on_def)(*l);
+			ControlFlow::Break(())
+		} else {
+			ControlFlow::Continue(())
+		}
+	}
+
+	fn visit_arg(&mut self, arg: &Arg) -> ControlFlow<()> {
+		if let Arg::Label(l) = arg {
+			(self.on_ref)(*l);
+		}
+		ControlFlow::Continue(())
+	}
+}
+
+impl<'a, 'b, FRef, FDef> visit::VisitMut for LabelVisitor<'a, 'b, FRef, FDef>
+where
+	FDef: FnMut(&mut usize) -> bool,
+	FRef: FnMut(&mut usize),
+{
+	fn visit_code_mut(&mut self, code: &mut Code) -> ControlFlow<()> {
+		code.retain_mut(|insn| {
+			if let ("_label", [Arg::Label(l)]) = (insn.name.as_str(), insn.args.as_mut_slice()) {
+				(self.on_def)(l)
+			} else {
+				insn.accept_mut(self);
+				true
+			}
+		});
+		ControlFlow::Break(()) // since we're visiting the instructions manually
+	}
+
+	fn visit_arg_mut(&mut self, arg: &mut Arg) -> ControlFlow<()> {
+		if let Arg::Label(l) = arg {
+			(self.on_ref)(l);
+		}
+		ControlFlow::Continue(())
+	}
+}
+
 fn visit_labels_mut(
-	insns: &mut Vec<Insn>,
+	insns: &mut Code,
 	on_def: &mut impl FnMut(&mut usize) -> bool,
 	on_ref: &mut impl FnMut(&mut usize),
 ) {
-	fn do_args(
-		args: &mut [Arg],
-		on_def: &mut impl FnMut(&mut usize) -> bool,
-		on_ref: &mut impl FnMut(&mut usize),
-	) {
-		for a in args {
-			match a {
-				Arg::Label(rf) => on_ref(rf),
-				Arg::Code(code) => visit_labels_mut(code, on_def, on_ref),
-				Arg::Tuple(args) => do_args(args, on_def, on_ref),
-				// Expr can contain Insn, but those never contain labels
-				_ => {}
-			}
-		}
-	}
-	insns.retain_mut(
-		|insn| match (insn.name.as_str(), insn.args.as_mut_slice()) {
-			("_label", [Arg::Label(df)]) => on_def(df),
-			(_, args) => {
-				do_args(args, on_def, on_ref);
-				true
-			}
-		},
-	);
+	insns.accept_mut(&mut LabelVisitor { on_def, on_ref })
 }
 
-fn visit_labels(insns: &[Insn], on_def: &mut impl FnMut(usize), on_ref: &mut impl FnMut(usize)) {
-	fn do_args(args: &[Arg], on_def: &mut impl FnMut(usize), on_ref: &mut impl FnMut(usize)) {
-		for a in args {
-			match a {
-				Arg::Label(rf) => on_ref(*rf),
-				Arg::Code(code) => visit_labels(code, on_def, on_ref),
-				Arg::Tuple(args) => do_args(args, on_def, on_ref),
-				// Expr can contain Insn, but those never contain labels
-				_ => {}
-			}
-		}
-	}
-	for insn in insns {
-		match (insn.name.as_str(), insn.args.as_slice()) {
-			("_label", [Arg::Label(df)]) => on_def(*df),
-			(_, args) => do_args(args, on_def, on_ref),
-		}
-	}
+fn visit_labels(insns: &Code, on_def: &mut impl FnMut(usize), on_ref: &mut impl FnMut(usize)) {
+	insns.accept(&mut LabelVisitor { on_def, on_ref })
 }
