@@ -1,7 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::ControlFlow;
 
-use super::visit::{self, Visitable};
+use super::visit::{Visit, Visitable};
+use super::visit_mut::{VisitMut, VisitableMut};
 use super::{Arg, Code, Insn};
 use snafu::prelude::*;
 
@@ -27,7 +28,7 @@ fn find_used(code: &Code) -> Result<BTreeSet<usize>, NormalizeError> {
 		duplicate: Option<usize>,
 	}
 
-	impl visit::Visit for Vis {
+	impl Visit for Vis {
 		fn visit_insn(&mut self, insn: &Insn) -> ControlFlow<()> {
 			if let ("_label", [Arg::Label(l)]) = insn.parts() {
 				if !self.defined.insert(*l) {
@@ -69,7 +70,7 @@ fn remove_unused(code: &mut Code, used: &BTreeSet<usize>) -> BTreeMap<usize, usi
 		order: BTreeMap<usize, usize>,
 	}
 
-	impl<'a> visit::VisitMut for Vis<'a> {
+	impl<'a> VisitMut for Vis<'a> {
 		fn visit_code_mut(&mut self, code: &mut Code) -> ControlFlow<()> {
 			code.retain_mut(|insn| {
 				if let ("_label", [Arg::Label(l)]) = insn.parts() {
@@ -98,7 +99,10 @@ fn rename(code: &mut Code, order: impl FnMut(usize) -> usize) {
 		order: F,
 	}
 
-	impl<F> visit::VisitMut for Vis<F> where F: FnMut(usize) -> usize {
+	impl<F> VisitMut for Vis<F>
+	where
+		F: FnMut(usize) -> usize,
+	{
 		fn visit_arg_mut(&mut self, arg: &mut Arg) -> ControlFlow<()> {
 			if let Arg::Label(l) = arg {
 				*l = (self.order)(*l)

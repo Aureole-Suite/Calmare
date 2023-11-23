@@ -6,6 +6,7 @@ use crate::scena::insn_set::InsnSet;
 
 mod normalize;
 pub mod visit;
+pub mod visit_mut;
 
 pub use normalize::NormalizeError;
 
