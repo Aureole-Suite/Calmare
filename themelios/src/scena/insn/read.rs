@@ -20,7 +20,7 @@ pub enum ReadError {
 	Whatever { message: String },
 	#[snafu(display("error reading instruction at {pos}, after {context:?}"))]
 	Insn {
-		context: Vec<(usize, Insn)>,
+		context: Vec<Insn>,
 		pos: usize,
 		source: Box<ReadError>,
 	},
@@ -44,17 +44,18 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 		let mut insns = Vec::new();
 		while self.f.pos() < end {
 			let pos = self.f.pos();
+			insns.push(Insn::new("_label", vec![Arg::Label(pos)]));
 			let insn = self.insn().map_err(Box::new).with_context(|_| InsnSnafu {
 				pos,
 				context: insns
 					.iter()
 					.rev()
-					.take(8)
+					.take(10)
 					.rev()
 					.cloned()
 					.collect::<Vec<_>>(),
 			})?;
-			insns.push((pos, insn));
+			insns.push(insn);
 		}
 		ensure_whatever!(
 			self.f.pos() == end,
@@ -63,12 +64,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 			end
 		);
 
-		let mut insns2 = Vec::with_capacity(insns.len() * 2 + 1);
-		for (pos, insn) in insns {
-			insns2.push(Insn::new("_label", vec![Arg::Label(pos)]));
-			insns2.push(insn);
-		}
-		Ok(Code(insns2))
+		Ok(Code(insns))
 	}
 
 	pub fn insn(&mut self) -> Result<Insn> {
