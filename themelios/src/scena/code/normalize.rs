@@ -16,7 +16,7 @@ pub enum NormalizeError {
 pub fn normalize(code: &mut Code) -> Result<(), NormalizeError> {
 	let used = find_used(code)?;
 	let order = remove_unused(code, &used);
-	rename(code, &order);
+	rename(code, |l| order[&l]);
 	Ok(())
 }
 
@@ -93,15 +93,15 @@ fn remove_unused(code: &mut Code, used: &BTreeSet<usize>) -> BTreeMap<usize, usi
 	vis.order
 }
 
-fn rename(code: &mut Code, order: &BTreeMap<usize, usize>) {
-	struct Vis<'a> {
-		order: &'a BTreeMap<usize, usize>,
+fn rename(code: &mut Code, order: impl FnMut(usize) -> usize) {
+	struct Vis<F> {
+		order: F,
 	}
 
-	impl<'a> visit::VisitMut for Vis<'a> {
+	impl<F> visit::VisitMut for Vis<F> where F: FnMut(usize) -> usize {
 		fn visit_arg_mut(&mut self, arg: &mut Arg) -> ControlFlow<()> {
 			if let Arg::Label(l) = arg {
-				*l = self.order[l]
+				*l = (self.order)(*l)
 			}
 			ControlFlow::Continue(())
 		}
