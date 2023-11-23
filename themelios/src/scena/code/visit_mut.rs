@@ -22,6 +22,12 @@ pub trait VisitableMut {
 	fn accept_mut(&mut self, f: &mut impl VisitMut);
 }
 
+impl<T: VisitableMut> VisitableMut for &mut T {
+	fn accept_mut(&mut self, f: &mut impl VisitMut) {
+		T::accept_mut(self, f);
+	}
+}
+
 impl<T: VisitableMut> VisitableMut for [T] {
 	fn accept_mut(&mut self, f: &mut impl VisitMut) {
 		for v in self {

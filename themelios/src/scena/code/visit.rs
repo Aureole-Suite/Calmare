@@ -22,6 +22,18 @@ pub trait Visitable {
 	fn accept(&self, f: &mut impl Visit);
 }
 
+impl<T: Visitable> Visitable for &T {
+	fn accept(&self, f: &mut impl Visit) {
+		T::accept(self, f);
+	}
+}
+
+impl<T: Visitable> Visitable for &mut T {
+	fn accept(&self, f: &mut impl Visit) {
+		T::accept(self, f);
+	}
+}
+
 impl<T: Visitable> Visitable for [T] {
 	fn accept(&self, f: &mut impl Visit) {
 		for v in self {
