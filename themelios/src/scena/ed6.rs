@@ -126,13 +126,12 @@ impl Scena {
 		let mut functions = Vec::with_capacity(func_table.len());
 		let mut funcpos = func_table.iter().copied().peekable();
 		let f: &mut Reader = &mut f.clone().at(code_start)?;
+		let mut ir = InsnReader::new(f, insn);
 		while let Some(start) = funcpos.next() {
-			ensure_whatever!(f.pos() == start, "weird function start");
-			let end = funcpos.peek().copied().unwrap_or(code_end);
-			let mut code = InsnReader::new(f, insn).code(end)?;
-			crate::scena::code::normalize::normalize(&mut code).unwrap();
-			functions.push(code);
+			ensure_whatever!(ir.pos() == start, "weird function start");
+			functions.push(ir.code(funcpos.peek().copied().unwrap_or(code_end))?);
 		}
+		crate::scena::code::normalize::normalize(&mut functions).unwrap();
 
 		Ok(Scena {
 			path,
@@ -225,9 +224,10 @@ impl Scena {
 			lp.write(&mut lps)?;
 		}
 
+		let mut iw = InsnWriter::new(&mut code, insn);
 		for func in scena.functions.iter() {
-			func_table.label16(code.here());
-			InsnWriter::new(&mut code, insn).code(func)?;
+			func_table.label16(iw.here());
+			iw.code(func)?;
 		}
 
 		f.append(chs);

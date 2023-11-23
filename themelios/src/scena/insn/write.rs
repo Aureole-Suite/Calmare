@@ -48,6 +48,10 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 		}
 	}
 
+	pub fn here(&mut self) -> Label {
+		self.f.here()
+	}
+
 	pub fn code(&mut self, code: &Code) -> Result<(), WriteError> {
 		for insn in code.iter() {
 			self.insn(insn)?;

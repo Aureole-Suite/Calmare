@@ -38,15 +38,19 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 		Self { f, iset }
 	}
 
+	pub fn pos(&self) -> usize {
+		self.f.pos()
+	}
+
 	pub fn code(&mut self, end: usize) -> Result<Code> {
 		let mut insns = Vec::new();
-		while self.f.pos() < end {
+		while self.pos() < end {
 			self.read_insn(&mut insns)?;
 		}
 		ensure_whatever!(
-			self.f.pos() == end,
+			self.pos() == end,
 			"overshot end: {} > {}",
-			self.f.pos(),
+			self.pos(),
 			end
 		);
 
@@ -54,7 +58,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 	}
 
 	fn read_insn<'a>(&mut self, insns: &'a mut Vec<Insn>) -> Result<&'a mut Insn, ReadError> {
-		let pos = self.f.pos();
+		let pos = self.pos();
 		insns.push(Insn::new("_label", vec![Arg::Label(pos)]));
 		let insn = self.insn().map_err(Box::new).with_context(|_| InsnSnafu {
 			pos,
