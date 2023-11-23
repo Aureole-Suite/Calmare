@@ -124,14 +124,11 @@ impl Scena {
 		ensure_whatever!(f.pos() == head_end, "overshot with entries");
 
 		let mut functions = Vec::with_capacity(func_table.len());
-		let starts = func_table.iter().copied();
-		let ends = func_table
-			.iter()
-			.copied()
-			.skip(1)
-			.chain(std::iter::once(code_end));
-		for (start, end) in starts.zip(ends) {
-			let f: &mut Reader = &mut f.clone().at(start)?;
+		let mut funcpos = func_table.iter().copied().peekable();
+		let f: &mut Reader = &mut f.clone().at(code_start)?;
+		while let Some(start) = funcpos.next() {
+			ensure_whatever!(f.pos() == start, "weird function start");
+			let end = funcpos.peek().copied().unwrap_or(code_end);
 			let mut code = InsnReader::new(f, insn).code(end)?;
 			code.normalize().unwrap();
 			functions.push(code);
