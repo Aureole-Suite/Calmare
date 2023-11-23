@@ -47,12 +47,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 		while self.pos() < end {
 			self.read_insn(&mut insns)?;
 		}
-		ensure_whatever!(
-			self.pos() == end,
-			"overshot end: {} > {}",
-			self.pos(),
-			end
-		);
+		ensure_whatever!(self.pos() == end, "overshot end: {} > {}", self.pos(), end);
 
 		Ok(Code(insns))
 	}

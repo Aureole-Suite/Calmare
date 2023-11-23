@@ -4,7 +4,7 @@ use snafu::prelude::*;
 use strict_result::Strict;
 
 use crate::scena::code::Code;
-use crate::scena::insn::{InsnWriter, InsnReader};
+use crate::scena::insn::{InsnReader, InsnWriter};
 use crate::scena::{insn_set as iset, FuncId};
 use crate::types::*;
 use crate::util::{self, cast, list, ReaderExt as _, WriterExt as _};

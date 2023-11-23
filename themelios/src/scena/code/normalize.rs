@@ -64,7 +64,10 @@ fn find_used(code: &(impl Visitable + VisitableMut)) -> Result<BTreeSet<usize>, 
 	Ok(vis.used)
 }
 
-fn remove_unused(code: &mut (impl Visitable + VisitableMut), used: &BTreeSet<usize>) -> BTreeMap<usize, usize> {
+fn remove_unused(
+	code: &mut (impl Visitable + VisitableMut),
+	used: &BTreeSet<usize>,
+) -> BTreeMap<usize, usize> {
 	struct Vis<'a> {
 		used: &'a BTreeSet<usize>,
 		order: BTreeMap<usize, usize>,
