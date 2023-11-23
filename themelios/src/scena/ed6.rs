@@ -130,7 +130,7 @@ impl Scena {
 			.skip(1)
 			.chain(std::iter::once(code_end));
 		for (start, end) in starts.zip(ends) {
-			functions.push(Code::read(&mut f.clone().at(start)?, insn, Some(end))?);
+			functions.push(Code::read(&mut f.clone().at(start)?, insn, end)?);
 		}
 
 		Ok(Scena {

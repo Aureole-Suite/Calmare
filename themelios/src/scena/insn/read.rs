@@ -38,9 +38,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 		Self { f, iset }
 	}
 
-	pub fn code(&mut self, end: Option<usize>) -> Result<Code> {
-		let end = end.expect("inferred end is not yet supported");
-
+	pub fn code(&mut self, end: usize) -> Result<Code> {
 		let mut insns = Vec::new();
 		while self.f.pos() < end {
 			self.read_insn(&mut insns)?;
@@ -163,7 +161,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 			T::Fork => {
 				let len = f.u8()? as usize;
 				let pos = f.pos();
-				let code = self.code(Some(pos + len))?;
+				let code = self.code(pos + len)?;
 				if len > 0 {
 					self.f.check_u8(0)?;
 				}
@@ -173,7 +171,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 			T::ForkLoop(next) => {
 				let len = f.u8()? as usize;
 				let pos = f.pos();
-				let code = self.code(Some(pos + len))?;
+				let code = self.code(pos + len)?;
 
 				let insns = [self.insn()?, self.insn()?];
 				#[rustfmt::skip]
