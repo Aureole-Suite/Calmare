@@ -4,6 +4,7 @@ use snafu::prelude::*;
 use strict_result::Strict;
 
 use crate::scena::code::Code;
+use crate::scena::insn::{InsnWriter, InsnReader};
 use crate::scena::{insn_set as iset, FuncId};
 use crate::types::*;
 use crate::util::{self, cast, list, ReaderExt as _, WriterExt as _};
@@ -130,7 +131,10 @@ impl Scena {
 			.skip(1)
 			.chain(std::iter::once(code_end));
 		for (start, end) in starts.zip(ends) {
-			functions.push(Code::read(&mut f.clone().at(start)?, insn, end)?);
+			let f: &mut Reader = &mut f.clone().at(start)?;
+			let mut code = InsnReader::new(f, insn).code(end)?;
+			code.normalize().unwrap();
+			functions.push(code);
 		}
 
 		Ok(Scena {
@@ -226,7 +230,7 @@ impl Scena {
 
 		for func in scena.functions.iter() {
 			func_table.label16(code.here());
-			Code::write(&mut code, insn, func)?;
+			InsnWriter::new(&mut code, insn).code(func)?;
 		}
 
 		f.append(chs);

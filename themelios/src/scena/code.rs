@@ -1,8 +1,5 @@
-use gospel::read::Reader;
-use gospel::write::Writer;
-
+// TODO this module is getting increasingly bare
 use crate::scena::insn::{self, Arg, Insn};
-use crate::scena::insn_set::InsnSet;
 
 mod normalize;
 pub mod visit;
@@ -28,16 +25,6 @@ impl std::ops::DerefMut for Code {
 }
 
 impl Code {
-	pub fn read(f: &mut Reader, insn: &InsnSet, end: usize) -> Result<Code, insn::ReadError> {
-		let mut code = insn::InsnReader::new(f, insn).code(end)?;
-		code.normalize().unwrap();
-		Ok(code)
-	}
-
-	pub fn write(f: &mut Writer, iset: &InsnSet, code: &Code) -> Result<(), insn::WriteError> {
-		insn::InsnWriter::new(f, iset).code(code)
-	}
-
 	pub fn normalize(&mut self) -> Result<(), NormalizeError> {
 		normalize::normalize(self)
 	}
