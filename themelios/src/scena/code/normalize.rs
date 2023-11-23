@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::ops::ControlFlow;
 
 use super::visit::{self, Visitable};
-use super::{Code, Insn, Arg};
+use super::{Arg, Code, Insn};
 use snafu::prelude::*;
 
 #[derive(Debug, Snafu)]
@@ -14,110 +14,99 @@ pub enum NormalizeError {
 }
 
 pub fn normalize(code: &mut Code) -> Result<(), NormalizeError> {
-	let mut used = BTreeSet::new();
-	let mut defined = BTreeSet::new();
-	let mut duplicate = None;
-	// No mutations here; if the code is malformed, we don't want mutations
-	visit_labels(
-		code,
-		&mut |df| {
-			if !defined.insert(df) {
-				duplicate = duplicate.or(Some(df))
-			}
-		},
-		&mut |rf| {
-			used.insert(rf);
-		},
-	);
-
-	if let Some(label) = duplicate {
-		return DuplicateLabelSnafu { label }.fail();
-	}
-	if let Some(&label) = used.difference(&defined).next() {
-		return UndefinedLabelSnafu { label }.fail();
-	}
-
-	let mut order = BTreeMap::new();
-	visit_labels_mut(
-		code,
-		&mut |df| {
-			if used.contains(df) {
-				let v = order.len();
-				order.insert(*df, v);
-				*df = v;
-				true
-			} else {
-				false
-			}
-		},
-		&mut |_| {},
-	);
-	visit_labels_mut(code, &mut |_| true, &mut |rf| *rf = order[rf]);
-
+	let used = find_used(code)?;
+	let order = remove_unused(code, &used);
+	rename(code, &order);
 	Ok(())
 }
 
-struct LabelVisitor<'a, 'b, FRef, FDef> {
-	on_def: &'a mut FDef,
-	on_ref: &'b mut FRef,
-}
+fn find_used(code: &Code) -> Result<BTreeSet<usize>, NormalizeError> {
+	struct Vis {
+		used: BTreeSet<usize>,
+		defined: BTreeSet<usize>,
+		duplicate: Option<usize>,
+	}
 
-impl<'a, 'b, FRef, FDef> visit::Visit for LabelVisitor<'a, 'b, FRef, FDef>
-where
-	FDef: FnMut(usize),
-	FRef: FnMut(usize),
-{
-	fn visit_insn(&mut self, insn: &Insn) -> ControlFlow<()> {
-		if let ("_label", [Arg::Label(l)]) = (insn.name.as_str(), insn.args.as_slice()) {
-			(self.on_def)(*l);
-			ControlFlow::Break(())
-		} else {
+	impl visit::Visit for Vis {
+		fn visit_insn(&mut self, insn: &Insn) -> ControlFlow<()> {
+			if let ("_label", [Arg::Label(l)]) = insn.parts() {
+				if !self.defined.insert(*l) {
+					self.duplicate = self.duplicate.or(Some(*l))
+				}
+				ControlFlow::Break(())
+			} else {
+				ControlFlow::Continue(())
+			}
+		}
+
+		fn visit_arg(&mut self, arg: &Arg) -> ControlFlow<()> {
+			if let Arg::Label(l) = arg {
+				self.used.insert(*l);
+			}
 			ControlFlow::Continue(())
 		}
 	}
 
-	fn visit_arg(&mut self, arg: &Arg) -> ControlFlow<()> {
-		if let Arg::Label(l) = arg {
-			(self.on_ref)(*l);
-		}
-		ControlFlow::Continue(())
+	let mut vis = Vis {
+		used: BTreeSet::new(),
+		defined: BTreeSet::new(),
+		duplicate: None,
+	};
+	code.accept(&mut vis);
+
+	if let Some(label) = vis.duplicate {
+		return DuplicateLabelSnafu { label }.fail();
 	}
+	if let Some(&label) = vis.used.difference(&vis.defined).next() {
+		return UndefinedLabelSnafu { label }.fail();
+	}
+	Ok(vis.used)
 }
 
-impl<'a, 'b, FRef, FDef> visit::VisitMut for LabelVisitor<'a, 'b, FRef, FDef>
-where
-	FDef: FnMut(&mut usize) -> bool,
-	FRef: FnMut(&mut usize),
-{
-	fn visit_code_mut(&mut self, code: &mut Code) -> ControlFlow<()> {
-		code.retain_mut(|insn| {
-			if let ("_label", [Arg::Label(l)]) = (insn.name.as_str(), insn.args.as_mut_slice()) {
-				(self.on_def)(l)
-			} else {
-				insn.accept_mut(self);
+fn remove_unused(code: &mut Code, used: &BTreeSet<usize>) -> BTreeMap<usize, usize> {
+	struct Vis<'a> {
+		used: &'a BTreeSet<usize>,
+		order: BTreeMap<usize, usize>,
+	}
+
+	impl<'a> visit::VisitMut for Vis<'a> {
+		fn visit_code_mut(&mut self, code: &mut Code) -> ControlFlow<()> {
+			code.retain_mut(|insn| {
+				if let ("_label", [Arg::Label(l)]) = insn.parts() {
+					if self.used.contains(l) {
+						self.order.insert(*l, self.order.len());
+					} else {
+						return false;
+					}
+				}
 				true
-			}
-		});
-		ControlFlow::Break(()) // since we're visiting the instructions manually
-	}
-
-	fn visit_arg_mut(&mut self, arg: &mut Arg) -> ControlFlow<()> {
-		if let Arg::Label(l) = arg {
-			(self.on_ref)(l);
+			});
+			ControlFlow::Continue(())
 		}
-		ControlFlow::Continue(())
 	}
+
+	let mut vis = Vis {
+		used,
+		order: BTreeMap::new(),
+	};
+	code.accept_mut(&mut vis);
+	vis.order
 }
 
-fn visit_labels_mut(
-	insns: &mut Code,
-	on_def: &mut impl FnMut(&mut usize) -> bool,
-	on_ref: &mut impl FnMut(&mut usize),
-) {
-	insns.accept_mut(&mut LabelVisitor { on_def, on_ref })
-}
+fn rename(code: &mut Code, order: &BTreeMap<usize, usize>) {
+	struct Vis<'a> {
+		order: &'a BTreeMap<usize, usize>,
+	}
 
-fn visit_labels(insns: &Code, on_def: &mut impl FnMut(usize), on_ref: &mut impl FnMut(usize)) {
-	insns.accept(&mut LabelVisitor { on_def, on_ref })
-}
+	impl<'a> visit::VisitMut for Vis<'a> {
+		fn visit_arg_mut(&mut self, arg: &mut Arg) -> ControlFlow<()> {
+			if let Arg::Label(l) = arg {
+				*l = self.order[l]
+			}
+			ControlFlow::Continue(())
+		}
+	}
 
+	let mut vis = Vis { order };
+	code.accept_mut(&mut vis);
+}
