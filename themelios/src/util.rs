@@ -61,6 +61,14 @@ pub impl Reader<'_> {
 			z: self.i32()?,
 		})
 	}
+
+	fn vec3(&mut self) -> Result<glam::Vec3, gospel::read::Error> {
+		Ok(glam::Vec3 {
+			x: self.f32()?,
+			y: self.f32()?,
+			z: self.f32()?,
+		})
+	}
 }
 
 #[extend::ext(name = WriterExt)]
@@ -101,6 +109,12 @@ pub impl Writer {
 		self.i32(p.x);
 		self.i32(p.y);
 		self.i32(p.z);
+	}
+
+	fn vec3(&mut self, p: glam::Vec3) {
+		self.f32(p.x);
+		self.f32(p.y);
+		self.f32(p.z);
 	}
 }
 

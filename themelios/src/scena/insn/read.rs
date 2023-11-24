@@ -2,6 +2,7 @@ use gospel::read::{Le as _, Reader};
 use snafu::prelude::*;
 
 use super::{Arg, Insn};
+use crate::scena::code::visit::visit_args;
 use crate::scena::code::Code;
 use crate::scena::insn::{Expr, Unit};
 use crate::scena::{insn_set as iset, CharId, EventId, FuncId, LookPointId};
@@ -48,6 +49,25 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 			self.read_insn(&mut insns)?;
 		}
 		ensure_whatever!(self.pos() == end, "overshot end: {} > {}", self.pos(), end);
+
+		Ok(Code(insns))
+	}
+
+	pub fn code_approx(&mut self, end: usize, valid_end: impl Fn(&Reader) -> bool) -> Result<Code> {
+		let mut insns = Vec::new();
+		let mut extent = self.pos();
+		while self.pos() < end {
+			let i = self.read_insn(&mut insns)?;
+			if i.name == "Return" && self.pos() >= extent && valid_end(self.f) {
+				break;
+			}
+			visit_args(i, |arg| {
+				if let Arg::Label(l) = arg {
+					extent = extent.max(*l);
+				}
+			});
+		}
+		ensure_whatever!(self.pos() <= end, "overshot end: {} > {}", self.pos(), end);
 
 		Ok(Code(insns))
 	}

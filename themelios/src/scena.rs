@@ -1,12 +1,39 @@
+use snafu::prelude::*;
+
 use crate::{types::NameId, util::ValueError};
 
 pub mod code;
 pub mod ed6;
+pub mod ed7;
 
 pub mod insn;
 pub mod insn_set;
 
 use self::insn_set::Game;
+
+#[derive(Debug, Snafu)]
+pub enum ReadError {
+	#[snafu(context(false))]
+	Gospel { source: gospel::read::Error },
+	#[snafu(context(false))]
+	Decode { source: crate::util::DecodeError },
+	#[snafu(context(false))]
+	Insn { source: insn::ReadError },
+	#[snafu(whatever, display("{message}"))]
+	Whatever { message: String },
+}
+
+#[derive(Debug, Snafu)]
+pub enum WriteError {
+	#[snafu(context(false))]
+	Gospel { source: gospel::write::Error },
+	#[snafu(context(false))]
+	Value { source: ValueError },
+	#[snafu(context(false))]
+	Insn { source: insn::WriteError },
+	#[snafu(context(false))]
+	Encode { source: crate::util::EncodeError },
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FuncId(pub u16, pub u16);

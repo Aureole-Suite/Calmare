@@ -87,3 +87,19 @@ impl VisitableMut for Term {
 		}
 	}
 }
+
+pub fn visit_args_mut(val: &mut (impl VisitableMut + ?Sized), f: impl FnMut(&mut Arg)) {
+	struct Vis<F> {
+		f: F,
+	}
+	impl<F> VisitMut for Vis<F>
+	where
+		F: FnMut(&mut Arg),
+	{
+		fn visit_arg_mut(&mut self, arg: &mut Arg) -> ControlFlow<()> {
+			(self.f)(arg);
+			ControlFlow::Continue(())
+		}
+	}
+	val.accept_mut(&mut Vis { f })
+}

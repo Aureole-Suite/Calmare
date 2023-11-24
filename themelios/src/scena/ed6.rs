@@ -7,9 +7,10 @@ use crate::scena::code::Code;
 use crate::scena::insn::{InsnReader, InsnWriter};
 use crate::scena::{insn_set as iset, FuncId};
 use crate::types::*;
-use crate::util::{self, cast, list, ReaderExt as _, WriterExt as _};
+use crate::util::{cast, list, ReaderExt as _, WriterExt as _};
 
 use super::{CharFlags, ChipId, EntryFlags, EventFlags, LookPointFlags};
+use super::{ReadError, WriteError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Scena {
@@ -30,30 +31,6 @@ pub struct Scena {
 	pub look_points: Vec<LookPoint>,
 	pub entries: Vec<Entry>,
 	pub functions: Vec<Code>,
-}
-
-#[derive(Debug, Snafu)]
-pub enum ReadError {
-	#[snafu(context(false))]
-	Gospel { source: gospel::read::Error },
-	#[snafu(context(false))]
-	Decode { source: util::DecodeError },
-	#[snafu(context(false))]
-	Insn { source: super::insn::ReadError },
-	#[snafu(whatever, display("{message}"))]
-	Whatever { message: String },
-}
-
-#[derive(Debug, Snafu)]
-pub enum WriteError {
-	#[snafu(context(false))]
-	Gospel { source: gospel::write::Error },
-	#[snafu(context(false))]
-	Value { source: util::ValueError },
-	#[snafu(context(false))]
-	Insn { source: super::insn::WriteError },
-	#[snafu(context(false))]
-	Encode { source: util::EncodeError },
 }
 
 impl Scena {
