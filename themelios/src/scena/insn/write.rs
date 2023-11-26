@@ -150,6 +150,11 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 			iset::IntType::Const(v) => {
 				ensure_whatever!(val == v, "{val} != {v}");
 			}
+			iset::IntType::ED7Battle => match val {
+				0 => {}
+				1 => f.u32(0xFFFFFFFF),
+				_ => whatever!("invalid ED7Battle"),
+			},
 		}
 		Ok(())
 	}
@@ -252,11 +257,24 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				expect!(Arg::Tuple(val) in iter, "tuple of name[]");
 				let mut n = 0;
 				for val in val {
-					expect!(Arg::Name(NameId(i)) = val, "name[]");
-					ensure_whatever!(*i < 32, "name[] < 32");
-					n |= 1 << i;
+					let val = int_arg(self.iset, val)?;
+					ensure_whatever!(val < 32, "name[] < 32");
+					n |= 1 << val;
 				}
 				f.u32(n);
+			}
+
+
+			T::ED7CharAnimation => {
+				expect!(Arg::Tuple(val) in iter, "tuple of int");
+				f.u8(cast(val.len())?);
+				if val.is_empty() {
+					f.u8(0)
+				}
+				for val in val {
+					let val = int_arg(self.iset, val)?;
+					f.u8(cast(val)?);
+				}
 			}
 
 			T::Menu => {
@@ -271,12 +289,18 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 
 			T::EvoSave => {
 				if self.iset.variant == iset::Variant::Evo {
-					self.arg(
-						args,
-						&iset::Arg::Int(iset::IntType::u8, iset::IntArg::Int),
-						iter,
-					)?;
+					let ty = iset::Arg::Int(iset::IntType::u8, iset::IntArg::Int);
+					self.arg(args, &ty, iter)?;
 				}
+			}
+
+			T::KaiSoundId => {
+				let int = if self.iset.variant == iset::Variant::Kai {
+					iset::IntType::u32
+				} else {
+					iset::IntType::u16
+				};
+				self.arg(args, &iset::Arg::Int(int, iset::IntArg::SoundId), iter)?;
 			}
 
 			T::FcPartyEquip => {

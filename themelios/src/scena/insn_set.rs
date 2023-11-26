@@ -42,7 +42,7 @@ pub fn get(game: Game, variant: Variant) -> InsnSet<'static> {
 		(Game::Fc, _) => Builtin::Fc,
 		(Game::Sc, _) => Builtin::Sc,
 		(Game::Tc, _) => Builtin::Tc,
-		(Game::Zero, _) => todo!(),
+		(Game::Zero, _) => Builtin::Zero,
 		(Game::Azure, _) => todo!(),
 	};
 	InsnSet {
@@ -101,6 +101,9 @@ pub enum IntType {
 	i16,
 	i32,
 	Const(i64),
+	// Ugly hack for ED7Battle and ED7NpcBattle instruction.
+	// Encodes 1 as `FF FF FF FF` and 0 as empty.
+	ED7Battle,
 }
 
 // Ugly implementation detail
@@ -115,6 +118,8 @@ enum IntType_inner {
 	i8,
 	i16,
 	i32,
+	#[serde(rename = "ed7battle")]
+	ED7Battle,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -198,8 +203,10 @@ pub enum MiscArg {
 	PartySelectMandatory,
 	PartySelectOptional,
 	TcMembers,
+	ED7CharAnimation,
 
 	EvoSave,
+	KaiSoundId,
 	FcPartyEquip,
 	ScPartySetSlot,
 	EffPlayPos,
@@ -399,6 +406,7 @@ pub enum Builtin {
 	Fc,
 	Sc,
 	Tc,
+	Zero,
 }
 
 impl Builtin {
@@ -420,6 +428,7 @@ impl Builtin {
 			Fc => "fc.yml",
 			Sc => "sc.yml",
 			Tc => "3rd.yml",
+			Zero => "zero.yml",
 		}
 	}
 }
@@ -429,4 +438,5 @@ fn test_parse() {
 	Builtin::Fc.get();
 	Builtin::Sc.get();
 	Builtin::Tc.get();
+	Builtin::Zero.get();
 }

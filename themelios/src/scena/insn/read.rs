@@ -131,6 +131,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 			iset::IntType::i16 => f.i16()? as i64,
 			iset::IntType::i32 => f.i32()? as i64,
 			iset::IntType::Const(v) => v,
+			iset::IntType::ED7Battle => f.check_u32(0xFFFFFFFF).is_ok().into(),
 		})
 	}
 
@@ -256,10 +257,31 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 				out.push(Arg::Tuple(v));
 			}
 
+			T::ED7CharAnimation => {
+				let n = f.u8()?;
+				let mut v = Vec::with_capacity(n as usize);
+				if n == 0 {
+					f.check_u8(0)?;
+				}
+				for _ in 0..n {
+					v.push(Arg::Int(f.u8()? as i64));
+				}
+				out.push(Arg::Tuple(v));
+			}
+
 			T::EvoSave => {
 				if self.iset.variant == iset::Variant::Evo {
 					self.arg(out, &iset::Arg::Int(iset::IntType::u8, iset::IntArg::Int))?;
 				}
+			}
+
+			T::KaiSoundId => {
+				let int = if self.iset.variant == iset::Variant::Kai {
+					iset::IntType::u32
+				} else {
+					iset::IntType::u16
+				};
+				self.arg(out, &iset::Arg::Int(int, iset::IntArg::SoundId))?;
 			}
 
 			T::FcPartyEquip => {
