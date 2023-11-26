@@ -252,7 +252,7 @@ insns:
   cases:
   - _BC_0: [u16]
   - _BC_1: [u16]
-- PartySetPortaitFinish: []
+- PartySetPortraitFinish: []
 - _BE: [[u8, u8, u8, u8], u16, u16, u8, [i32,i32,i32,i32,i32,i32]]
 - _BF: [[u8, u8, u8, u8], {u16: Flag}]
 - Minigame: [u8, i32, i32, i32, i32, i32, i32, i32, i32]
