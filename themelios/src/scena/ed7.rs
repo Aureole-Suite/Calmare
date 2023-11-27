@@ -150,8 +150,11 @@ impl Scena {
 		// To be able to roundtrip, I first try to load everything sequentially to prepopulate the mappings.
 		// This works so-so on eddec, but that's not worth roundtripping anyway.
 		let mut btl = BattleRead::default();
-		let _ = btl.preload_sepith(f, code_end..strings_start);
-		let _ = btl.preload_battles(f, monsters_end..p_animations);
+		if btl.preload_sepith(f, code_end..strings_start).is_err()
+			|| btl.preload_battles(f, monsters_end..p_animations).is_err()
+		{
+			btl = BattleRead::default();
+		}
 		load_battles(f, &mut btl, &mut monsters, &mut functions)?;
 
 		Ok(Scena {

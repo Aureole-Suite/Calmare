@@ -146,6 +146,7 @@ impl BattleRead {
 		while f.pos() < range.end {
 			self.get_sepith(&mut f)?;
 		}
+		snafu::ensure_whatever!(f.pos() == range.end, "overshot");
 		Ok(())
 	}
 
@@ -183,6 +184,7 @@ impl BattleRead {
 			self.get_battle(&mut f)?;
 		}
 
+		snafu::ensure_whatever!(f.pos() == range.end, "overshot");
 		Ok(())
 	}
 
