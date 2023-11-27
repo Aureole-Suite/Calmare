@@ -43,7 +43,7 @@ pub struct Scena {
 	pub events: Vec<Event>,
 	pub look_points: Vec<LookPoint>,
 	pub animations: Vec<Animation>,
-	pub entries: Vec<Entry>,
+	pub entries: Option<Entry>,
 
 	pub battle: battle::BattleSet,
 
@@ -94,38 +94,11 @@ impl Scena {
 		let item_use = FuncId(f.u8()? as u16, f.u8()? as u16);
 		let unknown_function = FuncId(item_use.0, f.u8()? as u16); // uncertain about this, but maybe
 
-		let mut entries = Vec::new();
-		while f.pos() < p_events {
-			entries.push(Entry::read(&mut f)?);
-		}
-
-		let data_chunks = [
-			(p_chips, n_chips != 0),
-			(p_npcs, n_npcs != 0),
-			(p_monsters, n_monsters != 0),
-			(p_events, n_events != 0),
-			(p_look_points, n_look_points != 0),
-			(p_labels, n_labels != 0),
-			(p_animations, p_animations != f.pos()),
-			(p_func_table, true),
-		];
-		let first_data_chunk = data_chunks
-			.into_iter()
-			.filter_map(|(a, b)| b.then_some(a))
-			.min()
-			.unwrap();
-		let is_vanilla = p_labels == 0
-			|| first_data_chunk == f.pos()
-				&& p_labels <= f.pos()
-				&& p_labels + n_labels * 20 == p_events
-				&& p_events + n_events * 96 == p_look_points
-				&& p_look_points + n_look_points * 36 == p_chips
-				&& p_chips + n_chips * 4 == p_npcs
-				&& p_npcs + n_npcs * 28 == p_monsters
-				&& p_monsters + n_monsters * 32 <= p_animations
-				&& p_animations <= p_func_table;
-		// This misidentifies a few eddec scenas as vanilla, but the battles seem to be in the right
-		// position in those anyway.
+		let entries = if f.pos() < p_events {
+			Some(Entry::read(&mut f)?)
+		} else {
+			None
+		};
 
 		let mut g = f.clone().at(p_chips)?;
 		let chips = list(n_chips, || Ok(FileId(g.u32()?))).strict()?;
@@ -166,26 +139,19 @@ impl Scena {
 		crate::scena::code::normalize::normalize(&mut functions).unwrap();
 		let code_end = f.pos();
 
-		let labels = if p_labels == 0 || !is_vanilla && n_labels == 0 {
+		let labels = if p_labels == 0 {
 			None
 		} else {
 			let mut g = f.clone().at(p_labels)?;
 			Some(list(n_labels, || Label::read(&mut g)).strict()?)
 		};
 
-		let mut btl = BattleRead::default();
-
 		// The battle stuff is not as well-delineated as the other parts, using pointers to individual parts.
 		// To be able to roundtrip, I first try to load everything sequentially to prepopulate the mappings.
-		// No point in trying to roundtrip eddec though.
-		if is_vanilla {
-			// The battle-related structs (including sepith above) are not as well-delineated as most other
-			// chunks, so I can't do anything other than simple heuristics for parsing those. Which sucks,
-			// but there's nothing I can do about it.
-			btl.preload_sepith(f, code_end..strings_start)?;
-			btl.preload_battles(f, monsters_end..p_animations)?;
-		}
-
+		// This works so-so on eddec, but that's not worth roundtripping anyway.
+		let mut btl = BattleRead::default();
+		let _ = btl.preload_sepith(f, code_end..strings_start);
+		let _ = btl.preload_battles(f, monsters_end..p_animations);
 		load_battles(f, &mut btl, &mut monsters, &mut functions)?;
 
 		Ok(Scena {
@@ -216,7 +182,7 @@ impl Scena {
 fn load_battles(
 	f: &Reader,
 	btl: &mut BattleRead,
-	monsters: &mut Vec<Monster>,
+	monsters: &mut [Monster],
 	functions: &mut [Code],
 ) -> Result<(), ReadError> {
 	for mons in monsters {
