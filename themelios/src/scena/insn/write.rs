@@ -264,7 +264,6 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				f.u32(n);
 			}
 
-
 			T::ED7CharAnimation => {
 				expect!(Arg::Tuple(val) in iter, "tuple of int");
 				f.u8(cast(val.len())?);

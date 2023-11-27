@@ -1,4 +1,5 @@
 use std::collections::hash_map::{Entry, HashMap};
+use std::ops::Range;
 use strict_result::Strict;
 
 use gospel::read::{Le as _, Reader};
@@ -46,7 +47,7 @@ pub struct BattleSetup {
 	pub at_roll: AtRollId,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct BattleRead {
 	sepith: Vec<[u8; 8]>,
 	sepith_pos: HashMap<usize, SepithId>,
@@ -140,15 +141,17 @@ impl BattleRead {
 		}
 	}
 
-	pub fn preload_sepith(&mut self, mut f: Reader) -> Result<(), ReadError> {
-		while !f.remaining().is_empty() {
+	pub fn preload_sepith(&mut self, f: &Reader, range: Range<usize>) -> Result<(), ReadError> {
+		let mut f = f.at(range.start)?;
+		while f.pos() < range.end {
 			self.get_sepith(&mut f)?;
 		}
 		Ok(())
 	}
 
-	pub fn preload_battles(&mut self, mut f: Reader) -> Result<(), ReadError> {
-		while !f.remaining().is_empty() {
+	pub fn preload_battles(&mut self, f: &Reader, range: Range<usize>) -> Result<(), ReadError> {
+		let mut f = f.at(range.start)?;
+		while f.pos() < range.end {
 			// Heuristic: first field of AT rolls is 100
 			if f.clone().u8()? != 100 {
 				break;
@@ -156,7 +159,7 @@ impl BattleRead {
 			self.get_at_roll(&mut f)?;
 		}
 
-		while !f.remaining().is_empty() {
+		while f.pos() < range.end {
 			// if both alternatives and field sepith is zero, it's not a placement
 			let Ok(v) = f.clone().at(f.pos() + 16).and_then(|mut g| g.u64()) else {
 				break;
@@ -176,7 +179,7 @@ impl BattleRead {
 			self.get_placement(&mut f)?;
 		}
 
-		while !f.remaining().is_empty() {
+		while f.pos() < range.end {
 			self.get_battle(&mut f)?;
 		}
 

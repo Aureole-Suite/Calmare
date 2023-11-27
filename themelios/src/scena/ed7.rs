@@ -44,9 +44,10 @@ pub struct Scena {
 	pub look_points: Vec<LookPoint>,
 	pub animations: Vec<Animation>,
 	pub entries: Vec<Entry>,
-	pub functions: Vec<Code>,
 
 	pub battle: battle::BattleSet,
+
+	pub functions: Vec<Code>,
 }
 
 impl Scena {
@@ -162,6 +163,7 @@ impl Scena {
 				ir.code_approx(strings_start, |f| (strings_start - f.pos()) % 8 == 0)?
 			});
 		}
+		crate::scena::code::normalize::normalize(&mut functions).unwrap();
 		let code_end = f.pos();
 
 		let labels = if p_labels == 0 || !is_vanilla && n_labels == 0 {
@@ -180,8 +182,8 @@ impl Scena {
 			// The battle-related structs (including sepith above) are not as well-delineated as most other
 			// chunks, so I can't do anything other than simple heuristics for parsing those. Which sucks,
 			// but there's nothing I can do about it.
-			btl.preload_sepith(Reader::new(&f.data()[..strings_start]).at(code_end)?)?;
-			btl.preload_battles(Reader::new(&f.data()[..p_animations]).at(monsters_end)?)?;
+			btl.preload_sepith(f, code_end..strings_start)?;
+			btl.preload_battles(f, monsters_end..p_animations)?;
 		}
 
 		load_battles(f, &mut btl, &mut monsters, &mut functions)?;

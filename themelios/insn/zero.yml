@@ -1,4 +1,4 @@
-game: 3rd
+game: zero
 _def:
  - &Time {u32: Time}
  - &FileId {u32: FileId}
@@ -26,11 +26,13 @@ insns:
   - ED7Battle:
     - {u32: BattleId}
     - *FileId
+    - u8
     - u16
     - u16
-    - {u8: CharId}
+    - {u16: CharId}
   - ED7NpcBattle:
     - *FileId
+    - u8
     - [*FileId, *FileId, *FileId, *FileId, *FileId, *FileId, *FileId, *FileId]
     - [u32, u32, u32, u32]
     - u16
@@ -129,7 +131,7 @@ insns:
 - CharAttr: [{u24: CharAttr}, Expr]
 - TextStart: [*CharId]
 - TextEnd: [*CharId]
-- TextMessage: [{?255: CharId}, Text]
+- TextMessage: [*CharId, Text]
 -
 - TextClose: [u8]
 - MenuSetTitle: [u16, u16, u16, TString]
@@ -156,8 +158,8 @@ insns:
 - ED7CamRotate: [[{i16: Angle}, {i16: Angle}, {i16: Angle}], *Time]
 - CamPers: [i32, *Time]
 - CamWait: [u8]
-- ObjFrame: [{u16: ObjectId}, u32]
-- ED7ObjPlay: [{u16: ObjectId}, u16, u16, u16, u32]
+- ObjFrame: [{u8: ObjectId}, u16]
+- ED7ObjPlay: [{u8: ObjectId}, u16, u16, u16, u32]
 - ObjFlagsSet: [{u8: ObjectId}, {u32: ObjectFlags}]
 - ObjFlagsUnset: [{u8: ObjectId}, {u32: ObjectFlags}]
 - ED7_74: [{u8: ObjectId}, u8, u8]
@@ -193,7 +195,7 @@ insns:
 - EffPlay:
   - {u8: EffId}
   - {u8: EffInstanceId}
-  - [*CharId, 0, EffPlayPos]
+  - [*CharId, u16, EffPlayPos]
   - [i16, i16, i16]
   - [u32, u32, u32]
   - [*CharId, Pos3]
@@ -201,7 +203,7 @@ insns:
 - EffPlay2:
   - {u8: EffId}
   - {u8: EffInstanceId}
-  - [{u8: ObjectId}, String, 0, RPos3]
+  - [{u8: ObjectId}, String, u16, RPos3]
   - [i16, i16, i16]
   - [u32, u32, u32]
   - *Time
@@ -209,8 +211,8 @@ insns:
 - _83: [{u8: EffInstanceId}, u8] # EffWait?
 - EffUnload: [{u8: EffId}]
 - _85: [*CharId]
-- CharSetChipBase: [*CharId, {u16: ChipId}]
-- CharSetChipPattern: [*CharId, {u16: ChipId}]
+- CharSetChipBase: [*CharId, {u8: ChipId}]
+- CharSetChipPattern: [*CharId, {u8: ChipId}]
 - CharSetName: [*CharId, TString]
 - CharSetPos: [*CharId, Pos3, {i16: Angle}]
 - CharSetPos2: [*CharId, Pos3, {i16: Angle}]
@@ -333,7 +335,7 @@ insns:
 - ED7_DB: []
 -
 -
-- ED7_DE: [String]
+- Zero_DE: [u16]
 -
 - ED7_E0: [u8]
 - ED7_E1: [Pos3]
