@@ -1,4 +1,4 @@
-game: zero
+game: azure
 _def:
  - &Time {u32: Time}
  - &FileId {u32: FileId}
@@ -41,15 +41,9 @@ insns:
 - Fog: [{u24: Color}, i32, i32, i32]
 - ED7_12: [{u16: SoundId}, u16, u8]
 - PlaceSetName: [{u16: TownId}]
-- BlurOn: [*Time, {u32: Color}, u32, u8, u32]
+- BlurOn: [{u16: Time}, {u32: Color}, u16, u8, u16]
 - BlurOff: [*Time]
-- !match
-  on: u8
-  cases:
-  -
-  -
-  - ZeroMap_2: [i32, Pos2, u16, u16, u16, u16]
-  - ZeroMap_3: [u8, u16]
+- AoMap: [u8]
 - Save: []
 -
 - EventBegin: [u8]
@@ -69,10 +63,10 @@ insns:
 - BgmStop: [*Time]
 - BgmWait: []
 - SoundPlay: [KaiSoundId, u8, u8, u8]
-- SoundStop: [{u16: SoundId}]
+- SoundStop: [KaiSoundId]
 - SoundSetVolume: [{u16: SoundId}, u8]
 - SoundPlayContinuously: [{u16: SoundId}, Pos3, u32, u32, u8, u32]
-- SoundLoad: [{u16: SoundId}]
+- SoundLoad: [KaiSoundId]
 - NextFrame2: []
 - !match
   head: [{u16: QuestId}]
@@ -176,8 +170,12 @@ insns:
 - ED7_77: [{u8: ObjectId}, u16]
 - ED7_78: [{u8: ObjectId}, *CharId]
 - ObjWait: [{u16: ObjectId}]
--
--
+- !match
+  on: u8
+  cases:
+  - EventSkipFrom: [*Address]
+  - EventSkipTo: [u32]
+- ED7_7B: [{u8: NameId}]
 -
 - MapColor: [{u32: Color}, {u32: Color}]
 -
@@ -252,6 +250,8 @@ insns:
 - FlagWaitUnset: [{u16: Flag}]
 -
 - ShopOpen: [{u8: ShopId}]
+-
+-
 - RecipeLearn: [{u16: RecipeId}]
 - ED7_B1: [u8]
 -
@@ -301,7 +301,7 @@ insns:
   - {u32: Color}
   - u8
   - String
-- VisSet: [{u8: VisId}, u8, i32, i32, i32, 0]
+- VisSet: [{u8: VisId}, u8, i32, i32, i32, i32]
 - !match
   on: u8
   cases:
@@ -329,11 +329,11 @@ insns:
 - UnloadChip: [{u8: ChipId}]
 - PartyGetAttr: [{u8: NameId}, u8]
 - PartyGetEquipped: [{u8: NameId}, u8]
--
+- Ao_DA: [u8]
 -
 - ED7_DA: [u8]
 - ED7_DB: []
--
+- Ao_DE: [String]
 -
 - Zero_DE: [u16]
 -
@@ -355,7 +355,7 @@ insns:
   - ED7Note_2: [u8]
   - ED7Note_3: []
 - ED7_E3: [u8]
--
+- Ao_E6: [u8, u8, {u32: Color}, u32]
 - _DB: []
 - _DC: []
 - SaveClearData: []
@@ -368,18 +368,16 @@ insns:
 - ED7_EE: [u8, u16]
 -
 -
--
+- Ao_F3: [i32]
 - ED7_F2: [u8]
--
--
--
--
--
 - ED7_F8: [u16]
 -
 -
 -
 -
 -
--
--
+- Ao_FB: [u8, u16]
+- Ao_FC: [u16]
+- Ao_FD: [u16, u16]
+- Ao_FE: [u8]
+- Ao_FF: [{u8: ObjectId}, Pos3]

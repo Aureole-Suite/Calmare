@@ -3,7 +3,7 @@ use themelios::scena::insn_set::{self, Game, Variant};
 fn main() -> anyhow::Result<()> {
 	unsafe { compact_debug::enable(true) }
 
-	let iset = insn_set::get(Game::Zero, Variant::Base);
+	let iset = insn_set::get(Game::Azure, Variant::Kai);
 
 	for file in std::env::args().skip(1) {
 		println!("running {file}");

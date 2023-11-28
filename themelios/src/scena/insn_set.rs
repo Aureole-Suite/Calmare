@@ -43,7 +43,7 @@ pub fn get(game: Game, variant: Variant) -> InsnSet<'static> {
 		(Game::Sc, _) => Builtin::Sc,
 		(Game::Tc, _) => Builtin::Tc,
 		(Game::Zero, _) => Builtin::Zero,
-		(Game::Azure, _) => todo!(),
+		(Game::Azure, _) => Builtin::Azure,
 	};
 	InsnSet {
 		variant,
@@ -408,6 +408,7 @@ pub enum Builtin {
 	Sc,
 	Tc,
 	Zero,
+	Azure,
 }
 
 impl Builtin {
@@ -430,6 +431,7 @@ impl Builtin {
 			Sc => "sc.yml",
 			Tc => "3rd.yml",
 			Zero => "zero.yml",
+			Azure => "azure.yml",
 		}
 	}
 }
@@ -440,4 +442,5 @@ fn test_parse() {
 	Builtin::Sc.get();
 	Builtin::Tc.get();
 	Builtin::Zero.get();
+	Builtin::Azure.get();
 }
