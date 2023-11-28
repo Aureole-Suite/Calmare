@@ -12,7 +12,7 @@ newtype!(SepithId(u16));
 newtype!(PlacementId(u16));
 newtype!(AtRollId(u16));
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct BattleSet {
 	/// The first five, if present, are always the same nonsensical values.
 	pub sepith: Vec<[u8; 8]>,
@@ -49,13 +49,10 @@ pub struct BattleSetup {
 
 #[derive(Default, Debug)]
 pub struct BattleRead {
-	sepith: Vec<[u8; 8]>,
+	btlset: BattleSet,
 	sepith_pos: HashMap<usize, SepithId>,
-	at_rolls: Vec<[u8; 16]>,
 	at_roll_pos: HashMap<usize, AtRollId>,
-	placements: Vec<[(u8, u8, Angle); 8]>,
 	placement_pos: HashMap<usize, PlacementId>,
-	battles: Vec<Battle>,
 	battle_pos: HashMap<usize, BattleId>,
 }
 
@@ -64,8 +61,8 @@ impl BattleRead {
 		match self.sepith_pos.entry(f.pos()) {
 			Entry::Occupied(e) => Ok(*e.get()),
 			Entry::Vacant(e) => {
-				let v = *e.insert(SepithId(self.sepith.len() as u16));
-				self.sepith.push(f.array()?);
+				let v = *e.insert(SepithId(self.btlset.sepith.len() as u16));
+				self.btlset.sepith.push(f.array()?);
 				Ok(v)
 			}
 		}
@@ -75,8 +72,8 @@ impl BattleRead {
 		match self.at_roll_pos.entry(f.pos()) {
 			Entry::Occupied(e) => Ok(*e.get()),
 			Entry::Vacant(e) => {
-				let v = *e.insert(AtRollId(self.at_rolls.len() as u16));
-				self.at_rolls.push(f.array()?);
+				let v = *e.insert(AtRollId(self.btlset.at_rolls.len() as u16));
+				self.btlset.at_rolls.push(f.array()?);
 				Ok(v)
 			}
 		}
@@ -86,8 +83,8 @@ impl BattleRead {
 		match self.placement_pos.entry(f.pos()) {
 			Entry::Occupied(e) => Ok(*e.get()),
 			Entry::Vacant(e) => {
-				let v = *e.insert(PlacementId(self.placements.len() as u16));
-				self.placements.push(
+				let v = *e.insert(PlacementId(self.btlset.placements.len() as u16));
+				self.btlset.placements.push(
 					std::array::try_from_fn(|_| Ok((f.u8()?, f.u8()?, Angle(f.i16()?))))
 						.strict()?,
 				);
@@ -100,7 +97,7 @@ impl BattleRead {
 		match self.battle_pos.entry(f.pos()) {
 			Entry::Occupied(e) => Ok(*e.get()),
 			Entry::Vacant(e) => {
-				let v = *e.insert(BattleId(self.battles.len() as u32));
+				let v = *e.insert(BattleId(self.btlset.battles.len() as u32));
 				let battle = Battle {
 					flags: f.u16()?,
 					level: f.u16()?,
@@ -135,7 +132,7 @@ impl BattleRead {
 						setups
 					},
 				};
-				self.battles.push(battle);
+				self.btlset.battles.push(battle);
 				Ok(v)
 			}
 		}
@@ -189,11 +186,6 @@ impl BattleRead {
 	}
 
 	pub fn finish(self) -> BattleSet {
-		BattleSet {
-			sepith: self.sepith,
-			at_rolls: self.at_rolls,
-			placements: self.placements,
-			battles: self.battles,
-		}
+		self.btlset
 	}
 }
