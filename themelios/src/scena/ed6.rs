@@ -102,8 +102,7 @@ impl Scena {
 
 		let mut functions = Vec::with_capacity(func_table.len());
 		let mut funcpos = func_table.iter().copied().peekable();
-		let f: &mut Reader = &mut f.clone().at(code_start)?;
-		let mut ir = InsnReader::new(f, insn);
+		let mut ir = InsnReader::new(f.clone().at(code_start)?, insn);
 		while let Some(start) = funcpos.next() {
 			ensure_whatever!(ir.pos() == start, "weird function start");
 			functions.push(ir.code(funcpos.peek().copied().unwrap_or(code_end))?);

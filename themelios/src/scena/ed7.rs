@@ -125,8 +125,7 @@ impl Scena {
 
 		let mut functions = Vec::with_capacity(func_table.len());
 		let mut funcpos = func_table.iter().copied().peekable();
-		let f: &mut Reader = &mut f.clone().at(func_table[0])?;
-		let mut ir = InsnReader::new(f, iset);
+		let mut ir = InsnReader::new(f.clone().at(func_table[0])?, iset);
 
 		while let Some(start) = funcpos.next() {
 			ensure_whatever!(ir.pos() == start, "weird function start");
@@ -137,7 +136,7 @@ impl Scena {
 			});
 		}
 		crate::scena::code::normalize::normalize(&mut functions).unwrap();
-		let code_end = f.pos();
+		let code_end = ir.pos();
 
 		let labels = if p_labels == 0 {
 			None
@@ -150,12 +149,12 @@ impl Scena {
 		// To be able to roundtrip, I first try to load everything sequentially to prepopulate the mappings.
 		// This works so-so on eddec, but that's not worth roundtripping anyway.
 		let mut btl = BattleRead::default();
-		if btl.preload_sepith(f, code_end..strings_start).is_err()
-			|| btl.preload_battles(f, monsters_end..p_animations).is_err()
+		if btl.preload_sepith(&f, code_end..strings_start).is_err()
+			|| btl.preload_battles(&f, monsters_end..p_animations).is_err()
 		{
 			btl = BattleRead::default();
 		}
-		load_battles(f, &mut btl, &mut monsters, &mut functions)?;
+		load_battles(&f, &mut btl, &mut monsters, &mut functions)?;
 
 		Ok(Scena {
 			path,

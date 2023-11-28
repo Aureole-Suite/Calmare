@@ -29,13 +29,13 @@ pub enum ReadError {
 
 type Result<T, E = ReadError> = std::result::Result<T, E>;
 
-pub struct InsnReader<'iset, 'read, 'buf> {
-	f: &'read mut Reader<'buf>,
+pub struct InsnReader<'iset, 'buf> {
+	f: Reader<'buf>,
 	iset: &'iset iset::InsnSet<'iset>,
 }
 
-impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
-	pub fn new(f: &'read mut Reader<'buf>, iset: &'iset iset::InsnSet) -> Self {
+impl<'iset, 'buf> InsnReader<'iset, 'buf> {
+	pub fn new(f: Reader<'buf>, iset: &'iset iset::InsnSet) -> Self {
 		Self { f, iset }
 	}
 
@@ -60,7 +60,7 @@ impl<'iset, 'read, 'buf> InsnReader<'iset, 'read, 'buf> {
 			let i = self.read_insn(&mut insns)?;
 			if i.name == "Return"
 				&& self.pos() > extent
-				&& (self.f.clone().check_u8(0).is_ok() || valid_end(self.f))
+				&& (self.f.clone().check_u8(0).is_ok() || valid_end(&self.f))
 			// TODO This null check is needed for a9000, and does not roundtrip. Eugh.
 			{
 				break;
