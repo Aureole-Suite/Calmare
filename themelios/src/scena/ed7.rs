@@ -45,7 +45,7 @@ pub struct Scena {
 	pub animations: Vec<Animation>,
 	pub entries: Option<Entry>,
 
-	pub battle: battle::BattleSet,
+	pub btlset: battle::BattleSet,
 
 	pub functions: Vec<Code>,
 }
@@ -177,7 +177,7 @@ impl Scena {
 			animations,
 			entries,
 			functions,
-			battle: btl.finish(),
+			btlset: btl.finish(),
 		})
 	}
 }
