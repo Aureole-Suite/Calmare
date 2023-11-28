@@ -2,21 +2,23 @@ use std::collections::BTreeMap;
 
 use glam::{Mat4, Vec3};
 use gospel::read::{Le as _, Reader};
+use gospel::write::{Le as _, Writer};
 use snafu::prelude::*;
 use strict_result::Strict;
 
 use crate::scena::code::Code;
+use crate::scena::ed7::battle::BattleWrite;
 use crate::scena::{insn_set as iset, FuncId};
 use crate::types::*;
-use crate::util::{list, ReaderExt as _};
+use crate::util::{cast, list, ReaderExt as _, WriterExt as _};
 
 use self::battle::BattleRead;
 
 use super::code::visit::visit_args;
 use super::code::visit_mut::visit_args_mut;
-use super::insn::{Arg, InsnReader};
-use super::ReadError;
+use super::insn::{Arg, InsnReader, InsnWriter};
 use super::{CharFlags, ChipId, EntryFlags};
+use super::{ReadError, WriteError};
 
 mod battle;
 
@@ -179,6 +181,125 @@ impl Scena {
 			btlset: btl.finish(),
 		})
 	}
+
+	pub fn write(insn: &iset::InsnSet, scena: &Scena) -> Result<Vec<u8>, WriteError> {
+		let mut f = Writer::new();
+
+		f.sized_string::<10, _>(&scena.path)?;
+		f.sized_string::<10, _>(&scena.map)?;
+		f.u16(scena.town.0);
+		f.u16(scena.bgm.0);
+		f.u32(scena.flags);
+		for i in scena.includes {
+			f.u32(match i.0 {
+				0 => 0xFFFFFFFF,
+				a => a,
+			});
+		}
+
+		let mut strings = f.ptr32();
+		strings.string(&scena.filename)?;
+
+		let mut chips = f.ptr16();
+		let mut npcs = f.ptr16();
+		let mut monsters = f.ptr16();
+		let mut events = f.ptr16();
+		let mut look_points = f.ptr16();
+
+		let mut func_table = f.ptr16();
+		f.u16(cast(scena.functions.len() * 4)?);
+		let mut animations = f.ptr16();
+
+		let mut labels = Writer::new();
+		if let Some(l) = &scena.labels {
+			f.label16(labels.here());
+			f.u8(cast(l.len())?);
+		} else {
+			f.u16(0);
+			f.u8(0);
+		}
+		f.u8(scena.system30);
+
+		f.u8(cast(scena.chips.len())?);
+		f.u8(cast(scena.npcs.len())?);
+		f.u8(cast(scena.monsters.len())?);
+		f.u8(cast(scena.events.len())?);
+		f.u8(cast(scena.look_points.len())?);
+		f.u8(cast(scena.item_use.0)?);
+		f.u8(cast(scena.item_use.1)?);
+		ensure_whatever!(
+			scena.item_use.0 == scena.unknown_function.0,
+			"item_use and unknown_function mismatch"
+		);
+		f.u8(cast(scena.unknown_function.1)?);
+
+		let mut entries = Writer::new();
+		let mut code = Writer::new();
+		let btl = BattleWrite::write(&scena.btlset)?;
+
+		for chip in &scena.chips {
+			chips.u32(chip.0);
+		}
+
+		for npc in &scena.npcs {
+			npc.write(&mut npcs, &mut strings)?;
+		}
+
+		for monster in &scena.monsters {
+			monster.write(&mut monsters, &btl.battle_pos)?;
+		}
+
+		for event in &scena.events {
+			event.write(&mut events)?;
+		}
+
+		for lp in &scena.look_points {
+			lp.write(&mut look_points)?;
+		}
+
+		for entry in &scena.entries {
+			entry.write(&mut entries)?;
+		}
+
+		for anim in &scena.animations {
+			anim.write(&mut animations)?;
+		}
+
+		let mut iw = InsnWriter::new(&mut code, insn, Some(&btl.battle_pos));
+		for func in &scena.functions {
+			func_table.label32(iw.here());
+			iw.code(func)?;
+		}
+
+		strings.append(btl.strings);
+
+		if let Some(l) = &scena.labels {
+			for l in l {
+				l.write(&mut labels, &mut strings)?;
+			}
+		}
+
+		f.append(entries);
+		f.append(labels);
+		f.append(events);
+		f.append(look_points);
+		f.append(chips);
+		f.append(npcs);
+		f.append(monsters);
+		f.append(btl.at_rolls);
+		f.append(btl.placements);
+		f.append(btl.battles);
+		f.append(animations);
+		f.append(func_table);
+		f.append(code);
+		f.append(btl.sepith);
+		f.append(strings);
+		// EDDec has order
+		//   header, entries, at_rolls, sepith, placements, battles,
+		//   chips, npcs, monsters, events, look_points, labels,
+		//   animations, func_table, code, strings
+		Ok(f.finish()?)
+	}
 }
 
 fn load_battles(
@@ -228,6 +349,17 @@ impl Label {
 			name: TString(f.ptr32()?.string()?),
 		})
 	}
+
+	fn write(&self, f: &mut Writer, strings: &mut Writer) -> Result<(), WriteError> {
+		f.f32(self.pos.x);
+		f.f32(self.pos.y);
+		f.f32(self.pos.z);
+		f.u16(self.unk1);
+		f.u16(self.unk2);
+		f.label32(strings.here());
+		strings.string(self.name.as_str())?;
+		Ok(())
+	}
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -257,6 +389,21 @@ impl Npc {
 			unk4: f.u32()?,
 		})
 	}
+
+	fn write(&self, f: &mut Writer, strings: &mut Writer) -> Result<(), WriteError> {
+		strings.string(self.name.as_str())?;
+		f.pos3(self.pos);
+		f.i16(self.angle.0);
+		f.u16(self.flags.0);
+		f.u16(self.unk2);
+		f.u16(self.chip.0);
+		f.u8(cast(self.init.0)?);
+		f.u8(cast(self.init.1)?);
+		f.u8(cast(self.talk.0)?);
+		f.u8(cast(self.talk.1)?);
+		f.u32(self.unk4);
+		Ok(())
+	}
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -285,6 +432,24 @@ impl Monster {
 			stand_anim: AnimId(f.u32()?),
 			walk_anim: AnimId(f.u32()?),
 		})
+	}
+
+	fn write(&self, f: &mut Writer, battle_pos: &[gospel::write::Label]) -> Result<(), WriteError> {
+		f.pos3(self.pos);
+		f.i16(self.angle);
+		f.u16(self.flags.0);
+		f.label16(
+			*battle_pos
+				.get(self.battle.0 as usize)
+				.whatever_context("battle id out of bounds")
+				.strict()?,
+		);
+		f.u16(self.flag.0);
+		f.u16(self.chip.0);
+		f.u16(self.unk2);
+		f.u32(self.stand_anim.0);
+		f.u32(self.walk_anim.0);
+		Ok(())
 	}
 }
 
@@ -317,6 +482,25 @@ impl Event {
 			unk6: f.u32()?,
 		})
 	}
+
+	fn write(&self, f: &mut Writer) -> Result<(), WriteError> {
+		f.f32(self.pos.x);
+		f.f32(self.pos.y);
+		f.f32(self.pos.z);
+		f.f32(self.radius);
+		for v in self.transform.to_cols_array() {
+			f.f32(v)
+		}
+		f.u8(self.unk1);
+		f.u16(self.unk2);
+		f.u8(cast(self.function.0)?);
+		f.u8(cast(self.function.1)?);
+		f.u8(self.unk3);
+		f.u16(self.unk4);
+		f.u32(self.unk5);
+		f.u32(self.unk6);
+		Ok(())
+	}
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -343,6 +527,19 @@ impl LookPoint {
 			unk3: f.u8()?,
 			unk4: f.u16()?,
 		})
+	}
+
+	fn write(&self, f: &mut Writer) -> Result<(), WriteError> {
+		f.pos3(self.pos);
+		f.u32(self.radius);
+		f.pos3(self.bubble_pos);
+		f.u8(self.unk1);
+		f.u16(self.unk2);
+		f.u8(cast(self.function.0)?);
+		f.u8(cast(self.function.1)?);
+		f.u8(self.unk3);
+		f.u16(self.unk4);
+		Ok(())
 	}
 }
 
@@ -385,6 +582,27 @@ impl Entry {
 			reinit: FuncId(f.u8()? as u16, f.u8()? as u16),
 		})
 	}
+
+	fn write(&self, f: &mut Writer) -> Result<(), WriteError> {
+		f.pos3(self.pos);
+		f.u32(self.unk1);
+		f.pos3(self.cam_from);
+		f.i32(self.cam_pers);
+		f.u16(self.unk2);
+		f.i16(self.cam_deg.0);
+		f.i16(self.cam_limit.0 .0);
+		f.i16(self.cam_limit.1 .0);
+		f.pos3(self.cam_at);
+		f.u16(self.unk3);
+		f.u16(self.unk4);
+		f.u16(self.flags.0);
+		f.u16(self.town.0);
+		f.u8(cast(self.init.0)?);
+		f.u8(cast(self.init.1)?);
+		f.u8(cast(self.reinit.0)?);
+		f.u8(cast(self.reinit.1)?);
+		Ok(())
+	}
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -402,5 +620,17 @@ impl Animation {
 		let frames = f.array::<8>()?;
 		let frames = frames[..count].to_owned();
 		Ok(Animation { speed, frames })
+	}
+
+	fn write(&self, f: &mut Writer) -> Result<(), WriteError> {
+		let count = self.frames.len();
+		ensure_whatever!(count <= 8, "too many frames: {count}");
+		let mut frames = [0; 8];
+		frames[..count].copy_from_slice(&self.frames);
+		f.u16(cast(self.speed.0)?);
+		f.u8(0);
+		f.u8(count as u8);
+		f.slice(&frames);
+		Ok(())
 	}
 }

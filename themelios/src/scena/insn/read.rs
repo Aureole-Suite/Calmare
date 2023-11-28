@@ -288,6 +288,11 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 				self.arg(out, &iset::Arg::Int(int, iset::IntArg::SoundId))?;
 			}
 
+			T::ED7BattlePos => {
+				out.push(Arg::Battle(BattleId(f.u32()?)));
+				// This is remapped later
+			}
+
 			T::FcPartyEquip => {
 				let int = if matches!(out[1], Arg::Item(ItemId(600..=799))) {
 					iset::IntType::u8

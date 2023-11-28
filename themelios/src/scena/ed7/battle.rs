@@ -1,12 +1,14 @@
 use std::collections::hash_map::{Entry, HashMap};
 use std::ops::Range;
-use strict_result::Strict;
 
 use gospel::read::{Le as _, Reader};
+use gospel::write::{Label, Le as _, Writer};
+use snafu::prelude::*;
+use strict_result::Strict;
 
 use super::ReadError;
 use crate::types::*;
-use crate::util::ReaderExt as _;
+use crate::util::{ReaderExt as _, WriterExt as _};
 
 newtype!(SepithId(u16));
 newtype!(PlacementId(u16));
@@ -187,5 +189,112 @@ impl BattleRead {
 
 	pub fn finish(self) -> BattleSet {
 		self.btlset
+	}
+}
+
+pub struct BattleWrite {
+	pub sepith: Writer,
+	pub at_rolls: Writer,
+	pub placements: Writer,
+	pub battles: Writer,
+	pub strings: Writer,
+	pub battle_pos: Vec<Label>,
+}
+
+impl BattleWrite {
+	pub fn write(btlset: &BattleSet) -> Result<Self, super::WriteError> {
+		let mut sepith = Writer::new();
+		let mut at_rolls = Writer::new();
+		let mut placements = Writer::new();
+		let mut battles = Writer::new();
+		let mut strings = Writer::new();
+
+		let mut sepith_pos = Vec::new();
+		let mut at_roll_pos = Vec::new();
+		let mut placement_pos = Vec::new();
+		let mut battle_pos = Vec::new();
+
+		for sep in &btlset.sepith {
+			sepith_pos.push(sepith.here());
+			sepith.slice(sep);
+		}
+
+		for roll in &btlset.at_rolls {
+			at_roll_pos.push(at_rolls.here());
+			at_rolls.slice(roll);
+		}
+
+		for plac in &btlset.placements {
+			placement_pos.push(placements.here());
+			for p in plac {
+				placements.u8(p.0);
+				placements.u8(p.1);
+				placements.i16(p.2 .0);
+			}
+		}
+
+		for battle in btlset.battles.iter() {
+			battle_pos.push(battles.here());
+			battles.u16(battle.flags);
+			battles.u16(battle.level);
+			battles.u8(battle.unk1);
+			battles.u8(battle.vision_range);
+			battles.u8(battle.move_range);
+			battles.u8(battle.can_move);
+			battles.u16(battle.move_speed);
+			battles.u16(battle.unk2);
+			battles.label32(strings.here());
+			strings.string(&battle.battlefield)?;
+			if let Some(s) = battle.sepith {
+				battles.label32(
+					*sepith_pos
+						.get(s.0 as usize)
+						.whatever_context("field sepith out of bounds")
+						.strict()?,
+				);
+			} else {
+				battles.u32(0);
+			}
+			let mut weights = [0u8; 4];
+			let mut h = Writer::new();
+			ensure_whatever!(battle.setups.len() <= 4, "too many setups");
+			for (i, setup) in battle.setups.iter().enumerate() {
+				weights[i] = setup.weight;
+				for ms in &setup.enemies {
+					h.u32(ms.0);
+				}
+				h.label16(
+					*placement_pos
+						.get(setup.placement.0 as usize)
+						.whatever_context("placement out of bounds")
+						.strict()?,
+				);
+				h.label16(
+					*placement_pos
+						.get(setup.placement_ambush.0 as usize)
+						.whatever_context("placement out of bounds")
+						.strict()?,
+				);
+				h.u16(setup.bgm.0);
+				h.u16(setup.bgm_ambush.0);
+				h.label32(
+					*at_roll_pos
+						.get(setup.at_roll.0 as usize)
+						.whatever_context("at roll out of bounds")
+						.strict()?,
+				);
+			}
+			battles.array(weights);
+			battles.append(h);
+		}
+
+		Ok(Self {
+			strings,
+			sepith,
+			at_rolls,
+			placements,
+			battles,
+			battle_pos,
+		})
 	}
 }

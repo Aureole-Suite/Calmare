@@ -24,7 +24,7 @@ insns:
   on: ed7battle
   cases:
   - ED7Battle:
-    - {u32: BattleId}
+    - ED7BattlePos
     - *FileId
     - u8
     - u16

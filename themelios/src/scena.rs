@@ -33,6 +33,8 @@ pub enum WriteError {
 	Insn { source: insn::WriteError },
 	#[snafu(context(false))]
 	Encode { source: crate::util::EncodeError },
+	#[snafu(whatever, display("{message}"))]
+	Whatever { message: String },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

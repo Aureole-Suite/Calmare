@@ -9,15 +9,20 @@ fn main() -> anyhow::Result<()> {
 		println!("running {file}");
 		let bytes = std::fs::read(&file)?;
 		let scena = ed7::Scena::read(&iset, &bytes)?;
-		// dbg!(scena);
-		// let bytes2 = ed7::Scena::write(&iset, &scena)?;
-		// if bytes != bytes2 {
-		// 	println!("{file} differs");
-		// 	std::fs::write(
-		// 		format!("/tmp/scena/{}", file.rsplit_once('/').unwrap().1),
-		// 		bytes2,
-		// 	)?;
-		// }
+		// dbg!(&scena);
+		let bytes2 = ed7::Scena::write(&iset, &scena)?;
+		if bytes != bytes2 && bytes2 != bytes[..bytes.len()-1] {
+			std::fs::write(
+				format!("/tmp/scena/{}", file.rsplit_once('/').unwrap().1),
+				&bytes2,
+			)?;
+			let scena2 = ed7::Scena::read(&iset, &bytes2)?;
+			if scena == scena2 {
+				println!("  {file} differs");
+			} else {
+				println!("  {file} differs significantly!!!!");
+			}
+		}
 	}
 
 	Ok(())

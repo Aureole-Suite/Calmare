@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use gospel::write::{Label, Le as _, Writer};
 use snafu::prelude::*;
+use strict_result::Strict as _;
 
 use super::{Arg, Expr, Insn};
 use crate::scena::code::Code;
@@ -25,6 +26,7 @@ pub struct InsnWriter<'iset, 'write> {
 	f: &'write mut Writer,
 	iset: &'iset iset::InsnSet<'iset>,
 	labels: BTreeMap<usize, Label>,
+	battle_pos: Option<&'iset [Label]>,
 }
 
 macro_rules! expect {
@@ -40,11 +42,16 @@ macro_rules! expect {
 }
 
 impl<'iset, 'write> InsnWriter<'iset, 'write> {
-	pub fn new(f: &'write mut Writer, iset: &'iset iset::InsnSet) -> Self {
+	pub fn new(
+		f: &'write mut Writer,
+		iset: &'iset iset::InsnSet,
+		battle_pos: Option<&'iset [Label]>,
+	) -> Self {
 		InsnWriter {
 			f,
 			iset,
 			labels: BTreeMap::new(),
+			battle_pos,
 		}
 	}
 
@@ -300,6 +307,18 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 					iset::IntType::u16
 				};
 				self.arg(args, &iset::Arg::Int(int, iset::IntArg::SoundId), iter)?;
+			}
+
+			T::ED7BattlePos => {
+				expect!(id in iter, "battle id");
+				let id = int_arg(self.iset, id)?;
+				let label = *self
+					.battle_pos
+					.unwrap()
+					.get(id as usize)
+					.whatever_context("battle id out of bounds")
+					.strict()?;
+				f.label32(label);
 			}
 
 			T::FcPartyEquip => {

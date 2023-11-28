@@ -200,7 +200,7 @@ impl Scena {
 			lp.write(&mut lps)?;
 		}
 
-		let mut iw = InsnWriter::new(&mut code, insn);
+		let mut iw = InsnWriter::new(&mut code, insn, None);
 		for func in scena.functions.iter() {
 			func_table.label16(iw.here());
 			iw.code(func)?;

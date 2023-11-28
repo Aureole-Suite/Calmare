@@ -207,6 +207,7 @@ pub enum MiscArg {
 
 	EvoSave,
 	KaiSoundId,
+	ED7BattlePos,
 	FcPartyEquip,
 	ScPartySetSlot,
 	EffPlayPos,
