@@ -25,6 +25,13 @@ pub enum ReadError {
 		pos: usize,
 		source: Box<ReadError>,
 	},
+	#[snafu(display("failed to read argument {pos} ({arg:?}) of {name}"))]
+	Arg {
+		name: String,
+		pos: usize,
+		arg: iset::Arg,
+		source: Box<ReadError>,
+	},
 }
 
 type Result<T, E = ReadError> = std::result::Result<T, E>;
@@ -109,14 +116,26 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 		match insns.get(n) {
 			None | Some(iset::Insn::Blank) => whatever!("unknown instruction {n:02X}"),
 			Some(iset::Insn::Regular { name, args }) => {
-				for arg in args {
-					self.arg(out, arg)?;
+				for (i, arg) in args.iter().enumerate() {
+					self.arg(out, arg)
+						.map_err(Box::new)
+						.with_context(|_| ArgSnafu {
+							name,
+							pos: i,
+							arg: arg.clone(),
+						})?;
 				}
 				Ok(name)
 			}
 			Some(iset::Insn::Match { head, on, cases }) => {
-				for arg in head {
-					self.arg(out, arg)?;
+				for (i, arg) in head.iter().enumerate() {
+					self.arg(out, arg)
+						.map_err(Box::new)
+						.with_context(|_| ArgSnafu {
+							name: "match head",
+							pos: i,
+							arg: arg.clone(),
+						})?;
 				}
 				let n = self.int(*on)? as usize;
 				self.insn_inner(out, cases, n)
