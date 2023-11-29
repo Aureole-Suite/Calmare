@@ -49,7 +49,8 @@ impl<'a> ContextIter<'a> {
 		&slice[..(self.len+1).min(slice.len())]
 	}
 
-	fn until(&mut self, len: usize) -> ContextIter<'_> {
+	fn until(&mut self, label: Label) -> ContextIter<'_> {
+		let len = self.lookup(label).unwrap();
 		assert!(len <= self.len);
 		self.len -= len;
 		ContextIter {
@@ -113,16 +114,16 @@ fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>) -> Code 
 					.is_some_and(|l| Some(l) == label);
 
 				if is_loop {
-					let mut body = block(ctx.until(target), label, Some(l1));
+					let mut body = block(ctx.until(l1), label, Some(l1));
 					assert_eq!(body.pop().unwrap().name, "continue");
 					insn.name = "while".into();
 					insn.args.push(Arg::Code(body));
 				} else {
-					let mut body = block(ctx.until(target), cont, brk);
+					let mut body = block(ctx.until(l1), cont, brk);
 					let l2 = body
 						.last()
 						.and_then(as_goto)
-						.and_then(|l2| ctx.lookup(l2));
+						.filter(|l2| ctx.lookup(*l2).is_some());
 					if let Some(l2) = l2 {
 						body.pop();
 						let body2 = block(ctx.until(l2), cont, brk);
