@@ -9,10 +9,7 @@ pub fn decompile(code: &mut impl VisitableMut) {
 	impl VisitMut for Vis {
 		fn visit_code_mut(&mut self, code: &mut Code) -> std::ops::ControlFlow<()> {
 			*code = block(
-				Context {
-					len: code.len(),
-					insns: &mut std::mem::take(&mut code.0).into_iter(),
-				},
+				Context::new(&mut std::mem::take(&mut code.0).into_iter()),
 				None,
 				None,
 			);
@@ -34,6 +31,13 @@ impl<'a> std::fmt::Debug for Context<'a> {
 }
 
 impl<'a> Context<'a> {
+	fn new(insns: &'a mut std::vec::IntoIter<Insn>) -> Self {
+		Self {
+			len: insns.as_slice().len(),
+			insns,
+		}
+	}
+
 	fn as_slice(&self) -> &[Insn] {
 		&self.insns.as_slice()[..(self.len+1).min(self.insns.as_slice().len())]
 	}
