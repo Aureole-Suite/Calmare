@@ -18,7 +18,7 @@ pub trait VisitMut {
 	}
 }
 
-pub trait VisitableMut {
+pub trait VisitableMut: super::visit::Visitable {
 	fn accept_mut(&mut self, f: &mut impl VisitMut);
 }
 
