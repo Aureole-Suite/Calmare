@@ -39,6 +39,13 @@ macro_rules! newtype {
 	};
 }
 
+newtype!(Label(usize));
+impl std::fmt::Display for Label {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "L{}", self.0)
+	}
+}
+
 newtype!(BattleId(u32));
 newtype!(BgmId(u16));
 newtype!(ItemId(u16));

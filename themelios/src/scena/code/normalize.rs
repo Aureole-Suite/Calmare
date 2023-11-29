@@ -1,6 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::ControlFlow;
 
+use crate::types::Label;
+
 use super::visit::{Visit, Visitable};
 use super::visit_mut::{VisitMut, VisitableMut};
 use super::{Arg, Code, Insn};
@@ -9,23 +11,23 @@ use snafu::prelude::*;
 #[derive(Debug, Snafu)]
 pub enum NormalizeError {
 	#[snafu(display("duplicate label: {label}"))]
-	DuplicateLabel { label: usize },
+	DuplicateLabel { label: Label },
 	#[snafu(display("undefined label: {label}"))]
-	UndefinedLabel { label: usize },
+	UndefinedLabel { label: Label },
 }
 
 pub fn normalize(code: &mut impl VisitableMut) -> Result<(), NormalizeError> {
 	let used = find_used(code)?;
 	let order = remove_unused(code, &used);
-	rename(code, |l| order[&l]);
+	rename(code, |l| Label(order[&l]));
 	Ok(())
 }
 
-fn find_used(code: &impl Visitable) -> Result<BTreeSet<usize>, NormalizeError> {
+fn find_used(code: &impl Visitable) -> Result<BTreeSet<Label>, NormalizeError> {
 	struct Vis {
-		used: BTreeSet<usize>,
-		defined: BTreeSet<usize>,
-		duplicate: Option<usize>,
+		used: BTreeSet<Label>,
+		defined: BTreeSet<Label>,
+		duplicate: Option<Label>,
 	}
 
 	impl Visit for Vis {
@@ -64,10 +66,10 @@ fn find_used(code: &impl Visitable) -> Result<BTreeSet<usize>, NormalizeError> {
 	Ok(vis.used)
 }
 
-fn remove_unused(code: &mut impl VisitableMut, used: &BTreeSet<usize>) -> BTreeMap<usize, usize> {
+fn remove_unused(code: &mut impl VisitableMut, used: &BTreeSet<Label>) -> BTreeMap<Label, usize> {
 	struct Vis<'a> {
-		used: &'a BTreeSet<usize>,
-		order: BTreeMap<usize, usize>,
+		used: &'a BTreeSet<Label>,
+		order: BTreeMap<Label, usize>,
 	}
 
 	impl<'a> VisitMut for Vis<'a> {
@@ -94,14 +96,14 @@ fn remove_unused(code: &mut impl VisitableMut, used: &BTreeSet<usize>) -> BTreeM
 	vis.order
 }
 
-fn rename(code: &mut impl VisitableMut, order: impl FnMut(usize) -> usize) {
+fn rename(code: &mut impl VisitableMut, order: impl FnMut(Label) -> Label) {
 	struct Vis<F> {
 		order: F,
 	}
 
 	impl<F> VisitMut for Vis<F>
 	where
-		F: FnMut(usize) -> usize,
+		F: FnMut(Label) -> Label,
 	{
 		fn visit_arg_mut(&mut self, arg: &mut Arg) -> ControlFlow<()> {
 			if let Arg::Label(l) = arg {

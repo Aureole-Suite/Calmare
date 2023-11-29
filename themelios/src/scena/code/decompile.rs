@@ -1,6 +1,7 @@
 use super::visit_mut::{VisitMut, VisitableMut};
 use super::Code;
 use crate::scena::insn::{Arg, Insn};
+use crate::types::Label;
 
 pub fn decompile(code: &mut impl VisitableMut) {
 	struct Vis;
@@ -20,9 +21,6 @@ pub fn decompile(code: &mut impl VisitableMut) {
 	}
 	code.accept_mut(&mut Vis);
 }
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-struct Label(usize);
 
 struct Context<'a> {
 	insns: &'a mut std::vec::IntoIter<Insn>,
@@ -83,8 +81,7 @@ fn block(mut ctx: Context, cont: Option<Label>, brk: Option<Label>) -> Vec<Insn>
 		out.push(insn);
 		let insn = out.last_mut().unwrap();
 		match insn.parts() {
-			("_goto", [Arg::Label(l)]) => {
-				let l = Label(*l);
+			("_goto", &[Arg::Label(l)]) => {
 				if Some(l) == brk {
 					*insn = Insn::new("break", vec![])
 				} else if Some(l) == cont {
@@ -92,8 +89,7 @@ fn block(mut ctx: Context, cont: Option<Label>, brk: Option<Label>) -> Vec<Insn>
 				}
 			}
 
-			("_if", [.., Arg::Label(l1)]) => {
-				let l1 = Label(*l1);
+			("_if", &[.., Arg::Label(l1)]) => {
 				let Some(target) = ctx.lookup(l1) else {
 					continue;
 				};
@@ -138,7 +134,7 @@ fn block(mut ctx: Context, cont: Option<Label>, brk: Option<Label>) -> Vec<Insn>
 
 fn as_goto(insn: &Insn) -> Option<Label> {
 	if let ("_goto", [Arg::Label(label)]) = insn.parts() {
-		Some(Label(*label))
+		Some(*label)
 	} else {
 		None
 	}
@@ -146,7 +142,7 @@ fn as_goto(insn: &Insn) -> Option<Label> {
 
 fn as_label(insn: &Insn) -> Option<Label> {
 	if let ("_label", [Arg::Label(label)]) = insn.parts() {
-		Some(Label(*label))
+		Some(*label)
 	} else {
 		None
 	}

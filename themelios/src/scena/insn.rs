@@ -40,7 +40,7 @@ impl Insn {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Arg {
-	Label(usize),
+	Label(Label),
 
 	Int(i64), // easier to have a single integer type encompassing everything
 	String(String),

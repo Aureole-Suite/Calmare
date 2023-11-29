@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use gospel::write::{Label, Le as _, Writer};
+use gospel::write::{Label as GLabel, Le as _, Writer};
 use snafu::prelude::*;
 use strict_result::Strict as _;
 
@@ -25,8 +25,8 @@ pub enum WriteError {
 pub struct InsnWriter<'iset, 'write> {
 	f: &'write mut Writer,
 	iset: &'iset iset::InsnSet<'iset>,
-	labels: BTreeMap<usize, Label>,
-	battle_pos: Option<&'iset [Label]>,
+	labels: BTreeMap<Label, GLabel>,
+	battle_pos: Option<&'iset [GLabel]>,
 }
 
 macro_rules! expect {
@@ -45,7 +45,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 	pub fn new(
 		f: &'write mut Writer,
 		iset: &'iset iset::InsnSet,
-		battle_pos: Option<&'iset [Label]>,
+		battle_pos: Option<&'iset [GLabel]>,
 	) -> Self {
 		InsnWriter {
 			f,
@@ -55,7 +55,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 		}
 	}
 
-	pub fn here(&mut self) -> Label {
+	pub fn here(&mut self) -> GLabel {
 		self.f.here()
 	}
 
@@ -85,8 +85,8 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 		Ok(())
 	}
 
-	fn label(&mut self, label: &usize) -> Label {
-		*self.labels.entry(*label).or_insert_with(Label::new)
+	fn label(&mut self, label: &Label) -> GLabel {
+		*self.labels.entry(*label).or_insert_with(GLabel::new)
 	}
 
 	fn args(&mut self, args: &[Arg], iargs: &[iset::Arg]) -> Result<(), WriteError> {
@@ -200,8 +200,8 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 
 			T::Fork => {
 				expect!(Arg::Code(c) in iter, "code");
-				let l1 = Label::new();
-				let l2 = Label::new();
+				let l1 = GLabel::new();
+				let l2 = GLabel::new();
 				self.f.diff8(l1, l2);
 				self.f.place(l1);
 				self.code(c)?;
@@ -213,15 +213,15 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 
 			T::ForkLoop(next) => {
 				expect!(Arg::Code(c) in iter, "code");
-				let l1 = Label::new();
-				let l2 = Label::new();
+				let l1 = GLabel::new();
+				let l2 = GLabel::new();
 				self.f.diff8(l1, l2);
 				self.f.place(l1);
 				self.code(c)?;
 				self.f.place(l2);
 				self.insn(&Insn::new(next, vec![]))?;
 				// Ugly hack :( Need a _goto to the start of the block, and this is the only way I have to do that
-				const KEY: usize = usize::MAX;
+				const KEY: Label = Label(usize::MAX);
 				let prev = self.labels.insert(KEY, l1);
 				self.insn(&Insn::new("_goto", vec![Arg::Label(KEY)]))?;
 				match prev {

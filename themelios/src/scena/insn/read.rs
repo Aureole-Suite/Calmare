@@ -73,7 +73,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 				break;
 			}
 			visit_args(i, |arg| {
-				if let Arg::Label(l) = arg {
+				if let Arg::Label(Label(l)) = arg {
 					extent = extent.max(*l);
 				}
 			});
@@ -85,7 +85,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 
 	fn read_insn<'a>(&mut self, insns: &'a mut Vec<Insn>) -> Result<&'a mut Insn, ReadError> {
 		let pos = self.pos();
-		insns.push(Insn::new("_label", vec![Arg::Label(pos)]));
+		insns.push(Insn::new("_label", vec![Arg::Label(Label(pos))]));
 		let insn = self.insn().map_err(Box::new).with_context(|_| InsnSnafu {
 			pos,
 			context: insns
@@ -221,7 +221,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 				ensure_whatever!(
 					insns == [
 						Insn::new(next, vec![]),
-						Insn::new("_goto", vec![Arg::Label(pos)]),
+						Insn::new("_goto", vec![Arg::Label(Label(pos))]),
 					],
 					"invalid ForkLoop: ended with {insns:?}"
 				);
@@ -388,7 +388,7 @@ fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Option<Arg>
 			return Ok(None);
 		}
 
-		T::Address => Arg::Label(cast(v)?),
+		T::Address => Arg::Label(Label(cast(v)?)),
 
 		T::Time => Arg::Scalar(cast(v)?, Unit::Time),
 		T::Length => Arg::Scalar(cast(v)?, Unit::Length),
