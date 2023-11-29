@@ -10,11 +10,7 @@ pub fn decompile(code: &mut impl VisitableMut) {
 
 	impl VisitMut for Vis {
 		fn visit_code_mut(&mut self, code: &mut Code) -> std::ops::ControlFlow<()> {
-			*code = block(
-				Context::new(std::mem::take(&mut code.0)).iter(),
-				None,
-				None,
-			);
+			*code = block(Context::new(std::mem::take(&mut code.0)).iter(), None, None);
 			std::ops::ControlFlow::Continue(())
 		}
 	}
@@ -62,17 +58,14 @@ struct ContextIter<'a> {
 impl<'a> ContextIter<'a> {
 	fn as_slice(&self) -> &[Insn] {
 		let slice = self.ctx.iter.as_slice();
-		&slice[..(self.len+1).min(slice.len())]
+		&slice[..(self.len + 1).min(slice.len())]
 	}
 
 	fn until(&mut self, label: Label) -> ContextIter<'_> {
 		let len = self.lookup(label).unwrap();
 		assert!(len <= self.len);
 		self.len -= len;
-		ContextIter {
-			ctx: self.ctx,
-			len,
-		}
+		ContextIter { ctx: self.ctx, len }
 	}
 
 	fn lookup(&self, label: Label) -> Option<usize> {

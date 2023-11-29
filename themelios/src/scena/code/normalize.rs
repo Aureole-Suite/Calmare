@@ -85,9 +85,7 @@ fn remove_unused(code: &mut impl VisitableMut, used: &BTreeSet<Label>) {
 		}
 	}
 
-	let mut vis = Vis {
-		used,
-	};
+	let mut vis = Vis { used };
 	code.accept_mut(&mut vis);
 }
 
