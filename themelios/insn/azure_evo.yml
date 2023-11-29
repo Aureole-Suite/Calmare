@@ -1,4 +1,4 @@
-game: zero
+game: azure
 _def:
  - &Time {u32: Time}
  - &FileId {u32: FileId}
@@ -41,21 +41,14 @@ insns:
 - Fog: [{u24: Color}, i32, i32, i32]
 - ED7_12: [{u16: SoundId}, u16, u8]
 - PlaceSetName: [{u16: TownId}]
-- BlurOn: [*Time, {u32: Color}, u32, u8, u32]
+- BlurOn: [{u16: Time}, {u32: Color}, u16, u8, u16]
 - BlurOff: [*Time]
-- !match
-  on: u8
-  cases:
-  -
-  -
-  - ZeroMap_2: [i32, Pos2, u16, u16, u16, u16]
-  - ZeroMap_3: [u8, u16]
+- AoMap: [u8]
 - Save: []
--
 - EventBegin: [u8]
 - EventEnd: [u8]
 - EntranceSetFunc: [{u8: EntranceId}, {u24: FuncId}]
--
+- ED7_1C: [u8, {u8: ObjectId}, u8, u8, {u16: FuncId}, {u16: Flag}, u16]
 - !match
   on: u8
   cases:
@@ -69,10 +62,10 @@ insns:
 - BgmStop: [*Time]
 - BgmWait: []
 - SoundPlay: [KaiSoundId, u8, u8, u8]
-- SoundStop: [{u16: SoundId}]
+- SoundStop: [KaiSoundId]
 - SoundSetVolume: [{u16: SoundId}, u8]
 - SoundPlayContinuously: [{u16: SoundId}, Pos3, u32, u32, u8, u32]
-- SoundLoad: [{u16: SoundId}]
+- SoundLoad: [KaiSoundId]
 - NextFrame2: []
 - !match
   head: [{u16: QuestId}]
@@ -97,8 +90,6 @@ insns:
 - PartyClear: []
 - _30: [u8]
 - PartySetAttr: [{u8: NameId}, u8, u16]
--
--
 - PartyAddArt: [{u8: NameId}, {u16: MagicId}]
 - PartyAddCraft: [{u8: NameId}, {u16: MagicId}]
 - ED7_37: []
@@ -176,21 +167,20 @@ insns:
 - ED7_77: [{u8: ObjectId}, u16]
 - ED7_78: [{u8: ObjectId}, *CharId]
 - ObjWait: [{u16: ObjectId}]
--
--
--
+- !match
+  on: u8
+  cases:
+  - EventSkipFrom: [*Address]
+  - EventSkipTo: [u32]
+- ED7_7B: [{u8: NameId}]
 - MapColor: [{u32: Color}, {u32: Color}]
--
--
--
--
 - Shake: [[u32, u32, u32], *Time]
 - !match
   on: u8
   cases:
   - _7D_0: [*CharId, u16, u16]
   - _7D_1: [*CharId, u16, u16]
--
+- ED7_84: [u8, u8]
 - EffLoad: [{u8: EffId}, String]
 - EffPlay:
   - {u8: EffId}
@@ -269,25 +259,16 @@ insns:
   - VideoEnd: [String, u16, u16]
 - ReturnToTitle: [u8]
 - ED7_B8: [u16, u16]
--
 - _B8: [{u8: NameId}]
 - ItemUse: [{u16: ItemId}, *CharId]
 - PartyHasSpell: [{u8: NameId}, {u16: MagicId}]
 - PartyHasSlot: [{u8: NameId}, u8]
 - PartySetPortrait: [{u8: NameId}, u8, u8, u8, u8, u8]
-- !match
-  head: [u8]
-  on: u8
-  cases:
-  - _BC_0: [u16]
-  - _BC_1: [u16]
 - PartySetPortraitFinish: []
 - _BE: [[u8, u8, u8, u8], u16, u16, u8, [i32,i32,i32,i32,i32,i32]]
 - _BF: [[u8, u8, u8, u8], {u16: Flag}]
 - Minigame: [u8, i32, i32, i32, i32, i32, i32, i32, i32]
-- _C1: [{u16: ItemId}, u32]
 - Tc_C2: [u8, u8]
--
 - !match
   on: u8
   cases:
@@ -301,15 +282,15 @@ insns:
   - {u32: Color}
   - u8
   - String
-- VisSet: [{u8: VisId}, u8, i32, i32, i32, 0]
+- VisSet: [{u8: VisId}, u8, i32, i32, i32, i32]
 - !match
   on: u8
   cases:
   - VisWait: [{u8: VisId}, u8]
   - VisHide: [{u8: VisId}, u8]
 - _C8: [u16, u16, String, u8, u16]
--
--
+- ED7_CC: [u8] # Is this same as _D6?
+- CharIdSet: [u8, {u8: CharId}, {u8: NameId}]
 - !match
   on: u8
   cases:
@@ -329,14 +310,12 @@ insns:
 - UnloadChip: [{u8: ChipId}]
 - PartyGetAttr: [{u8: NameId}, u8]
 - PartyGetEquipped: [{u8: NameId}, u8]
--
--
+- Ao_DA: [u8]
 - ED7_DA: [u8]
 - ED7_DB: []
--
+- Ao_DE: [String]
 -
 - Zero_DE: [u16]
--
 - ED7_E0: [u8]
 - ED7_E1: [Pos3]
 - !match
@@ -355,27 +334,41 @@ insns:
   - ED7Note_2: [u8]
   - ED7Note_3: []
 - ED7_E3: [u8]
--
+- Ao_E6: [u8, u8, {u32: Color}, u32]
 - _DB: []
 - _DC: []
 - SaveClearData: []
--
--
--
--
--
--
 - ED7_EE: [u8, u16]
--
--
--
+- Ao_F3: [i32]
 - ED7_F2: [u8]
--
--
--
--
--
 - ED7_F8: [u16]
+- Ao_FB: [u8, u16]
+- Ao_FC: [u16]
+- Ao_FD: [u16, u16]
+- Ao_FE: [u8]
+- Ao_FF: [{u8: ObjectId}, Pos3]
+- ZeroEvo_E0: []
+- ZeroEvo_E1: [[u32,u32,u32,u32], [u32,u32,u32,u32], [u32,u32,u32,u32]]
+- ZeroEvo_E2: [u32,u32,u32, u8, u32, u32]
+- ZeroEvo_E3: [u8, String, u32, u32, u8]
+- AoEvo_E7: [u32, i32, i32, i32]
+- AoEvo_E8: [u8]
+- ZeroEvo_E4: [u8, u16]
+- ZeroEvo_E5: [u8, u8, String, String, Pos3, Pos3, Pos3, u8]
+- ZeroEvo_E6: [u8, u8, Pos3, Pos3, Pos3]
+- ZeroEvo_E7: [u8, u8]
+- ZeroEvo_E8: [u8]
+- ZeroEvo_E9: [u16, [u32,u32,u32,u32], [u32,u32,u32,u32]]
+- AoEvo_EF: []
+- AoEvoStopwatchGet: []
+- AoEvoStopwatchStart: []
+- AoEvo_F2: [u8, u8]
+- AoEvo_F3: [u8, u8]
+-
+-
+-
+-
+-
 -
 -
 -

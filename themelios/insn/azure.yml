@@ -275,19 +275,14 @@ insns:
 - PartyHasSpell: [{u8: NameId}, {u16: MagicId}]
 - PartyHasSlot: [{u8: NameId}, u8]
 - PartySetPortrait: [{u8: NameId}, u8, u8, u8, u8, u8]
-- !match
-  head: [u8]
-  on: u8
-  cases:
-  - _BC_0: [u16]
-  - _BC_1: [u16]
+-
 - PartySetPortraitFinish: []
 - _BE: [[u8, u8, u8, u8], u16, u16, u8, [i32,i32,i32,i32,i32,i32]]
 - _BF: [[u8, u8, u8, u8], {u16: Flag}]
 - Minigame: [u8, i32, i32, i32, i32, i32, i32, i32, i32]
-- _C1: [{u16: ItemId}, u32]
+-
 - Tc_C2: [u8, u8]
-- _C3: [u16]
+-
 - !match
   on: u8
   cases:

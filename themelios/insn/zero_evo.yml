@@ -40,7 +40,6 @@ insns:
 - EntranceSetDisabled: [{u8: EntranceId}, u8]
 - Fog: [{u24: Color}, i32, i32, i32]
 - ED7_12: [{u16: SoundId}, u16, u8]
-- PlaceSetName: [{u16: TownId}]
 - BlurOn: [*Time, {u32: Color}, u32, u8, u32]
 - BlurOff: [*Time]
 - !match
@@ -51,11 +50,9 @@ insns:
   - ZeroMap_2: [i32, Pos2, u16, u16, u16, u16]
   - ZeroMap_3: [u8, u16]
 - Save: []
--
 - EventBegin: [u8]
 - EventEnd: [u8]
 - EntranceSetFunc: [{u8: EntranceId}, {u24: FuncId}]
--
 - !match
   on: u8
   cases:
@@ -97,8 +94,6 @@ insns:
 - PartyClear: []
 - _30: [u8]
 - PartySetAttr: [{u8: NameId}, u8, u16]
--
--
 - PartyAddArt: [{u8: NameId}, {u16: MagicId}]
 - PartyAddCraft: [{u8: NameId}, {u16: MagicId}]
 - ED7_37: []
@@ -176,21 +171,13 @@ insns:
 - ED7_77: [{u8: ObjectId}, u16]
 - ED7_78: [{u8: ObjectId}, *CharId]
 - ObjWait: [{u16: ObjectId}]
--
--
--
 - MapColor: [{u32: Color}, {u32: Color}]
--
--
--
--
 - Shake: [[u32, u32, u32], *Time]
 - !match
   on: u8
   cases:
   - _7D_0: [*CharId, u16, u16]
   - _7D_1: [*CharId, u16, u16]
--
 - EffLoad: [{u8: EffId}, String]
 - EffPlay:
   - {u8: EffId}
@@ -275,19 +262,12 @@ insns:
 - PartyHasSpell: [{u8: NameId}, {u16: MagicId}]
 - PartyHasSlot: [{u8: NameId}, u8]
 - PartySetPortrait: [{u8: NameId}, u8, u8, u8, u8, u8]
-- !match
-  head: [u8]
-  on: u8
-  cases:
-  - _BC_0: [u16]
-  - _BC_1: [u16]
 - PartySetPortraitFinish: []
 - _BE: [[u8, u8, u8, u8], u16, u16, u8, [i32,i32,i32,i32,i32,i32]]
 - _BF: [[u8, u8, u8, u8], {u16: Flag}]
 - Minigame: [u8, i32, i32, i32, i32, i32, i32, i32, i32]
 - _C1: [{u16: ItemId}, u32]
 - Tc_C2: [u8, u8]
--
 - !match
   on: u8
   cases:
@@ -309,7 +289,6 @@ insns:
   - VisHide: [{u8: VisId}, u8]
 - _C8: [u16, u16, String, u8, u16]
 -
--
 - !match
   on: u8
   cases:
@@ -330,13 +309,11 @@ insns:
 - PartyGetAttr: [{u8: NameId}, u8]
 - PartyGetEquipped: [{u8: NameId}, u8]
 -
--
 - ED7_DA: [u8]
 - ED7_DB: []
 -
 -
 - Zero_DE: [u16]
--
 - ED7_E0: [u8]
 - ED7_E1: [Pos3]
 - !match
@@ -360,11 +337,6 @@ insns:
 - _DC: []
 - SaveClearData: []
 -
--
--
--
--
--
 - ED7_EE: [u8, u16]
 -
 -
@@ -373,9 +345,32 @@ insns:
 -
 -
 -
--
--
 - ED7_F8: [u16]
+- ZeroEvo_E0: []
+- ZeroEvo_E1: [[u32,u32,u32,u32], [u32,u32,u32,u32], [u32,u32,u32,u32]]
+- ZeroEvo_E2: [u32,u32,u32, u8, u32, u32]
+- ZeroEvo_E3: [u8, String, u32, u32, u8]
+- ZeroEvo_E4: [u8, u16]
+- ZeroEvo_E5: [u8, u8, String, String, Pos3, Pos3, Pos3, u8]
+- ZeroEvo_E6: [u8, u8, Pos3, Pos3, Pos3]
+- ZeroEvo_E7: [u8, u8]
+- ZeroEvo_E8: [u8]
+- ZeroEvo_E9: [u16, [u32,u32,u32,u32], [u32,u32,u32,u32]]
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
 -
 -
 -
