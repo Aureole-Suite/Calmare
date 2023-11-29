@@ -18,7 +18,8 @@ pub enum NormalizeError {
 
 pub fn normalize(code: &mut impl VisitableMut) -> Result<(), NormalizeError> {
 	let used = find_used(code)?;
-	let order = remove_unused(code, &used);
+	remove_unused(code, &used);
+	let order = find_order(code);
 	rename(code, |l| Label(order[&l]));
 	Ok(())
 }
@@ -66,23 +67,19 @@ fn find_used(code: &impl Visitable) -> Result<BTreeSet<Label>, NormalizeError> {
 	Ok(vis.used)
 }
 
-fn remove_unused(code: &mut impl VisitableMut, used: &BTreeSet<Label>) -> BTreeMap<Label, usize> {
+fn remove_unused(code: &mut impl VisitableMut, used: &BTreeSet<Label>) {
 	struct Vis<'a> {
 		used: &'a BTreeSet<Label>,
-		order: BTreeMap<Label, usize>,
 	}
 
 	impl<'a> VisitMut for Vis<'a> {
 		fn visit_code_mut(&mut self, code: &mut Code) -> ControlFlow<()> {
 			code.retain_mut(|insn| {
 				if let ("_label", [Arg::Label(l)]) = insn.parts() {
-					if self.used.contains(l) {
-						self.order.insert(*l, self.order.len());
-					} else {
-						return false;
-					}
+					self.used.contains(l)
+				} else {
+					true
 				}
-				true
 			});
 			ControlFlow::Continue(())
 		}
@@ -90,9 +87,28 @@ fn remove_unused(code: &mut impl VisitableMut, used: &BTreeSet<Label>) -> BTreeM
 
 	let mut vis = Vis {
 		used,
-		order: BTreeMap::new(),
 	};
 	code.accept_mut(&mut vis);
+}
+
+fn find_order(code: &impl Visitable) -> BTreeMap<Label, usize> {
+	struct Vis {
+		order: BTreeMap<Label, usize>,
+	}
+
+	impl Visit for Vis {
+		fn visit_insn(&mut self, insn: &Insn) -> ControlFlow<()> {
+			if let ("_label", [Arg::Label(l)]) = insn.parts() {
+				self.order.insert(*l, self.order.len());
+			}
+			ControlFlow::Continue(())
+		}
+	}
+
+	let mut vis = Vis {
+		order: BTreeMap::new(),
+	};
+	code.accept(&mut vis);
 	vis.order
 }
 
