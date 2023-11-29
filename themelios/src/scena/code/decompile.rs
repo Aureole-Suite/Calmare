@@ -8,7 +8,7 @@ pub fn decompile(code: &mut impl VisitableMut) {
 
 	impl VisitMut for Vis {
 		fn visit_code_mut(&mut self, code: &mut Code) -> std::ops::ControlFlow<()> {
-			code.0 = block(
+			*code = block(
 				Context {
 					len: code.len(),
 					insns: &mut std::mem::take(&mut code.0).into_iter(),
@@ -74,7 +74,7 @@ impl<'a> Iterator for Context<'a> {
 	}
 }
 
-fn block(mut ctx: Context, cont: Option<Label>, brk: Option<Label>) -> Vec<Insn> {
+fn block(mut ctx: Context, cont: Option<Label>, brk: Option<Label>) -> Code {
 	let mut out = Vec::new();
 	let mut label = None;
 	while let Some(insn) = ctx.next() {
@@ -105,7 +105,7 @@ fn block(mut ctx: Context, cont: Option<Label>, brk: Option<Label>) -> Vec<Insn>
 					let mut body = block(ctx.until(target), label, Some(l1));
 					assert_eq!(body.pop().unwrap().name, "continue");
 					insn.name = "while".into();
-					insn.args.push(Arg::Code(Code(body)));
+					insn.args.push(Arg::Code(body));
 				} else {
 					let mut body = block(ctx.until(target), cont, brk);
 					let l2 = body
@@ -116,11 +116,11 @@ fn block(mut ctx: Context, cont: Option<Label>, brk: Option<Label>) -> Vec<Insn>
 						body.pop();
 						let body2 = block(ctx.until(l2), cont, brk);
 						insn.name = "if".into();
-						insn.args.push(Arg::Code(Code(body)));
-						insn.args.push(Arg::Code(Code(body2)));
+						insn.args.push(Arg::Code(body));
+						insn.args.push(Arg::Code(body2));
 					} else {
 						insn.name = "if".into();
-						insn.args.push(Arg::Code(Code(body)));
+						insn.args.push(Arg::Code(body));
 					}
 				}
 			}
@@ -129,7 +129,7 @@ fn block(mut ctx: Context, cont: Option<Label>, brk: Option<Label>) -> Vec<Insn>
 		}
 		label = as_label(insn);
 	}
-	out
+	Code(out)
 }
 
 fn as_goto(insn: &Insn) -> Option<Label> {
