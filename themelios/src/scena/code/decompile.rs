@@ -9,7 +9,7 @@ pub fn decompile(code: &mut impl VisitableMut) {
 	impl VisitMut for Vis {
 		fn visit_code_mut(&mut self, code: &mut Code) -> std::ops::ControlFlow<()> {
 			*code = block(
-				Context::new(&mut std::mem::take(&mut code.0).into_iter()),
+				Context::new(std::mem::take(&mut code.0)).iter(),
 				None,
 				None,
 			);
@@ -19,34 +19,41 @@ pub fn decompile(code: &mut impl VisitableMut) {
 	code.accept_mut(&mut Vis);
 }
 
-struct Context<'a> {
-	insns: &'a mut std::vec::IntoIter<Insn>,
-	len: usize,
+struct Context {
+	iter: std::vec::IntoIter<Insn>,
 }
 
-impl<'a> std::fmt::Debug for Context<'a> {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		f.debug_tuple("Context").field(&self.as_slice()).finish()
-	}
-}
-
-impl<'a> Context<'a> {
-	fn new(insns: &'a mut std::vec::IntoIter<Insn>) -> Self {
+impl Context {
+	fn new(insns: Vec<Insn>) -> Self {
 		Self {
-			len: insns.as_slice().len(),
-			insns,
+			iter: insns.into_iter(),
 		}
 	}
 
+	fn iter(&mut self) -> ContextIter<'_> {
+		ContextIter {
+			len: self.iter.as_slice().len(),
+			ctx: self,
+		}
+	}
+}
+
+struct ContextIter<'a> {
+	ctx: &'a mut Context,
+	len: usize,
+}
+
+impl<'a> ContextIter<'a> {
 	fn as_slice(&self) -> &[Insn] {
-		&self.insns.as_slice()[..(self.len+1).min(self.insns.as_slice().len())]
+		let slice = self.ctx.iter.as_slice();
+		&slice[..(self.len+1).min(slice.len())]
 	}
 
-	fn until(&mut self, len: usize) -> Context<'_> {
+	fn until(&mut self, len: usize) -> ContextIter<'_> {
 		assert!(len <= self.len);
 		self.len -= len;
-		Context {
-			insns: self.insns,
+		ContextIter {
+			ctx: self.ctx,
 			len,
 		}
 	}
@@ -65,7 +72,7 @@ impl<'a> Context<'a> {
 	}
 }
 
-impl<'a> Iterator for Context<'a> {
+impl<'a> Iterator for ContextIter<'a> {
 	type Item = Insn;
 
 	fn next(&mut self) -> Option<Self::Item> {
@@ -73,12 +80,12 @@ impl<'a> Iterator for Context<'a> {
 			None
 		} else {
 			self.len -= 1;
-			self.insns.next()
+			self.ctx.iter.next()
 		}
 	}
 }
 
-fn block(mut ctx: Context, cont: Option<Label>, brk: Option<Label>) -> Code {
+fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>) -> Code {
 	let mut out = Vec::new();
 	let mut label = None;
 	while let Some(insn) = ctx.next() {
