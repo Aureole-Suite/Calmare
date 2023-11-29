@@ -1,28 +1,31 @@
-use themelios::scena::ed7;
+use themelios::scena::ed6::Scena;
 use themelios::scena::insn_set::{self, Game, Variant};
 fn main() -> anyhow::Result<()> {
 	unsafe { compact_debug::enable(true) }
 
-	let iset = insn_set::get(Game::Azure, Variant::Evo);
+	let iset = insn_set::get(Game::Sc, Variant::Base);
 
 	for file in std::env::args().skip(1) {
 		println!("running {file}");
 		let bytes = std::fs::read(&file)?;
-		let scena = ed7::Scena::read(&iset, &bytes)?;
+		let mut scena = Scena::read(&iset, &bytes)?;
 		// dbg!(&scena);
-		let bytes2 = ed7::Scena::write(&iset, &scena)?;
-		if bytes != bytes2 {
-			std::fs::write(
-				format!("/tmp/scena/{}", file.rsplit_once('/').unwrap().1),
-				&bytes2,
-			)?;
-			let scena2 = ed7::Scena::read(&iset, &bytes2)?;
-			if scena == scena2 {
-				println!("  {file} differs");
-			} else {
-				println!("  {file} differs significantly!!!!");
-			}
-		}
+		themelios::scena::code::decompile::decompile(&mut scena.functions);
+		themelios::scena::code::normalize::normalize(&mut scena.functions).unwrap();
+		println!("{:#?}", scena.functions[0]);
+		// let bytes2 = Scena::write(&iset, &scena)?;
+		// if bytes != bytes2 {
+		// 	std::fs::write(
+		// 		format!("/tmp/scena/{}", file.rsplit_once('/').unwrap().1),
+		// 		&bytes2,
+		// 	)?;
+		// 	let scena2 = Scena::read(&iset, &bytes2)?;
+		// 	if scena == scena2 {
+		// 		println!("  {file} differs");
+		// 	} else {
+		// 		println!("  {file} differs significantly!!!!");
+		// 	}
+		// }
 	}
 
 	Ok(())

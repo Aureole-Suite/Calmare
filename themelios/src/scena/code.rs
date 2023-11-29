@@ -1,6 +1,7 @@
 // TODO this module is getting increasingly bare
 use crate::scena::insn::{self, Arg, Insn};
 
+pub mod decompile;
 pub mod normalize;
 pub mod visit;
 pub mod visit_mut;
