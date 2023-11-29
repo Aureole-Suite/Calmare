@@ -102,8 +102,8 @@ fn block(mut ctx: Context, cont: Option<Label>, brk: Option<Label>) -> Vec<Insn>
 					.is_some_and(|l| Some(l) == label);
 
 				if is_loop {
-					let body = block(ctx.until(target), label, Some(l1));
-					// TODO remove the continue
+					let mut body = block(ctx.until(target), label, Some(l1));
+					assert_eq!(body.pop().unwrap().name, "continue");
 					insn.name = "while".into();
 					insn.args.push(Arg::Code(Code(body)));
 				} else {
