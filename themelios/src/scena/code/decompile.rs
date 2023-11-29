@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use super::visit_mut::{VisitMut, VisitableMut};
 use super::Code;
 use crate::scena::insn::{Arg, Insn};
@@ -20,14 +22,28 @@ pub fn decompile(code: &mut impl VisitableMut) {
 }
 
 struct Context {
+	initial_len: usize,
+	labels: BTreeMap<Label, usize>,
 	iter: std::vec::IntoIter<Insn>,
 }
 
 impl Context {
 	fn new(insns: Vec<Insn>) -> Self {
 		Self {
+			initial_len: insns.len(),
+			labels: insns
+				.iter()
+				.enumerate()
+				.filter_map(|(i, insn)| as_label(insn).map(|j| (j, i)))
+				.collect(),
 			iter: insns.into_iter(),
 		}
+	}
+
+	fn lookup(&self, label: Label) -> Option<usize> {
+		self.labels
+			.get(&label)
+			.map(|&i| self.iter.len() - (self.initial_len - i))
 	}
 
 	fn iter(&mut self) -> ContextIter<'_> {
@@ -60,12 +76,7 @@ impl<'a> ContextIter<'a> {
 	}
 
 	fn lookup(&self, label: Label) -> Option<usize> {
-		self.as_slice()
-			.iter()
-			.map(as_label)
-			.enumerate()
-			.find(|(_, l)| *l == Some(label))
-			.map(|i| i.0)
+		self.ctx.lookup(label).filter(|i| *i <= self.len)
 	}
 
 	fn peek(&self, pos: usize) -> Option<&Insn> {
