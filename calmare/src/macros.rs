@@ -21,7 +21,7 @@ pub macro newtype_unit($type:ty, $suf:literal) {
 	impl Print for $type {
 		fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 			let Self(v) = self;
-			f.val(v, ctx).suf($suf);
+			f.val(v, ctx).no_space().word($suf);
 		}
 	}
 }

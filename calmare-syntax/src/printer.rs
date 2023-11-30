@@ -85,23 +85,6 @@ impl Printer {
 		self
 	}
 
-	pub fn pre(&mut self, arg: &str) -> &mut Self {
-		if !arg.is_empty() {
-			self.put_space();
-			self.out.push_str(arg);
-		}
-		self
-	}
-
-	pub fn suf(&mut self, arg: &str) -> &mut Self {
-		if !arg.is_empty() {
-			self.no_space().put_space();
-			self.out.push_str(arg);
-			self.space();
-		}
-		self
-	}
-
 	pub fn str(&mut self, str: &str) -> &mut Self {
 		write!(self, "{str:?}").space() // TODO
 	}
@@ -112,7 +95,7 @@ impl Printer {
 
 	pub fn block<T>(&mut self, f: impl FnOnce(&mut Self) -> T) -> T {
 		assert!(!self.newline);
-		let v = self.suf(":").line().indent(f);
+		let v = self.no_space().word(":").line().indent(f);
 		assert!(self.newline);
 		v
 	}
@@ -140,9 +123,11 @@ impl<'a> TermPrinter<'a> {
 			if self.named {
 				self.printer.no_space();
 			}
-			self.printer.pre(if self.named { "[" } else { "(" });
+			self.printer.word(if self.named { "[" } else { "(" });
+			self.printer.no_space();
 		} else {
-			self.printer.suf(",");
+			self.printer.no_space();
+			self.printer.word(",");
 			if self.named {
 				self.printer.no_space();
 			}
@@ -155,11 +140,11 @@ impl<'a> TermPrinter<'a> {
 impl<'a> Drop for TermPrinter<'a> {
 	fn drop(&mut self) {
 		match (self.count, self.named) {
-			(0, false) => self.printer.pre("(").suf(")"),
-			(1, false) => self.printer.suf(",)"),
-			(_, false) => self.printer.suf(")"),
-			(0, true) => self.printer.space(),
-			(_, true) => self.printer.suf("]"),
+			(0, false) => self.printer.word("()"),
+			(1, false) => self.printer.no_space().word(",)"),
+			(_, false) => self.printer.no_space().word(")"),
+			(0, true) => self.printer,
+			(_, true) => self.printer.no_space().word("]"),
 		};
 	}
 }
