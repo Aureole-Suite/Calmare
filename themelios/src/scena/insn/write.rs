@@ -28,6 +28,8 @@ pub struct InsnWriter<'iset, 'write> {
 	labels: BTreeMap<Label, GLabel>,
 	label_no: usize,
 	battle_pos: Option<&'iset [GLabel]>,
+	brk: Option<Label>,
+	cont: Option<Label>,
 }
 
 macro_rules! expect {
@@ -54,6 +56,8 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 			labels: BTreeMap::new(),
 			label_no: 0,
 			battle_pos,
+			brk: None,
+			cont: None,
 		}
 	}
 
@@ -77,6 +81,69 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				let label = self.label(label);
 				self.f.place(label);
 			}
+
+			"if" => {
+				match insn.args.as_slice() {
+					[args@.., Arg::Code(yes), Arg::Code(no)] => {
+						let mid = self.internal_label(GLabel::new());
+						let end = self.internal_label(GLabel::new());
+						let mut args = args.to_vec();
+						args.push(Arg::Label(mid));
+						self.insn(&Insn::new("_if", args))?;
+						self.code(yes)?;
+						self.insn(&Insn::new("_goto", vec![Arg::Label(end)]))?;
+						self.insn(&Insn::new("_label", vec![Arg::Label(mid)]))?;
+						self.code(no)?;
+						self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
+					}
+					[args@.., Arg::Code(yes)] => {
+						let end = self.internal_label(GLabel::new());
+						let mut args = args.to_vec();
+						args.push(Arg::Label(end));
+						self.insn(&Insn::new("_if", args))?;
+						self.code(yes)?;
+						self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
+					}
+					_ => whatever!("malformed if")
+				}
+			}
+
+			"break" => {
+				match self.brk {
+					Some(l) => self.insn(&Insn::new("_goto", vec![Arg::Label(l)]))?,
+					None => whatever!("can't break here"),
+				}
+			}
+
+			"continue" => {
+				match self.cont {
+					Some(l) => self.insn(&Insn::new("_goto", vec![Arg::Label(l)]))?,
+					None => whatever!("can't continue here"),
+				}
+			}
+
+			"while" => {
+				let [args@.., Arg::Code(body)] = insn.args.as_slice() else {
+					whatever!("malformed while")
+				};
+				let start = self.internal_label(GLabel::new());
+				let end = self.internal_label(GLabel::new());
+
+				let brk = self.brk.replace(end);
+				let cont = self.cont.replace(start);
+
+				let mut args = args.to_vec();
+				args.push(Arg::Label(end));
+				self.insn(&Insn::new("_label", vec![Arg::Label(start)]))?;
+				self.insn(&Insn::new("_if", args))?;
+				self.code(body)?;
+				self.insn(&Insn::new("continue", vec![]))?;
+				self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
+
+				self.brk = brk;
+				self.cont = cont;
+			}
+
 			name => {
 				let Some(iargs) = self.iset.insns_rev.get(name) else {
 					whatever!("unknown instruction {name}")

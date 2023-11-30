@@ -12,20 +12,20 @@ fn main() -> anyhow::Result<()> {
 		// dbg!(&scena);
 		themelios::scena::code::decompile::decompile(&mut scena.functions);
 		themelios::scena::code::normalize::normalize(&mut scena.functions).unwrap();
-		println!("{:#?}", scena.functions[0]);
-		// let bytes2 = Scena::write(&iset, &scena)?;
-		// if bytes != bytes2 {
-		// 	std::fs::write(
-		// 		format!("/tmp/scena/{}", file.rsplit_once('/').unwrap().1),
-		// 		&bytes2,
-		// 	)?;
-		// 	let scena2 = Scena::read(&iset, &bytes2)?;
-		// 	if scena == scena2 {
-		// 		println!("  {file} differs");
-		// 	} else {
-		// 		println!("  {file} differs significantly!!!!");
-		// 	}
-		// }
+		// println!("{:#?}", scena.functions[0]);
+		let bytes2 = Scena::write(&iset, &scena)?;
+		if bytes != bytes2 {
+			std::fs::write(
+				format!("/tmp/scena/{}", file.rsplit_once('/').unwrap().1),
+				&bytes2,
+			)?;
+			let scena2 = Scena::read(&iset, &bytes2)?;
+			if scena == scena2 {
+				println!("  {file} differs");
+			} else {
+				println!("  {file} differs significantly!!!!");
+			}
+		}
 	}
 
 	Ok(())
