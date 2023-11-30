@@ -81,116 +81,104 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 	}
 
 	pub fn insn(&mut self, insn: &Insn) -> Result<(), WriteError> {
-		match insn.name.as_str() {
-			"_label" => {
-				let [Arg::Label(label)] = insn.args.as_slice() else {
-					whatever!("malformed label")
-				};
+		match insn.parts() {
+			("_label", [Arg::Label(label)]) => {
 				let label = self.label(label);
 				self.f.place(label);
 			}
+			("_label", _) => whatever!("malformed label"),
 
-			"if" => match insn.args.as_slice() {
-				[args @ .., Arg::Code(yes), Arg::Code(no)] => {
-					let mid = self.internal_label(GLabel::new());
-					let end = self.internal_label(GLabel::new());
-					self.insn(&Insn::new("_if", vec_plus![args, Arg::Label(mid)]))?;
-					self.code(yes)?;
-					self.insn(&Insn::new("_goto", vec![Arg::Label(end)]))?;
-					self.insn(&Insn::new("_label", vec![Arg::Label(mid)]))?;
-					self.code(no)?;
-					self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
-				}
-				[args @ .., Arg::Code(yes)] => {
-					let end = self.internal_label(GLabel::new());
-					self.insn(&Insn::new("_if", vec_plus![args, Arg::Label(end)]))?;
-					self.code(yes)?;
-					self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
-				}
-				_ => whatever!("malformed if"),
-			},
-
-			"break" => {
-				ensure_whatever!(insn.args.is_empty(), "malformed break");
-				match self.brk {
-					Some(l) => self.insn(&Insn::new("_goto", vec![Arg::Label(l)]))?,
-					None => whatever!("can't break here"),
-				}
+			("if", [args @ .., Arg::Code(yes), Arg::Code(no)]) => {
+				let mid = self.internal_label(GLabel::new());
+				let end = self.internal_label(GLabel::new());
+				self.insn(&Insn::new("_if", vec_plus![args, Arg::Label(mid)]))?;
+				self.code(yes)?;
+				self.insn(&Insn::new("_goto", vec![Arg::Label(end)]))?;
+				self.insn(&Insn::new("_label", vec![Arg::Label(mid)]))?;
+				self.code(no)?;
+				self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
 			}
-
-			"continue" => {
-				ensure_whatever!(insn.args.is_empty(), "malformed continue");
-				match self.cont {
-					Some(l) => self.insn(&Insn::new("_goto", vec![Arg::Label(l)]))?,
-					None => whatever!("can't continue here"),
-				}
+			("if", [args @ .., Arg::Code(yes)]) => {
+				let end = self.internal_label(GLabel::new());
+				self.insn(&Insn::new("_if", vec_plus![args, Arg::Label(end)]))?;
+				self.code(yes)?;
+				self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
 			}
+			("if", _) => whatever!("malformed if"),
 
-			"while" => match insn.args.as_slice() {
-				[args @ .., Arg::Code(body)] => {
-					let start = self.internal_label(GLabel::new());
-					let end = self.internal_label(GLabel::new());
-
-					let brk = self.brk.replace(end);
-					let cont = self.cont.replace(start);
-
-					self.insn(&Insn::new("_label", vec![Arg::Label(start)]))?;
-					self.insn(&Insn::new("_if", vec_plus![args, Arg::Label(end)]))?;
-					self.code(body)?;
-					self.insn(&Insn::new("continue", vec![]))?;
-					self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
-
-					self.brk = brk;
-					self.cont = cont;
-				}
-				_ => whatever!("malformed while"),
+			("break", []) => match self.brk {
+				Some(l) => self.insn(&Insn::new("_goto", vec![Arg::Label(l)]))?,
+				None => whatever!("can't break here"),
 			},
+			("break", _) => whatever!("malformed break"),
 
-			"switch" => match insn.args.as_slice() {
-				[args @ .., Arg::Code(body)] => {
-					let mut body_out = Vec::new();
-					let mut cases = Vec::new();
-					let mut default = None;
+			("continue", []) => match self.cont {
+				Some(l) => self.insn(&Insn::new("_goto", vec![Arg::Label(l)]))?,
+				None => whatever!("can't continue here"),
+			},
+			("continue", _) => whatever!("malformed continue"),
 
-					for case in body.iter() {
-						let label = self.internal_label(GLabel::new());
-						match case.parts() {
-							("case", [args @ .., Arg::Code(body)]) => {
-								cases.push(Arg::Tuple(vec_plus![args, Arg::Label(label)]));
-								body_out.push((label, body));
-							}
-							("default", [Arg::Code(body)]) => {
-								ensure_whatever!(default.is_none(), "duplicate default case");
-								default = Some(label);
-								body_out.push((label, body));
-							}
-							_ => whatever!("invalid switch case"),
+			("while", [args @ .., Arg::Code(body)]) => {
+				let start = self.internal_label(GLabel::new());
+				let end = self.internal_label(GLabel::new());
+
+				let brk = self.brk.replace(end);
+				let cont = self.cont.replace(start);
+
+				self.insn(&Insn::new("_label", vec![Arg::Label(start)]))?;
+				self.insn(&Insn::new("_if", vec_plus![args, Arg::Label(end)]))?;
+				self.code(body)?;
+				self.insn(&Insn::new("continue", vec![]))?;
+				self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
+
+				self.brk = brk;
+				self.cont = cont;
+			}
+			("while", _) => whatever!("malformed while"),
+
+			("switch", [args @ .., Arg::Code(body)]) => {
+				let mut body_out = Vec::new();
+				let mut cases = Vec::new();
+				let mut default = None;
+
+				for case in body.iter() {
+					let label = self.internal_label(GLabel::new());
+					match case.parts() {
+						("case", [args @ .., Arg::Code(body)]) => {
+							cases.push(Arg::Tuple(vec_plus![args, Arg::Label(label)]));
+							body_out.push((label, body));
 						}
+						("default", [Arg::Code(body)]) => {
+							ensure_whatever!(default.is_none(), "duplicate default case");
+							default = Some(label);
+							body_out.push((label, body));
+						}
+						_ => whatever!("invalid switch case"),
 					}
-
-					let end = self.internal_label(GLabel::new());
-					let brk = self.brk.replace(end);
-
-					self.insn(&Insn::new(
-						"_switch",
-						vec_plus![args, Arg::Tuple(cases), Arg::Label(default.unwrap_or(end))],
-					))?;
-					for (l, code) in body_out {
-						self.insn(&Insn::new("_label", vec![Arg::Label(l)]))?;
-						self.code(code)?;
-					}
-					self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
-
-					self.brk = brk;
 				}
-				_ => whatever!("malformed switch"),
-			},
 
-			name => {
+				let end = self.internal_label(GLabel::new());
+				let brk = self.brk.replace(end);
+
+				self.insn(&Insn::new(
+					"_switch",
+					vec_plus![args, Arg::Tuple(cases), Arg::Label(default.unwrap_or(end))],
+				))?;
+				for (l, code) in body_out {
+					self.insn(&Insn::new("_label", vec![Arg::Label(l)]))?;
+					self.code(code)?;
+				}
+				self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
+
+				self.brk = brk;
+			}
+			("switch", _) => whatever!("malformed switch"),
+
+			(name, args) => {
 				let Some(iargs) = self.iset.insns_rev.get(name) else {
 					whatever!("unknown instruction {name}")
 				};
-				self.args(&insn.args, iargs)?;
+				self.args(args, iargs)?;
 			}
 		}
 		Ok(())
