@@ -13,11 +13,11 @@ fn main() -> anyhow::Result<()> {
 		// dbg!(&scena);
 		themelios::scena::code::decompile::decompile(&mut scena.functions);
 		themelios::scena::code::normalize::normalize(&mut scena.functions).unwrap();
-		for e in &scena.entries {
-			let mut printer = calmare::Printer::new();
-			e.print(&mut calmare::PrintContext {}, &mut printer);
-			println!("{}", printer.finish());
-		}
+
+		let mut printer = calmare::Printer::new();
+		scena.print(&mut calmare::PrintContext {}, &mut printer);
+		print!("{}", printer.finish());
+
 		// println!("{:#?}", scena.functions[0]);
 		let bytes2 = Scena::write(&iset, &scena)?;
 		if bytes != bytes2 {

@@ -3,7 +3,12 @@ use crate::{Print, PrintContext, Printer, PrinterExt};
 use themelios::types;
 
 // Label(usize)
-// newtype!(FileId(u32), "0x{:08X}");
+
+impl Print for types::FileId {
+	fn print(&self, _ctx: &mut PrintContext, f: &mut Printer) {
+		write!(f.term("file").field(), "0x{:08X}", self.0);
+	}
+}
 
 newtype_hex!(types::Color);
 
@@ -44,4 +49,8 @@ impl Print for types::Pos3 {
 	}
 }
 
-// pub struct TString(pub String);
+impl Print for types::TString {
+	fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
+		self.0.print(ctx, f)
+	}
+}

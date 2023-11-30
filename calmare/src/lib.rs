@@ -45,3 +45,15 @@ impl<A: Print, B: Print, C: Print> Print for (A, B, C) {
 		f.val(&self.0, ctx).val(&self.1, ctx).val(&self.2, ctx);
 	}
 }
+
+impl Print for str {
+	fn print(&self, _ctx: &mut PrintContext, f: &mut Printer) {
+		write!(f, "{self:?}"); // TODO
+	}
+}
+
+impl Print for String {
+	fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
+		self.as_str().print(ctx, f)
+	}
+}

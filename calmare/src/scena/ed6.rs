@@ -1,5 +1,30 @@
 use crate::{Print, PrintContext, Printer, PrinterExt};
 use themelios::scena::ed6;
+use themelios::types;
+
+impl Print for ed6::Scena {
+	fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
+		f.word("scena").block(|f| {
+			f.kv_line("name", (&self.path, &self.map), ctx);
+			f.kv_line("town", self.town, ctx);
+			f.kv_line("bgm", self.bgm, ctx);
+			f.kv_line("item_use", self.item_use, ctx);
+			for (i, a) in self.includes.iter().enumerate() {
+				if *a != types::FileId::NONE {
+					f.kv_line("scp", (i as u16, a), ctx);
+				}
+			}
+		});
+		f.line();
+
+		for entry in &self.entries {
+			f.word("entry").block(|f| {
+				entry.print(ctx, f);
+			});
+			f.line();
+		}
+	}
+}
 
 impl Print for ed6::Entry {
 	fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
