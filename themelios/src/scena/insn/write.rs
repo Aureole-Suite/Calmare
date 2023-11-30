@@ -44,6 +44,14 @@ macro_rules! expect {
 	};
 }
 
+macro_rules! vec_plus {
+	($base:expr $(, $extra:expr)* $(,)?) => {{
+		let mut args = $base.to_vec();
+		$(args.push($extra);)*
+		args
+	}}
+}
+
 impl<'iset, 'write> InsnWriter<'iset, 'write> {
 	pub fn new(
 		f: &'write mut Writer,
@@ -87,9 +95,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 					[args@.., Arg::Code(yes), Arg::Code(no)] => {
 						let mid = self.internal_label(GLabel::new());
 						let end = self.internal_label(GLabel::new());
-						let mut args = args.to_vec();
-						args.push(Arg::Label(mid));
-						self.insn(&Insn::new("_if", args))?;
+						self.insn(&Insn::new("_if", vec_plus![args, Arg::Label(mid)]))?;
 						self.code(yes)?;
 						self.insn(&Insn::new("_goto", vec![Arg::Label(end)]))?;
 						self.insn(&Insn::new("_label", vec![Arg::Label(mid)]))?;
@@ -98,9 +104,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 					}
 					[args@.., Arg::Code(yes)] => {
 						let end = self.internal_label(GLabel::new());
-						let mut args = args.to_vec();
-						args.push(Arg::Label(end));
-						self.insn(&Insn::new("_if", args))?;
+						self.insn(&Insn::new("_if", vec_plus![args, Arg::Label(end)]))?;
 						self.code(yes)?;
 						self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
 					}
@@ -134,10 +138,8 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				let brk = self.brk.replace(end);
 				let cont = self.cont.replace(start);
 
-				let mut args = args.to_vec();
-				args.push(Arg::Label(end));
 				self.insn(&Insn::new("_label", vec![Arg::Label(start)]))?;
-				self.insn(&Insn::new("_if", args))?;
+				self.insn(&Insn::new("_if", vec_plus![args, Arg::Label(end)]))?;
 				self.code(body)?;
 				self.insn(&Insn::new("continue", vec![]))?;
 				self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
