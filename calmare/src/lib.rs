@@ -57,3 +57,25 @@ impl Print for String {
 		self.as_str().print(f, ctx)
 	}
 }
+
+trait Hex {
+	fn print_hex(&self, f: &mut Printer);
+}
+
+impl Hex for u8 {
+	fn print_hex(&self, f: &mut Printer) {
+		write!(f, "0x{self:02X}");
+	}
+}
+
+impl Hex for u16 {
+	fn print_hex(&self, f: &mut Printer) {
+		write!(f, "0x{self:04X}");
+	}
+}
+
+impl Hex for u32 {
+	fn print_hex(&self, f: &mut Printer) {
+		write!(f, "0x{self:08X}");
+	}
+}
