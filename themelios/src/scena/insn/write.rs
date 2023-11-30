@@ -146,6 +146,46 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				_ => whatever!("malformed while"),
 			},
 
+			"switch" => match insn.args.as_slice() {
+				[args @ .., Arg::Code(body)] => {
+					let mut body_out = Vec::new();
+					let mut cases = Vec::new();
+					let mut default = None;
+
+					for case in body.iter() {
+						let label = self.internal_label(GLabel::new());
+						match case.parts() {
+							("case", [args @ .., Arg::Code(body)]) => {
+								cases.push(Arg::Tuple(vec_plus![args, Arg::Label(label)]));
+								body_out.push((label, body));
+							}
+							("default", [Arg::Code(body)]) => {
+								ensure_whatever!(default.is_none(), "duplicate default case");
+								default = Some(label);
+								body_out.push((label, body));
+							}
+							_ => whatever!("invalid switch case"),
+						}
+					}
+
+					let end = self.internal_label(GLabel::new());
+					let brk = self.brk.replace(end);
+
+					self.insn(&Insn::new(
+						"_switch",
+						vec_plus![args, Arg::Tuple(cases), Arg::Label(default.unwrap_or(end))],
+					))?;
+					for (l, code) in body_out {
+						self.insn(&Insn::new("_label", vec![Arg::Label(l)]))?;
+						self.code(code)?;
+					}
+					self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
+
+					self.brk = brk;
+				}
+				_ => whatever!("malformed switch"),
+			},
+
 			name => {
 				let Some(iargs) = self.iset.insns_rev.get(name) else {
 					whatever!("unknown instruction {name}")

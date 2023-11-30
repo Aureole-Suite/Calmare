@@ -140,7 +140,7 @@ fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>) -> Code 
 				}
 			}
 
-			("_switch", [.., Arg::Tuple(cases), Arg::Label(default)]) if false => {
+			("_switch", [.., Arg::Tuple(cases), Arg::Label(default)]) => {
 				let Some(cases) = find_cases(&ctx, cases, default) else {
 					continue;
 				};
