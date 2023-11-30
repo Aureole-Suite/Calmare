@@ -34,6 +34,10 @@ impl Print for Insn {
 				}
 			}
 
+			(_, [param, Arg::Expr(expr)]) => {
+				f.val(param, ctx).val(expr, ctx);
+			}
+
 			("Menu", args) => {
 				f.word("Menu");
 				let mut n = 0;
