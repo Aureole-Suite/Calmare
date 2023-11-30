@@ -13,7 +13,7 @@ pub struct PrintContext {}
 #[extend::ext]
 pub(crate) impl Printer {
 	fn val(&mut self, val: impl Print, ctx: &mut PrintContext) -> &mut Self {
-		val.print(ctx, self);
+		val.print(self, ctx);
 		self.space()
 	}
 
@@ -23,37 +23,37 @@ pub(crate) impl Printer {
 }
 
 pub trait Print {
-	fn print(&self, ctx: &mut PrintContext, f: &mut Printer);
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext);
 }
 
 macros::number!(u8, u16, u32, u64, i8, i16, i32, i64, f32, f64);
 
 impl<T: Print> Print for &T {
-	fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
-		T::print(self, ctx, f)
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+		T::print(self, f, ctx)
 	}
 }
 
 impl<A: Print, B: Print> Print for (A, B) {
-	fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 		f.val(&self.0, ctx).val(&self.1, ctx);
 	}
 }
 
 impl<A: Print, B: Print, C: Print> Print for (A, B, C) {
-	fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 		f.val(&self.0, ctx).val(&self.1, ctx).val(&self.2, ctx);
 	}
 }
 
 impl Print for str {
-	fn print(&self, _ctx: &mut PrintContext, f: &mut Printer) {
+	fn print(&self, f: &mut Printer, _ctx: &mut PrintContext) {
 		write!(f, "{self:?}"); // TODO
 	}
 }
 
 impl Print for String {
-	fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
-		self.as_str().print(ctx, f)
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+		self.as_str().print(f, ctx)
 	}
 }

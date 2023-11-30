@@ -15,7 +15,7 @@ fn main() -> anyhow::Result<()> {
 		themelios::scena::code::normalize::normalize(&mut scena.functions).unwrap();
 
 		let mut printer = calmare::Printer::new();
-		scena.print(&mut calmare::PrintContext {}, &mut printer);
+		scena.print(&mut printer, &mut calmare::PrintContext {});
 		print!("{}", printer.finish());
 
 		// println!("{:#?}", scena.functions[0]);

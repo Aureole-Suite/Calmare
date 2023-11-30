@@ -5,7 +5,7 @@ use themelios::types;
 // Label(usize)
 
 impl Print for types::FileId {
-	fn print(&self, _ctx: &mut PrintContext, f: &mut Printer) {
+	fn print(&self, f: &mut Printer, _ctx: &mut PrintContext) {
 		write!(f.term("file").field(), "0x{:08X}", self.0);
 	}
 }
@@ -32,7 +32,7 @@ newtype_unit!(types::AngularSpeed, "deg/s");
 newtype_unit!(types::Length, "mm");
 
 impl Print for types::Pos2 {
-	fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 		let mut term = f.term("");
 		term.field().val(self.x, ctx);
 		term.field().word("null");
@@ -41,7 +41,7 @@ impl Print for types::Pos2 {
 }
 
 impl Print for types::Pos3 {
-	fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 		let mut term = f.term("");
 		term.field().val(self.x, ctx);
 		term.field().val(self.y, ctx);
@@ -50,7 +50,7 @@ impl Print for types::Pos3 {
 }
 
 impl Print for types::TString {
-	fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
-		self.0.print(ctx, f)
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+		self.0.print(f, ctx)
 	}
 }

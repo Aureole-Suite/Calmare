@@ -5,7 +5,7 @@ use crate::macros::{newtype_hex, newtype_term};
 use crate::{Print, PrintContext, Printer, PrinterExt as _};
 
 impl Print for scena::FuncId {
-	fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 		let mut term = f.term("fn");
 		term.field().val(self.0, ctx);
 		term.field().val(self.1, ctx);
@@ -23,7 +23,7 @@ newtype_term!(scena::EntryId, "entry");
 newtype_hex!(scena::EntryFlags);
 
 impl Print for scena::CharId {
-	fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 		use scena::CharId as C;
 		match self {
 			C::Party(v) => f.term("field_party").field().val(v, ctx),

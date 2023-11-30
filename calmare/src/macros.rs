@@ -2,7 +2,7 @@ use crate::{Print, PrintContext, Printer};
 
 pub macro number($($type:ty),*) {
 	$(impl Print for $type {
-		fn print(&self, _ctx: &mut PrintContext, f: &mut Printer) {
+		fn print(&self, f: &mut Printer, _ctx: &mut PrintContext) {
 			write!(f, "{:?}", self);
 		}
 	})*
@@ -10,7 +10,7 @@ pub macro number($($type:ty),*) {
 
 pub macro newtype_term($type:ty, $term:literal) {
 	impl Print for $type {
-		fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
+		fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 			let Self(v) = self;
 			f.term($term).field().val(v, ctx);
 		}
@@ -19,7 +19,7 @@ pub macro newtype_term($type:ty, $term:literal) {
 
 pub macro newtype_unit($type:ty, $suf:literal) {
 	impl Print for $type {
-		fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
+		fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 			let Self(v) = self;
 			f.val(v, ctx).suf($suf);
 		}
@@ -51,7 +51,7 @@ impl Hex for u32 {
 
 pub macro newtype_hex($type:ty) {
 	impl Print for $type {
-		fn print(&self, _ctx: &mut PrintContext, f: &mut Printer) {
+		fn print(&self, f: &mut Printer, _ctx: &mut PrintContext) {
 			let Self(v) = self;
 			write!(f, "0x{:0width$X}", v, width = v.hex_width());
 		}

@@ -3,7 +3,7 @@ use themelios::scena::{ed6, ChipId, LocalCharId};
 use themelios::types::FileId;
 
 impl Print for ed6::Scena {
-	fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 		f.word("scena").block(|f| {
 			f.kv_line("name", (&self.path, &self.map), ctx);
 			f.kv_line("town", self.town, ctx);
@@ -18,7 +18,7 @@ impl Print for ed6::Scena {
 		f.line();
 
 		for entry in &self.entries {
-			f.word("entry").block(|f| entry.print(ctx, f));
+			f.word("entry").block(|f| entry.print(f, ctx));
 			f.line();
 		}
 
@@ -32,7 +32,7 @@ impl Print for ed6::Scena {
 		for npc in &self.npcs {
 			f.word("npc")
 				.val(LocalCharId(n), ctx)
-				.block(|f| npc.print(ctx, f));
+				.block(|f| npc.print(f, ctx));
 			n += 1;
 			f.line();
 		}
@@ -40,7 +40,7 @@ impl Print for ed6::Scena {
 		for monster in &self.monsters {
 			f.word("monster")
 				.val(LocalCharId(n), ctx)
-				.block(|f| monster.print(ctx, f));
+				.block(|f| monster.print(f, ctx));
 			n += 1;
 			f.line();
 		}
@@ -74,7 +74,7 @@ fn print_chcp(ch: &[FileId], cp: &[FileId], ctx: &mut PrintContext, f: &mut Prin
 }
 
 impl Print for ed6::Entry {
-	fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 		f.kv_line("pos", self.pos, ctx);
 		f.kv_line("chr", self.chr, ctx);
 		f.kv_line("angle", self.angle, ctx);
@@ -93,7 +93,7 @@ impl Print for ed6::Entry {
 }
 
 impl Print for ed6::Npc {
-	fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 		f.kv_line("name", &self.name, ctx);
 		f.kv_line("pos", self.pos, ctx);
 		f.kv_line("angle", self.angle, ctx);
@@ -108,7 +108,7 @@ impl Print for ed6::Npc {
 }
 
 impl Print for ed6::Monster {
-	fn print(&self, ctx: &mut PrintContext, f: &mut Printer) {
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 		f.kv_line("name", &self.name, ctx);
 		f.kv_line("pos", self.pos, ctx);
 		f.kv_line("angle", self.angle, ctx);
