@@ -126,25 +126,25 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				}
 			}
 
-			"while" => {
-				let [args @ .., Arg::Code(body)] = insn.args.as_slice() else {
-					whatever!("malformed while")
-				};
-				let start = self.internal_label(GLabel::new());
-				let end = self.internal_label(GLabel::new());
+			"while" => match insn.args.as_slice() {
+				[args @ .., Arg::Code(body)] => {
+					let start = self.internal_label(GLabel::new());
+					let end = self.internal_label(GLabel::new());
 
-				let brk = self.brk.replace(end);
-				let cont = self.cont.replace(start);
+					let brk = self.brk.replace(end);
+					let cont = self.cont.replace(start);
 
-				self.insn(&Insn::new("_label", vec![Arg::Label(start)]))?;
-				self.insn(&Insn::new("_if", vec_plus![args, Arg::Label(end)]))?;
-				self.code(body)?;
-				self.insn(&Insn::new("continue", vec![]))?;
-				self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
+					self.insn(&Insn::new("_label", vec![Arg::Label(start)]))?;
+					self.insn(&Insn::new("_if", vec_plus![args, Arg::Label(end)]))?;
+					self.code(body)?;
+					self.insn(&Insn::new("continue", vec![]))?;
+					self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
 
-				self.brk = brk;
-				self.cont = cont;
-			}
+					self.brk = brk;
+					self.cont = cont;
+				}
+				_ => whatever!("malformed while"),
+			},
 
 			name => {
 				let Some(iargs) = self.iset.insns_rev.get(name) else {
