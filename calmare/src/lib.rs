@@ -39,6 +39,12 @@ impl<T: Print> Print for &T {
 	}
 }
 
+impl<T: Print> Print for Box<T> {
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+		T::print(self, f, ctx)
+	}
+}
+
 impl<A: Print, B: Print> Print for (A, B) {
 	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 		f.val(&self.0, ctx).val(&self.1, ctx);

@@ -119,4 +119,3 @@ fn op_str(op: Op) -> (&'static str, u8) {
 		Op::OrAss  => ("|=", 0),
 	}
 }
-

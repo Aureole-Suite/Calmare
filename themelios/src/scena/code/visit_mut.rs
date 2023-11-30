@@ -1,9 +1,6 @@
 use std::ops::ControlFlow;
 
-use super::{
-	insn::{Expr, Term},
-	Arg, Code, Insn,
-};
+use super::{insn::Expr, Arg, Code, Insn};
 
 #[allow(unused_variables)]
 pub trait VisitMut {
@@ -73,17 +70,17 @@ impl VisitableMut for Arg {
 
 impl VisitableMut for Expr {
 	fn accept_mut(&mut self, f: &mut impl VisitMut) {
-		self.0.accept_mut(f)
-	}
-}
-
-impl VisitableMut for Term {
-	fn accept_mut(&mut self, f: &mut impl VisitMut) {
 		match self {
-			Term::Arg(t) => t.accept_mut(f),
-			Term::Op(_) => {}
-			Term::Insn(t) => t.accept_mut(f),
-			Term::Rand => {}
+			Expr::Arg(t) => t.accept_mut(f),
+			Expr::Bin(_, l, r) => {
+				l.accept_mut(f);
+				r.accept_mut(f);
+			}
+			Expr::Unary(_, t) | Expr::Assign(_, t) => {
+				t.accept_mut(f);
+			}
+			Expr::Insn(t) => t.accept_mut(f),
+			Expr::Rand => {}
 		}
 	}
 }

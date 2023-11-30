@@ -302,6 +302,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 			T::Expr => {
 				expect!(Arg::Expr(e) in iter, "expr");
 				self.expr(e)?;
+				self.f.u8(0x01);
 			}
 
 			T::Fork => {
@@ -445,46 +446,54 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 	}
 
 	fn expr(&mut self, expr: &Expr) -> Result<(), WriteError> {
-		use crate::scena::insn::Term;
-		for term in &expr.0 {
-			match *term {
-				Term::Arg(Arg::Int(n)) => {
-					self.f.u8(0x00);
-					self.f.u32(cast(n)?);
-				}
-				Term::Op(op) => self.f.u8(op.into()),
-				Term::Insn(ref insn) => {
-					self.f.u8(0x1C);
-					self.insn(insn)?;
-				}
-				Term::Arg(Arg::Flag(Flag(v))) => {
-					self.f.u8(0x1E);
-					self.f.u16(v);
-				}
-				Term::Arg(Arg::Var(v)) => {
-					self.f.u8(0x1F);
-					self.f.u16(v);
-				}
-				Term::Arg(Arg::Attr(v)) => {
-					self.f.u8(0x20);
-					self.f.u8(v);
-				}
-				Term::Arg(Arg::CharAttr(id, v)) => {
-					self.f.u8(0x21);
-					self.f.u16(id.to_u16(self.iset.game)?);
-					self.f.u8(v);
-				}
-				Term::Rand => {
-					self.f.u8(0x22);
-				}
-				Term::Arg(Arg::Global(v)) => {
-					self.f.u8(0x23);
-					self.f.u8(v);
-				}
-				Term::Arg(ref v) => whatever!("cannot use {v:?} in Expr"),
+		match *expr {
+			Expr::Arg(Arg::Int(n)) => {
+				self.f.u8(0x00);
+				self.f.u32(cast(n)?);
 			}
+			Expr::Bin(op, ref l, ref r) => {
+				self.expr(l)?;
+				self.expr(r)?;
+				self.f.u8(op.into());
+			}
+			Expr::Unary(op, ref t) => {
+				self.expr(t)?;
+				self.f.u8(op.into());
+			}
+			Expr::Assign(op, ref t) => {
+				self.expr(t)?;
+				self.f.u8(op.into());
+			}
+			Expr::Insn(ref insn) => {
+				self.f.u8(0x1C);
+				self.insn(insn)?;
+			}
+			Expr::Arg(Arg::Flag(Flag(v))) => {
+				self.f.u8(0x1E);
+				self.f.u16(v);
+			}
+			Expr::Arg(Arg::Var(v)) => {
+				self.f.u8(0x1F);
+				self.f.u16(v);
+			}
+			Expr::Arg(Arg::Attr(v)) => {
+				self.f.u8(0x20);
+				self.f.u8(v);
+			}
+			Expr::Arg(Arg::CharAttr(id, v)) => {
+				self.f.u8(0x21);
+				self.f.u16(id.to_u16(self.iset.game)?);
+				self.f.u8(v);
+			}
+			Expr::Rand => {
+				self.f.u8(0x22);
+			}
+			Expr::Arg(Arg::Global(v)) => {
+				self.f.u8(0x23);
+				self.f.u8(v);
+			}
+			Expr::Arg(ref v) => whatever!("cannot use {v:?} in Expr"),
 		}
-		self.f.u8(0x01);
 		Ok(())
 	}
 }

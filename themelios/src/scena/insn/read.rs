@@ -1,5 +1,6 @@
 use gospel::read::{Le as _, Reader};
 use snafu::prelude::*;
+use strict_result::Strict as _;
 
 use super::{Arg, Insn};
 use crate::scena::code::visit::visit_args;
@@ -331,34 +332,45 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 		Ok(())
 	}
 
-	fn expr(&mut self) -> Result<Expr> {
-		use crate::scena::insn::{Op, Term};
-		let mut terms = Vec::new();
+	fn expr(&mut self) -> Result<Box<Expr>> {
+		use crate::scena::insn::{AssOp, BinOp, UnOp};
+		let mut stack = Vec::new();
 		loop {
 			let f = &mut self.f;
 			let op = f.u8()?;
-			let term = if let Ok(op) = Op::try_from(op) {
-				Term::Op(op)
+			if let Ok(op) = BinOp::try_from(op) {
+				let rhs = stack.pop().whatever_context("missing operand").strict()?;
+				let lhs = stack.pop().whatever_context("missing operand").strict()?;
+				stack.push(Expr::Bin(op, Box::new(lhs), Box::new(rhs)))
+			} else if let Ok(op) = UnOp::try_from(op) {
+				let arg = stack.pop().whatever_context("missing operand").strict()?;
+				stack.push(Expr::Unary(op, Box::new(arg)))
+			} else if let Ok(op) = AssOp::try_from(op) {
+				let arg = stack.pop().whatever_context("missing operand").strict()?;
+				stack.push(Expr::Assign(op, Box::new(arg)))
 			} else {
-				match op {
-					0x00 => Term::Arg(Arg::Int(f.u32()? as i64)),
+				stack.push(match op {
+					0x00 => Expr::Arg(Arg::Int(f.u32()? as i64)),
 					0x01 => break,
-					0x1C => Term::Insn(Box::new(self.insn()?)),
-					0x1E => Term::Arg(Arg::Flag(Flag(f.u16()?))),
-					0x1F => Term::Arg(Arg::Var(f.u16()?)),
-					0x20 => Term::Arg(Arg::Attr(f.u8()?)),
-					0x21 => Term::Arg(Arg::CharAttr(
+					0x1C => Expr::Insn(self.insn()?),
+					0x1E => Expr::Arg(Arg::Flag(Flag(f.u16()?))),
+					0x1F => Expr::Arg(Arg::Var(f.u16()?)),
+					0x20 => Expr::Arg(Arg::Attr(f.u8()?)),
+					0x21 => Expr::Arg(Arg::CharAttr(
 						CharId::from_u16(self.iset.game, f.u16()?)?,
 						f.u8()?,
 					)),
-					0x22 => Term::Rand,
-					0x23 => Term::Arg(Arg::Global(f.u8()?)),
+					0x22 => Expr::Rand,
+					0x23 => Expr::Arg(Arg::Global(f.u8()?)),
 					op => Err(ValueError::new("Expr", format!("0x{op:02X}")))?,
-				}
+				})
 			};
-			terms.push(term);
 		}
-		Ok(Expr(terms))
+		if stack.len() == 1 {
+			Ok(Box::new(stack.pop().unwrap()))
+		} else {
+			whatever!("invalid expression stack size {}", stack.len())
+		}
 	}
 }
 

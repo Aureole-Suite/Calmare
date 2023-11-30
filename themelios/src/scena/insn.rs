@@ -96,7 +96,7 @@ pub enum Arg {
 	CharAttr(CharId, u8),
 
 	Code(Code),
-	Expr(Expr),
+	Expr(Box<Expr>),
 
 	QuestTask(u16),
 	QuestFlags(u8),
@@ -108,69 +108,57 @@ pub enum Arg {
 	CharFlags2(u16),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum OpKind {
-	Unary,
-	Binary, // includes comparisons
-	Assign,
-}
-
-#[derive(
-	Debug, Clone, Copy, PartialEq, Eq, num_enum::TryFromPrimitive, num_enum::IntoPrimitive,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)] // comment to trick rustfmt
+#[derive(num_enum::TryFromPrimitive, num_enum::IntoPrimitive)]
 #[repr(u8)]
-pub enum Op {
+pub enum BinOp {
 	Eq = 0x02,      // ==
 	Ne = 0x03,      // !=
 	Lt = 0x04,      // <
 	Gt = 0x05,      // >
 	Le = 0x06,      // <=
 	Ge = 0x07,      // >=
-	Not = 0x08,     // !
 	BoolAnd = 0x09, // &&
 	And = 0x0A,     // &
 	Or = 0x0B,      // | and ||
 	Add = 0x0C,     // +
 	Sub = 0x0D,     // -
-	Neg = 0x0E,     // -
 	Xor = 0x0F,     // ^
 	Mul = 0x10,     // *
 	Div = 0x11,     // /
 	Mod = 0x12,     // %
-	Ass = 0x13,     // =
-	MulAss = 0x14,  // *=
-	DivAss = 0x15,  // /=
-	ModAss = 0x16,  // %=
-	AddAss = 0x17,  // +=
-	SubAss = 0x18,  // -=
-	AndAss = 0x19,  // &=
-	XorAss = 0x1A,  // ^=
-	OrAss = 0x1B,   // |=
-	Inv = 0x1D,     // ~
 }
 
-impl Op {
-	pub fn kind(self) -> OpKind {
-		use Op::*;
-		match self {
-			Not | Neg | Inv => OpKind::Unary,
-			Eq | Ne | Lt | Le | Gt | Ge => OpKind::Binary,
-			BoolAnd | And | Or | Add | Sub | Xor | Mul | Div | Mod => OpKind::Binary,
-			Ass | MulAss | DivAss | ModAss | AddAss | SubAss | AndAss | XorAss | OrAss => {
-				OpKind::Assign
-			}
-		}
-	}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)] // comment to trick rustfmt
+#[derive(num_enum::TryFromPrimitive, num_enum::IntoPrimitive)]
+#[repr(u8)]
+pub enum UnOp {
+	Not = 0x08, // !
+	Neg = 0x0E, // -
+	Inv = 0x1D, // ~
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)] // comment to trick rustfmt
+#[derive(num_enum::TryFromPrimitive, num_enum::IntoPrimitive)]
+#[repr(u8)]
+pub enum AssOp {
+	Ass = 0x13,    // =
+	MulAss = 0x14, // *=
+	DivAss = 0x15, // /=
+	ModAss = 0x16, // %=
+	AddAss = 0x17, // +=
+	SubAss = 0x18, // -=
+	AndAss = 0x19, // &=
+	XorAss = 0x1A, // ^=
+	OrAss = 0x1B,  // |=
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[repr(u8)]
-pub enum Term {
+pub enum Expr {
 	Arg(Arg),
-	Op(Op),
-	Insn(Box<Insn>),
+	Bin(BinOp, Box<Expr>, Box<Expr>),
+	Unary(UnOp, Box<Expr>),
+	Assign(AssOp, Box<Expr>),
+	Insn(Insn),
 	Rand, // random 15-bit number
 }
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Expr(pub Vec<Term>);
