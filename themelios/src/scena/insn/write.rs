@@ -109,6 +109,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 			}
 
 			"break" => {
+				ensure_whatever!(insn.args.is_empty(), "malformed break");
 				match self.brk {
 					Some(l) => self.insn(&Insn::new("_goto", vec![Arg::Label(l)]))?,
 					None => whatever!("can't break here"),
@@ -116,6 +117,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 			}
 
 			"continue" => {
+				ensure_whatever!(insn.args.is_empty(), "malformed continue");
 				match self.cont {
 					Some(l) => self.insn(&Insn::new("_goto", vec![Arg::Label(l)]))?,
 					None => whatever!("can't continue here"),
