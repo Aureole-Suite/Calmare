@@ -17,13 +17,15 @@ macro_rules! impl_from_into {
 
 #[macro_export]
 macro_rules! newtype {
-	($outer:ident($inner:ident)) => {
+	($(#[$m:meta])* $outer:ident($inner:ident)) => {
+		$(#[$m])*
 		#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 		#[repr(transparent)]
 		pub struct $outer(pub $inner);
 		$crate::impl_from_into!($outer($inner));
 	};
-	($outer:ident($inner:ident), $fmt:literal) => {
+	($(#[$m:meta])* $outer:ident($inner:ident), $fmt:literal) => {
+		$(#[$m])*
 		#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 		#[repr(transparent)]
 		pub struct $outer(pub $inner);
@@ -39,7 +41,13 @@ macro_rules! newtype {
 	};
 }
 
-newtype!(Label(usize));
+newtype!(
+	/// A label used in bytecode.
+	///
+	/// Labels with the top bit set are reserved for internal use and are used at own risk.
+	Label(usize)
+);
+
 impl std::fmt::Display for Label {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "L{}", self.0)
