@@ -102,14 +102,14 @@ impl Print for Arg {
 			Arg::Code(v) => f.val(v, ctx),
 			Arg::Expr(v) => f.val(v, ctx),
 
-			Arg::QuestTask(v) => f.val(v, ctx),
-			Arg::QuestFlags(v) => f.val(v, ctx),
-			Arg::SystemFlags(v) => f.val(v, ctx),
-			Arg::LookPointFlags(v) => f.val(v, ctx),
-			Arg::ObjectFlags(v) => f.val(v, ctx),
-			Arg::EventFlags(v) => f.val(v, ctx),
-			Arg::CharFlags(v) => f.val(v, ctx),
-			Arg::CharFlags2(v) => f.val(v, ctx),
+			Arg::QuestTask(v) => f.hex(v),
+			Arg::QuestFlags(v) => f.hex(v),
+			Arg::SystemFlags(v) => f.hex(v),
+			Arg::LookPointFlags(v) => f.hex(v),
+			Arg::ObjectFlags(v) => f.hex(v),
+			Arg::EventFlags(v) => f.hex(v),
+			Arg::CharFlags(v) => f.hex(v),
+			Arg::CharFlags2(v) => f.hex(v),
 		};
 	}
 }

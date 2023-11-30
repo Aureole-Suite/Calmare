@@ -1,4 +1,4 @@
-use crate::{Hex, Print, PrintContext, Printer};
+use crate::{Print, PrintContext, Printer};
 
 pub macro number($($type:ty),*) {
 	$(impl Print for $type {
@@ -30,7 +30,7 @@ pub macro newtype_hex($type:ty) {
 	impl Print for $type {
 		fn print(&self, f: &mut Printer, _ctx: &mut PrintContext) {
 			let Self(v) = self;
-			v.print_hex(f);
+			f.hex(v);
 		}
 	}
 }

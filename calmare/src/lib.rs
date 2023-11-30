@@ -20,6 +20,11 @@ pub(crate) impl Printer {
 	fn kv_line(&mut self, key: &str, val: impl Print, ctx: &mut PrintContext) -> &mut Self {
 		self.word(key).val(val, ctx).line()
 	}
+
+	fn hex(&mut self, val: impl Hex) -> &mut Self {
+		val.print_hex(self);
+		self.space()
+	}
 }
 
 pub trait Print {
@@ -60,6 +65,12 @@ impl Print for String {
 
 trait Hex {
 	fn print_hex(&self, f: &mut Printer);
+}
+
+impl<T: Hex> Hex for &T {
+	fn print_hex(&self, f: &mut Printer) {
+		T::print_hex(self, f)
+	}
 }
 
 impl Hex for u8 {
