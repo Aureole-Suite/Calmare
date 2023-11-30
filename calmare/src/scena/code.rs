@@ -98,7 +98,7 @@ impl Print for Arg {
 			Arg::Var(v) => f.val(v, ctx),
 			Arg::Global(v) => f.val(v, ctx),
 			Arg::Attr(v) => f.val(v, ctx),
-			Arg::CharAttr(v, w) => f.val(v, ctx),
+			Arg::CharAttr(v, w) => f.val(v, ctx).no_space().word(".").no_space().val(w, ctx),
 			Arg::Code(v) => f.val(v, ctx),
 			Arg::Expr(v) => f.val(v, ctx),
 
