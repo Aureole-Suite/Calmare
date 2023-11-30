@@ -15,45 +15,44 @@ impl Print for ed6::Scena {
 				}
 			}
 		});
-		f.line();
 
 		for entry in &self.entries {
-			f.word("entry").block(|f| entry.print(f, ctx));
 			f.line();
+			f.word("entry").block(|f| entry.print(f, ctx));
 		}
 
-		print_chcp(&self.ch, &self.cp, ctx, f);
 		if !self.ch.is_empty() || !self.cp.is_empty() {
 			f.line();
 		}
+		print_chcp(&self.ch, &self.cp, ctx, f);
 
 		let mut n = 0;
 
 		for npc in &self.npcs {
+			f.line();
 			f.word("npc")
 				.val(LocalCharId(n), ctx)
 				.block(|f| npc.print(f, ctx));
 			n += 1;
-			f.line();
 		}
 
 		for monster in &self.monsters {
+			f.line();
 			f.word("monster")
 				.val(LocalCharId(n), ctx)
 				.block(|f| monster.print(f, ctx));
 			n += 1;
-			f.line();
 		}
 
 		for (i, event) in self.events.iter().enumerate() {
-			f.val(EventId(i as u16), ctx).block(|f| event.print(f, ctx));
 			f.line();
+			f.val(EventId(i as u16), ctx).block(|f| event.print(f, ctx));
 		}
 
 		for (i, lp) in self.look_points.iter().enumerate() {
+			f.line();
 			f.val(LookPointId(i as u16), ctx)
 				.block(|f| lp.print(f, ctx));
-			f.line();
 		}
 	}
 }
