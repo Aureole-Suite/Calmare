@@ -1,5 +1,6 @@
 use themelios::scena;
-pub mod ed6;
+mod code;
+mod ed6;
 
 use crate::macros::{newtype_hex, newtype_term};
 use crate::{Print, PrintContext, Printer, PrinterExt as _};

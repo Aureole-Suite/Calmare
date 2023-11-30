@@ -2,6 +2,10 @@ use crate::{Print, PrintContext, Printer, PrinterExt};
 use themelios::scena::{ed6, ChipId, EventId, LocalCharId, LookPointId};
 use themelios::types::FileId;
 
+struct LocalFuncId(u16);
+
+crate::macros::newtype_term!(LocalFuncId, "fn");
+
 impl Print for ed6::Scena {
 	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 		f.word("scena").block(|f| {
@@ -53,6 +57,11 @@ impl Print for ed6::Scena {
 			f.line();
 			f.val(LookPointId(i as u16), ctx)
 				.block(|f| lp.print(f, ctx));
+		}
+
+		for (i, func) in self.functions.iter().enumerate() {
+			f.line();
+			f.val(LocalFuncId(i as u16), ctx).val(func, ctx);
 		}
 	}
 }

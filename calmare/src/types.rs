@@ -2,7 +2,11 @@ use crate::macros::{newtype_hex, newtype_term, newtype_unit};
 use crate::{Print, PrintContext, Printer, PrinterExt};
 use themelios::types;
 
-// Label(usize)
+impl Print for types::Label {
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+		write!(f, "{:?}", self);
+	}
+}
 
 impl Print for types::FileId {
 	fn print(&self, f: &mut Printer, _ctx: &mut PrintContext) {

@@ -30,7 +30,7 @@ impl Printer {
 		let newline = std::mem::take(&mut self.newline);
 		let space = std::mem::take(&mut self.space);
 		if newline {
-			for _ in 0..self.indent + usize::from(space) {
+			for _ in 0..self.indent {
 				self.out.push('\t');
 			}
 		} else if space {
@@ -53,6 +53,14 @@ impl Printer {
 		self.newline = true;
 		self.space = false;
 		self
+	}
+
+	pub fn is_line(&self) -> bool {
+		self.newline
+	}
+
+	pub fn is_space(&self) -> bool {
+		self.space && !self.newline
 	}
 
 	pub fn indent<T>(&mut self, f: impl FnOnce(&mut Self) -> T) -> T {
@@ -103,6 +111,7 @@ impl Printer {
 	}
 
 	pub fn block<T>(&mut self, f: impl FnOnce(&mut Self) -> T) -> T {
+		assert!(!self.newline);
 		let v = self.suf(":").line().indent(f);
 		assert!(self.newline);
 		v
