@@ -28,24 +28,24 @@ pub macro newtype_unit($type:ty, $suf:literal) {
 
 #[doc(hidden)]
 pub(crate) trait Hex {
-	fn hex_width(&self) -> usize;
+	fn print_hex(&self, f: &mut Printer);
 }
 
 impl Hex for u8 {
-	fn hex_width(&self) -> usize {
-		2
+	fn print_hex(&self, f: &mut Printer) {
+		write!(f, "0x{self:02X}");
 	}
 }
 
 impl Hex for u16 {
-	fn hex_width(&self) -> usize {
-		4
+	fn print_hex(&self, f: &mut Printer) {
+		write!(f, "0x{self:04X}");
 	}
 }
 
 impl Hex for u32 {
-	fn hex_width(&self) -> usize {
-		8
+	fn print_hex(&self, f: &mut Printer) {
+		write!(f, "0x{self:08X}");
 	}
 }
 
@@ -53,7 +53,7 @@ pub macro newtype_hex($type:ty) {
 	impl Print for $type {
 		fn print(&self, f: &mut Printer, _ctx: &mut PrintContext) {
 			let Self(v) = self;
-			write!(f, "0x{:0width$X}", v, width = v.hex_width());
+			v.print_hex(f);
 		}
 	}
 }
