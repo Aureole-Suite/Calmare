@@ -1,5 +1,5 @@
 use crate::{Print, PrintContext, Printer, PrinterExt};
-use themelios::scena::{ed6, ChipId, LocalCharId};
+use themelios::scena::{ed6, ChipId, EventId, LocalCharId, LookPointId};
 use themelios::types::FileId;
 
 impl Print for ed6::Scena {
@@ -42,6 +42,17 @@ impl Print for ed6::Scena {
 				.val(LocalCharId(n), ctx)
 				.block(|f| monster.print(f, ctx));
 			n += 1;
+			f.line();
+		}
+
+		for (i, event) in self.events.iter().enumerate() {
+			f.val(EventId(i as u16), ctx).block(|f| event.print(f, ctx));
+			f.line();
+		}
+
+		for (i, lp) in self.look_points.iter().enumerate() {
+			f.val(LookPointId(i as u16), ctx)
+				.block(|f| lp.print(f, ctx));
 			f.line();
 		}
 	}
@@ -118,5 +129,26 @@ impl Print for ed6::Monster {
 		f.kv_line("battle", self.battle, ctx);
 		f.kv_line("flag", self.flag, ctx);
 		f.kv_line("unk3", self.unk3, ctx);
+	}
+}
+
+impl Print for ed6::Event {
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+		f.kv_line("pos1", self.pos1, ctx);
+		f.kv_line("pos2", self.pos2, ctx);
+		f.kv_line("flags", self.flags, ctx);
+		f.kv_line("func", self.func, ctx);
+		f.kv_line("unk1", self.unk1, ctx);
+	}
+}
+
+impl Print for ed6::LookPoint {
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+		f.kv_line("pos", self.pos, ctx);
+		f.kv_line("radius", self.radius, ctx);
+		f.kv_line("bubble_pos", self.bubble_pos, ctx);
+		f.kv_line("flags", self.flags, ctx);
+		f.kv_line("func", self.func, ctx);
+		f.kv_line("unk1", self.unk1, ctx);
 	}
 }
