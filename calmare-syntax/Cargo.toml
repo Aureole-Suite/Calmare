@@ -1,0 +1,7 @@
+[package]
+name = "calmare-syntax"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+unicode-ident = "1.0.12"

@@ -1,6 +1,13 @@
 [workspace]
 members = [
 	"themelios",
+	"calmare-syntax",
+	"calmare",
 	"examples",
 ]
 resolver = "2"
+
+[workspace.dependencies]
+themelios = { path = "./themelios" }
+calmare-syntax = { path = "./calmare-syntax" }
+calmare = { path = "./calmare" }

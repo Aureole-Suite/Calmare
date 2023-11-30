@@ -1,3 +1,4 @@
+use calmare::Print as _;
 use themelios::scena::ed6::Scena;
 use themelios::scena::insn_set::{self, Game, Variant};
 fn main() -> anyhow::Result<()> {
@@ -12,6 +13,11 @@ fn main() -> anyhow::Result<()> {
 		// dbg!(&scena);
 		themelios::scena::code::decompile::decompile(&mut scena.functions);
 		themelios::scena::code::normalize::normalize(&mut scena.functions).unwrap();
+		for e in &scena.entries {
+			let mut printer = calmare::Printer::new();
+			e.print(&mut calmare::PrintContext {}, &mut printer);
+			println!("{}", printer.finish());
+		}
 		// println!("{:#?}", scena.functions[0]);
 		let bytes2 = Scena::write(&iset, &scena)?;
 		if bytes != bytes2 {

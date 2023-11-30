@@ -48,6 +48,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f30e7476521f6f8af1a1c4c0b8cc94f0bee37d91763d0ca2665f299b6cd8aec"
 
 [[package]]
+name = "calmare"
+version = "0.1.0"
+dependencies = [
+ "calmare-syntax",
+ "extend",
+ "themelios",
+]
+
+[[package]]
+name = "calmare-syntax"
+version = "0.1.0"
+dependencies = [
+ "unicode-ident",
+]
+
+[[package]]
 name = "cc"
 version = "1.0.84"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -152,6 +168,7 @@ name = "examples"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "calmare",
  "compact-debug",
  "themelios",
 ]

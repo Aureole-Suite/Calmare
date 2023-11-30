@@ -4,6 +4,7 @@ version = "0.0.0"
 edition = "2021"
 
 [dev-dependencies]
-themelios.path = "../themelios"
+themelios.workspace = true
+calmare.workspace = true
 anyhow = "1.0"
 compact-debug = "0.1.0"
