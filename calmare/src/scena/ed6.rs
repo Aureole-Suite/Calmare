@@ -84,71 +84,10 @@ fn print_chcp(ch: &[FileId], cp: &[FileId], ctx: &mut PrintContext, f: &mut Prin
 	}
 }
 
-impl Print for ed6::Entry {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-		f.kv_line("pos", self.pos, ctx);
-		f.kv_line("chr", self.chr, ctx);
-		f.kv_line("angle", self.angle, ctx);
-		f.kv_line("cam_from", self.cam_from, ctx);
-		f.kv_line("cam_at", self.cam_at, ctx);
-		f.kv_line("cam_zoom", self.cam_zoom, ctx);
-		f.kv_line("cam_pers", self.cam_pers, ctx);
-		f.kv_line("cam_deg", self.cam_deg, ctx);
-		f.kv_line("cam_limit", self.cam_limit, ctx);
-		f.kv_line("north", self.north, ctx);
-		f.kv_line("flags", self.flags, ctx);
-		f.kv_line("town", self.town, ctx);
-		f.kv_line("init", self.init, ctx);
-		f.kv_line("reinit", self.reinit, ctx);
-	}
-}
-
-impl Print for ed6::Npc {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-		f.kv_line("name", &self.name, ctx);
-		f.kv_line("pos", self.pos, ctx);
-		f.kv_line("angle", self.angle, ctx);
-		f.kv_line("x", self.x, ctx);
-		f.kv_line("cp", self.cp, ctx);
-		f.kv_line("frame", self.frame, ctx);
-		f.kv_line("ch", self.ch, ctx);
-		f.kv_line("flags", self.flags, ctx);
-		f.kv_line("init", self.init, ctx);
-		f.kv_line("talk", self.talk, ctx);
-	}
-}
-
-impl Print for ed6::Monster {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-		f.kv_line("name", &self.name, ctx);
-		f.kv_line("pos", self.pos, ctx);
-		f.kv_line("angle", self.angle, ctx);
-		f.kv_line("chip", self.chip, ctx);
-		f.kv_line("flags", self.flags, ctx);
-		f.kv_line("unk2", self.unk2, ctx);
-		f.kv_line("battle", self.battle, ctx);
-		f.kv_line("flag", self.flag, ctx);
-		f.kv_line("unk3", self.unk3, ctx);
-	}
-}
-
-impl Print for ed6::Event {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-		f.kv_line("pos1", self.pos1, ctx);
-		f.kv_line("pos2", self.pos2, ctx);
-		f.kv_line("flags", self.flags, ctx);
-		f.kv_line("func", self.func, ctx);
-		f.kv_line("unk1", self.unk1, ctx);
-	}
-}
-
-impl Print for ed6::LookPoint {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-		f.kv_line("pos", self.pos, ctx);
-		f.kv_line("radius", self.radius, ctx);
-		f.kv_line("bubble_pos", self.bubble_pos, ctx);
-		f.kv_line("flags", self.flags, ctx);
-		f.kv_line("func", self.func, ctx);
-		f.kv_line("unk1", self.unk1, ctx);
-	}
+crate::macros::strukt! {
+	struct ed6::Entry { pos, chr, angle, cam_from, cam_at, cam_zoom, cam_pers, cam_deg, cam_limit, north, flags, town, init, reinit, }
+	struct ed6::Npc { name, pos, angle, x, cp, frame, ch, flags, init, talk, }
+	struct ed6::Monster { name, pos, angle, chip, flags, unk2, battle, flag, unk3, }
+	struct ed6::Event { pos1, pos2, flags, func, unk1, }
+	struct ed6::LookPoint { pos, radius, bubble_pos, flags, func, unk1, }
 }

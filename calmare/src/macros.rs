@@ -57,3 +57,12 @@ pub macro newtype_hex($type:ty) {
 		}
 	}
 }
+
+pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
+	$(impl Print for $type {
+		fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+			let Self { $($field),* } = &self;
+			$(f.kv_line(stringify!($field), $field, ctx);)*
+		}
+	})+
+}
