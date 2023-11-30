@@ -96,8 +96,8 @@ fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>) -> Code 
 	while let Some(insn) = ctx.next() {
 		out.push(insn);
 		let insn = out.last_mut().unwrap();
-		match insn.parts() {
-			("_goto", &[Arg::Label(l)]) => {
+		match (insn.name.as_str(), insn.args.as_mut_slice()) {
+			("_goto", &mut [Arg::Label(l)]) => {
 				if Some(l) == brk {
 					*insn = Insn::new("break", vec![])
 				} else if Some(l) == cont {
@@ -105,11 +105,10 @@ fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>) -> Code 
 				}
 			}
 
-			("_if", &[.., Arg::Label(l1)]) => {
+			("_if", &mut [.., Arg::Label(l1)]) => {
 				let Some(target) = ctx.lookup(l1) else {
 					continue;
 				};
-
 				insn.args.pop();
 
 				let is_loop = ctx
@@ -141,11 +140,79 @@ fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>) -> Code 
 				}
 			}
 
+			("_switch", [.., Arg::Tuple(cases), Arg::Label(default)]) => {
+				let Some(cases) = find_cases(&ctx, cases, default) else {
+					continue;
+				};
+				insn.args.pop();
+				insn.args.pop();
+
+				let mut switch_brk = None;
+				for case_end in cases.iter().map(|a| &a.1).skip(1) {
+					if let Some(end) = ctx.lookup(*case_end).and_then(|p| ctx.peek(p - 1)).and_then(as_goto) {
+						if ctx.lookup(end).is_some() {
+							switch_brk = Some(end);
+						}
+					}
+				}
+
+				// There's a couple of edge cases where the last case is the only that has a break.
+				// These are currently not handled, might improve it later.
+
+				let mut bodies = Vec::new();
+				for end in cases.iter().map(|i| i.1).skip(1).chain(switch_brk) {
+					let body = block(ctx.until(end), cont, switch_brk);
+					bodies.push(body);
+				}
+
+				bodies.push(Code(vec![]));
+
+				let mut out = Vec::new();
+				for ((mut case, _), body) in std::iter::zip(cases, bodies) {
+					case.args.push(Arg::Code(body));
+					out.push(case);
+				}
+
+				insn.name = "switch".into();
+				insn.args.push(Arg::Code(Code(out)));
+			}
 			_ => {}
 		}
 		label = as_label(insn);
 	}
 	Code(out)
+}
+
+fn find_cases(ctx: &ContextIter, cases: &mut [Arg], default: &Label) -> Option<Vec<(Insn, Label)>> {
+	let default_pos = ctx.lookup(*default)?;
+
+	let mut out = Vec::new();
+	for case in cases.iter() {
+		let Arg::Tuple(case) = case else {
+			return None;
+		};
+		let Some(Arg::Label(label)) = case.last() else {
+			return None;
+		};
+		ctx.lookup(*label)?;
+		out.push((Insn::new("case", vec![]), *label));
+	}
+
+	if !out.is_sorted_by_key(|a| ctx.lookup(a.1).unwrap()) {
+		return None;
+	}
+
+	for (insn, case) in std::iter::zip(&mut out, cases) {
+		let Arg::Tuple(case) = case else {
+			return None;
+		};
+		case.pop();
+		std::mem::swap(&mut insn.0.args, case);
+	}
+
+	let idx = out.partition_point(|a| ctx.lookup(a.1).unwrap() < default_pos);
+	out.insert(idx, (Insn::new("default", vec![]), *default));
+	Some(out)
 }
 
 fn as_goto(insn: &Insn) -> Option<Label> {
