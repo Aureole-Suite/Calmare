@@ -184,20 +184,9 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 			T::TString => out.push(Arg::TString(TString(f.string()?))),
 			T::Text => text(f, out)?,
 
-			T::Pos2 => out.push(Arg::Pos2(Pos2 {
-				x: f.i32()?,
-				z: f.i32()?,
-			})),
-			T::Pos3 => out.push(Arg::Pos3(Pos3 {
-				x: f.i32()?,
-				y: f.i32()?,
-				z: f.i32()?,
-			})),
-			T::RPos3 => out.push(Arg::RPos3(Pos3 {
-				x: f.i32()?,
-				y: f.i32()?,
-				z: f.i32()?,
-			})),
+			T::Pos2 => out.push(Arg::Pos2(f.pos2()?)),
+			T::Pos3 => out.push(Arg::Pos3(f.pos3()?)),
+			T::RPos3 => out.push(Arg::RPos3(f.pos3()?)),
 
 			T::Expr => out.push(Arg::Expr(self.expr()?)),
 
@@ -331,11 +320,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 			}
 
 			T::EffPlayPos => {
-				let pos = Pos3 {
-					x: f.i32()?,
-					y: f.i32()?,
-					z: f.i32()?,
-				};
+				let pos = f.pos3()?;
 				if matches!(out[0], Arg::Char(CharId::Null)) {
 					out.push(Arg::Pos3(pos))
 				} else {
