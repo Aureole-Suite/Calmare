@@ -5,6 +5,8 @@ use themelios::scena::{
 
 use crate::{Print, PrintContext, Printer, PrinterExt};
 
+mod expr;
+
 impl Print for Code {
 	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 		f.block(|f| {
@@ -141,6 +143,6 @@ impl Print for Arg {
 
 impl Print for Expr {
 	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-		write!(f, "{:?}", self);
+		expr::print(self, f, ctx)
 	}
 }
