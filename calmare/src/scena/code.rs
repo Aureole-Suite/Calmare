@@ -33,6 +33,23 @@ impl Print for Insn {
 					f.word("else").val(no, ctx);
 				}
 			}
+
+			("Menu", args) => {
+				f.word("Menu");
+				let mut n = 0;
+				for arg in args {
+					if matches!(arg, Arg::TString(_)) {
+						f.line().indent(|f| {
+							f.val(arg, ctx);
+							write!(f, "// {n}");
+						});
+						n += 1;
+					} else {
+						f.val(arg, ctx);
+					}
+				}
+			}
+
 			_ => {
 				f.word(&self.name);
 				for arg in &self.args {
