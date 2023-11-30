@@ -45,9 +45,13 @@ pub enum Arg {
 	Int(i64), // easier to have a single integer type encompassing everything
 	String(String),
 
-	Scalar(i32, Unit),
-	Angle32(i32),
-	Color(u32),
+	Time(Time),
+	Angle(Angle),
+	Angle32(Angle32),
+	Speed(Speed),
+	AngularSpeed(AngularSpeed),
+	Length(Length),
+	Color(Color),
 
 	Pos2(Pos2),
 	Pos3(Pos3),
@@ -102,15 +106,6 @@ pub enum Arg {
 	EventFlags(u16),
 	CharFlags(u16),
 	CharFlags2(u16),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Unit {
-	Time,
-	Length,
-	Speed,
-	Angle,
-	AngularSpeed,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

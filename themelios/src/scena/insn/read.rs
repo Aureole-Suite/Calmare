@@ -4,7 +4,7 @@ use snafu::prelude::*;
 use super::{Arg, Insn};
 use crate::scena::code::visit::visit_args;
 use crate::scena::code::Code;
-use crate::scena::insn::{Expr, Unit};
+use crate::scena::insn::Expr;
 use crate::scena::{insn_set as iset, CharId, EventId, FuncId, LookPointId};
 use crate::types::*;
 use crate::util::{ReaderExt, ValueError};
@@ -375,13 +375,13 @@ fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Option<Arg>
 
 		T::Address => Arg::Label(Label(cast(v)?)),
 
-		T::Time => Arg::Scalar(cast(v)?, Unit::Time),
-		T::Length => Arg::Scalar(cast(v)?, Unit::Length),
-		T::Speed => Arg::Scalar(cast(v)?, Unit::Speed),
-		T::Angle => Arg::Scalar(cast(v)?, Unit::Angle),
-		T::AngularSpeed => Arg::Scalar(cast(v)?, Unit::AngularSpeed),
-		T::Angle32 => Arg::Angle32(cast(v)?),
-		T::Color => Arg::Color(cast(v)?),
+		T::Time => Arg::Time(Time(cast(v)?)),
+		T::Length => Arg::Length(Length(cast(v)?)),
+		T::Angle => Arg::Angle(Angle(cast(v)?)),
+		T::Angle32 => Arg::Angle32(Angle32(cast(v)?)),
+		T::Speed => Arg::Speed(Speed(cast(v)?)),
+		T::AngularSpeed => Arg::AngularSpeed(AngularSpeed(cast(v)?)),
+		T::Color => Arg::Color(Color(cast(v)?)),
 
 		T::FileId => Arg::File(FileId(cast(v)?)),
 

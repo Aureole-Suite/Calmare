@@ -492,9 +492,13 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 fn int_arg(iset: &iset::InsnSet, arg: &Arg) -> Result<i64, WriteError> {
 	Ok(match *arg {
 		Arg::Int(v) => v,
-		Arg::Scalar(v, _) => v as i64,
-		Arg::Angle32(v) => v as i64,
-		Arg::Color(v) => v as i64,
+		Arg::Time(Time(v)) => v as i64,
+		Arg::Angle(Angle(v)) => v as i64,
+		Arg::Angle32(Angle32(v)) => v as i64,
+		Arg::Speed(Speed(v)) => v as i64,
+		Arg::AngularSpeed(AngularSpeed(v)) => v as i64,
+		Arg::Length(Length(v)) => v as i64,
+		Arg::Color(Color(v)) => v as i64,
 		Arg::File(FileId(v)) => v as i64,
 		Arg::Battle(BattleId(v)) => v as i64,
 		Arg::Bgm(BgmId(v)) => v as i64,
