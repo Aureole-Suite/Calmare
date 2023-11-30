@@ -20,21 +20,24 @@ impl Print for Code {
 
 impl Print for Insn {
 	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-		if let ("if", [args @ .., Arg::Code(yes), Arg::Code(no)]) = self.parts() {
-			f.word("if");
-			for arg in args {
-				f.val(arg, ctx);
+		match self.parts() {
+			("if", [args @ .., Arg::Code(yes), Arg::Code(no)]) => {
+				f.word("if");
+				for arg in args {
+					f.val(arg, ctx);
+				}
+				f.val(yes, ctx);
+				if no.len() == 1 && no[0].name == "if" {
+					f.word("else").val(&no[0], ctx);
+				} else {
+					f.word("else").val(no, ctx);
+				}
 			}
-			f.val(yes, ctx);
-			if no.len() == 1 && no[0].name == "if" {
-				f.word("else").val(&no[0], ctx);
-			} else {
-				f.word("else").val(no, ctx);
-			}
-		} else {
-			f.word(&self.name);
-			for arg in &self.args {
-				f.val(arg, ctx);
+			_ => {
+				f.word(&self.name);
+				for arg in &self.args {
+					f.val(arg, ctx);
+				}
 			}
 		}
 	}
