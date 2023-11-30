@@ -149,7 +149,11 @@ fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>) -> Code 
 
 				let mut switch_brk = None;
 				for case_end in cases.iter().map(|a| &a.1).skip(1) {
-					if let Some(end) = ctx.lookup(*case_end).and_then(|p| ctx.peek(p - 1)).and_then(as_goto) {
+					if let Some(end) = ctx
+						.lookup(*case_end)
+						.and_then(|p| ctx.peek(p - 1))
+						.and_then(as_goto)
+					{
 						if ctx.lookup(end).is_some() {
 							switch_brk = Some(end);
 						}

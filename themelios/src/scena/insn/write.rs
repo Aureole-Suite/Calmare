@@ -90,27 +90,25 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				self.f.place(label);
 			}
 
-			"if" => {
-				match insn.args.as_slice() {
-					[args@.., Arg::Code(yes), Arg::Code(no)] => {
-						let mid = self.internal_label(GLabel::new());
-						let end = self.internal_label(GLabel::new());
-						self.insn(&Insn::new("_if", vec_plus![args, Arg::Label(mid)]))?;
-						self.code(yes)?;
-						self.insn(&Insn::new("_goto", vec![Arg::Label(end)]))?;
-						self.insn(&Insn::new("_label", vec![Arg::Label(mid)]))?;
-						self.code(no)?;
-						self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
-					}
-					[args@.., Arg::Code(yes)] => {
-						let end = self.internal_label(GLabel::new());
-						self.insn(&Insn::new("_if", vec_plus![args, Arg::Label(end)]))?;
-						self.code(yes)?;
-						self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
-					}
-					_ => whatever!("malformed if")
+			"if" => match insn.args.as_slice() {
+				[args @ .., Arg::Code(yes), Arg::Code(no)] => {
+					let mid = self.internal_label(GLabel::new());
+					let end = self.internal_label(GLabel::new());
+					self.insn(&Insn::new("_if", vec_plus![args, Arg::Label(mid)]))?;
+					self.code(yes)?;
+					self.insn(&Insn::new("_goto", vec![Arg::Label(end)]))?;
+					self.insn(&Insn::new("_label", vec![Arg::Label(mid)]))?;
+					self.code(no)?;
+					self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
 				}
-			}
+				[args @ .., Arg::Code(yes)] => {
+					let end = self.internal_label(GLabel::new());
+					self.insn(&Insn::new("_if", vec_plus![args, Arg::Label(end)]))?;
+					self.code(yes)?;
+					self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
+				}
+				_ => whatever!("malformed if"),
+			},
 
 			"break" => {
 				ensure_whatever!(insn.args.is_empty(), "malformed break");
@@ -129,7 +127,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 			}
 
 			"while" => {
-				let [args@.., Arg::Code(body)] = insn.args.as_slice() else {
+				let [args @ .., Arg::Code(body)] = insn.args.as_slice() else {
 					whatever!("malformed while")
 				};
 				let start = self.internal_label(GLabel::new());
