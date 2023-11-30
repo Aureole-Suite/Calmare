@@ -26,6 +26,7 @@ pub struct InsnWriter<'iset, 'write> {
 	f: &'write mut Writer,
 	iset: &'iset iset::InsnSet<'iset>,
 	labels: BTreeMap<Label, GLabel>,
+	label_no: usize,
 	battle_pos: Option<&'iset [GLabel]>,
 }
 
@@ -51,6 +52,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 			f,
 			iset,
 			labels: BTreeMap::new(),
+			label_no: 0,
 			battle_pos,
 		}
 	}
@@ -87,6 +89,13 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 
 	fn label(&mut self, label: &Label) -> GLabel {
 		*self.labels.entry(*label).or_insert_with(GLabel::new)
+	}
+
+	fn internal_label(&mut self, label: GLabel) -> Label {
+		let l = Label(!self.label_no);
+		self.label_no += 1;
+		self.labels.insert(l, label);
+		l
 	}
 
 	fn args(&mut self, args: &[Arg], iargs: &[iset::Arg]) -> Result<(), WriteError> {
@@ -215,19 +224,13 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				expect!(Arg::Code(c) in iter, "code");
 				let l1 = GLabel::new();
 				let l2 = GLabel::new();
+				let l1_ = self.internal_label(l1);
 				self.f.diff8(l1, l2);
 				self.f.place(l1);
 				self.code(c)?;
 				self.f.place(l2);
 				self.insn(&Insn::new(next, vec![]))?;
-				// Ugly hack :( Need a _goto to the start of the block, and this is the only way I have to do that
-				const KEY: Label = Label(usize::MAX);
-				let prev = self.labels.insert(KEY, l1);
-				self.insn(&Insn::new("_goto", vec![Arg::Label(KEY)]))?;
-				match prev {
-					Some(v) => self.labels.insert(KEY, v),
-					None => self.labels.remove(&KEY),
-				};
+				self.insn(&Insn::new("_goto", vec![Arg::Label(l1_)]))?;
 			}
 
 			T::SwitchTable(count, case) => {
