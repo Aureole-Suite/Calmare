@@ -58,3 +58,9 @@ impl Print for types::TString {
 		self.0.print(f, ctx)
 	}
 }
+
+impl Print for types::Text {
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+		self.0.print(f, ctx)
+	}
+}

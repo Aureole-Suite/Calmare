@@ -58,7 +58,7 @@ pub enum Arg {
 	RPos3(Pos3),
 
 	TString(TString),
-	Text(TString),
+	Text(Text),
 
 	Tuple(Vec<Arg>),
 	File(FileId),

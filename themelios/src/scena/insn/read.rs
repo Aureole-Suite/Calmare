@@ -455,7 +455,7 @@ fn text(f: &mut Reader, out: &mut Vec<Arg>) -> Result<()> {
 	Ok(())
 }
 
-fn text_page(f: &mut Reader) -> Result<(TString, bool)> {
+fn text_page(f: &mut Reader) -> Result<(Text, bool)> {
 	let mut buf = String::new();
 	let more = loop {
 		match f.u8()? {
@@ -481,5 +481,5 @@ fn text_page(f: &mut Reader) -> Result<(TString, bool)> {
 			}
 		}
 	};
-	Ok((TString(buf), more))
+	Ok((Text(TString(buf)), more))
 }

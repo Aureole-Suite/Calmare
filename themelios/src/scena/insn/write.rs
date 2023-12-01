@@ -561,8 +561,8 @@ fn text<'c>(f: &mut Writer, iter: impl Iterator<Item = &'c Arg>) -> Result<(), W
 	Ok(())
 }
 
-fn text_page(f: &mut Writer, s: &TString) -> Result<(), WriteError> {
-	let mut iter = s.chars();
+fn text_page(f: &mut Writer, s: &Text) -> Result<(), WriteError> {
+	let mut iter = s.0.chars();
 	while let Some(char) = iter.next() {
 		if char == '\\' {
 			match iter.next() {

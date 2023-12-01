@@ -96,7 +96,7 @@ pub struct Pos3 {
 }
 
 /// Translatable string
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 #[repr(transparent)]
 pub struct TString(pub String);
 impl_from_into!(TString(String));
@@ -139,3 +139,8 @@ impl std::fmt::Debug for TString {
 		write!(f, "t{:?}", &self.0)
 	}
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[repr(transparent)]
+pub struct Text(pub TString);
+impl_from_into!(Text(TString));
