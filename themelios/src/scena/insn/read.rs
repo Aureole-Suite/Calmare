@@ -460,21 +460,22 @@ fn text_page(f: &mut Reader) -> Result<(Text, bool)> {
 	let more = loop {
 		match f.u8()? {
 			0x00 => break false,
-			0x01 => buf.push_str("\\n"), // newline → line feed
-			0x02 => buf.push_str("\\f"), // pause → page break
-			0x03 => break true,          // page break
-			0x07 => buf.push_str(&format!("\\{}C", f.u8()?)),
-			0x0D => buf.push_str("\\r"),
-			0x1F => buf.push_str(&format!("\\{}i", f.u16()?)),
-			ch @ (0x00..=0x1F) => buf.push_str(&format!("\\{}x", ch)),
-			b'\\' => buf.push_str("\\\\"),
+			0x01 => buf.push('\n'), // newline
+			0x02 => buf.push('\t'), // pause → tab
+			0x03 => break true,     // page break
+			0x07 => buf.push_str(&format!("♯{}C", f.u8()?)),
+			0x0D => buf.push('\r'),
+			0x1F => buf.push_str(&format!("♯{}i", f.u16()?)),
+			ch @ (0x00..=0x1F) => buf.push_str(&format!("♯{}x", ch)),
 			ch @ 0x20.. => {
 				let result = falcom_sjis::decode_char_from(ch, || f.u8().ok());
 				match result {
+					// write literal sharp sign as its raw sjis bytes encoding
+					Ok('♯') => buf.push_str("♯129x♯242x"),
 					Ok(ch) => buf.push(ch),
 					Err(enc) => {
 						for ch in enc {
-							buf.push_str(&format!("\\{}x", ch))
+							buf.push_str(&format!("♯{}x", ch))
 						}
 					}
 				}

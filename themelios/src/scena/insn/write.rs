@@ -564,43 +564,44 @@ fn text<'c>(f: &mut Writer, iter: impl Iterator<Item = &'c Arg>) -> Result<(), W
 fn text_page(f: &mut Writer, s: &Text) -> Result<(), WriteError> {
 	let mut iter = s.0.chars();
 	while let Some(char) = iter.next() {
-		if char == '\\' {
-			match iter.next() {
-				Some('n') => f.u8(0x01),
-				Some('f') => f.u8(0x02),
-				Some('r') => f.u8(0x0D),
-				Some('\\') => f.u8(b'\\'),
-				Some(v @ ('0'..='9')) => {
-					let mut n = v.to_digit(10).unwrap();
-					loop {
-						match iter.next() {
-							Some(v @ ('0'..='9')) => n = n * 10 + v.to_digit(10).unwrap(),
-							Some('C') => {
-								f.u8(0x07);
-								f.u8(cast(n)?);
-								break;
-							}
-							Some('i') => {
-								f.u8(0x1F);
-								f.u16(cast(n)?);
-								break;
-							}
-							Some('x') => {
-								f.u8(cast(n)?);
-								break;
-							}
-							None => whatever!("unterminated escape sequence"),
-							Some(_) => whatever!("illegal escape sequence"),
+		match char {
+			'\n' => f.u8(0x01),
+			'\t' => f.u8(0x02),
+			'\r' => f.u8(0x0D),
+			'\0'..='\x1F' => whatever!("unprintable character"),
+
+			'♯' => {
+				let mut n = 0;
+				loop {
+					match iter.next() {
+						Some(v @ ('0'..='9')) => n = n * 10 + v.to_digit(10).unwrap(),
+						Some('C') => {
+							f.u8(0x07);
+							f.u8(cast(n)?);
+							break;
 						}
+						Some('i') => {
+							f.u8(0x1F);
+							f.u16(cast(n)?);
+							break;
+						}
+						Some('x') => {
+							f.u8(cast(n)?);
+							break;
+						}
+						None => whatever!("unterminated escape sequence"),
+						Some(_) => whatever!("illegal escape sequence (maybe try `#`?)"),
 					}
 				}
-				None => whatever!("unterminated escape sequence"),
-				Some(_) => whatever!("illegal escape sequence"),
 			}
-		} else if let Some(enc) = falcom_sjis::encode_char(char) {
-			f.slice(&enc)
-		} else {
-			whatever!("cannot encode as shift-jis: {char:?}");
+
+			char => {
+				if let Some(enc) = falcom_sjis::encode_char(char) {
+					f.slice(&enc)
+				} else {
+					whatever!("cannot encode as shift-jis: {char:?}");
+				}
+			}
 		}
 	}
 	Ok(())

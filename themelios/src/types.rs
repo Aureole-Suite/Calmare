@@ -140,6 +140,14 @@ impl std::fmt::Debug for TString {
 	}
 }
 
+/// A translatable string possibly containing non-textual content
+///
+/// - newlines are encoded as `\n` (or sometimes `\r`)
+/// - pauses are encoded as `\t` (`\f` would be more semantically correct, but Rust doesn't support that)
+/// - page breaks are handled at a higher layer, usually by having some variant of `Vec<Text>`
+/// - colors are encoded as `♯𝓃C`, to parallel `#𝓃C`
+/// - item names are likewise encoded as `♯𝓃i`, to parallel `#𝓃i`
+/// - raw bytes are encoded as U+FE𝓃𝓃, in PUA
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 #[repr(transparent)]
 pub struct Text(pub TString);
