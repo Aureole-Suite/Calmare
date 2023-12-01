@@ -5,7 +5,7 @@ use themelios::scena::{
 
 use crate::{Print, PrintContext, Printer, PrinterExt};
 
-// mod expr;
+mod expr;
 
 impl Print for Code {
 	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
@@ -143,7 +143,6 @@ impl Print for Arg {
 
 impl Print for Expr {
 	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-		write!(f, "{self:?}");
-		// expr::print(self, f, ctx)
+		expr::print(self, f, ctx)
 	}
 }

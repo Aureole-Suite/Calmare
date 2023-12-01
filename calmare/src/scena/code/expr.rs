@@ -1,121 +1,85 @@
 use crate::{PrintContext, Printer, PrinterExt};
-use themelios::scena::insn::{Expr, Op, OpKind, Term};
+use themelios::scena::insn::{AssOp, BinOp, Expr, UnOp};
 
 pub fn print(e: &Expr, f: &mut Printer, ctx: &mut PrintContext) {
-	let mut stack = Vec::new();
-	for t in &e.0 {
-		if let Term::Op(op) = t {
-			match op.kind() {
-				OpKind::Unary => {
-					let a = stack.pop().unwrap_or_default();
-					stack.push(E::Un(*op, Box::new(a)));
-				}
-				OpKind::Binary => {
-					let b = stack.pop().unwrap_or_default();
-					let a = stack.pop().unwrap_or_default();
-					stack.push(E::Bin(*op, Box::new(a), Box::new(b)));
-				}
-				OpKind::Assign => {
-					let a = stack.pop().unwrap_or_default();
-					stack.push(E::Ass(*op, Box::new(a)));
-				}
-			}
-		} else {
-			stack.push(E::Atom(t))
-		}
-	}
-
-	if stack.is_empty() {
-		f.word("(EXPR MISSING)");
-	} else {
-		for (i, e) in stack.into_iter().enumerate() {
-			if i != 0 {
-				f.word("¤");
-			}
-			print_prio(e, 0, f, ctx);
-		}
-	}
+	print_prio(e, 0, f, ctx)
 }
 
-#[derive(Default)]
-enum E<'a> {
-	Atom(&'a Term),
-	Bin(Op, Box<E<'a>>, Box<E<'a>>),
-	Un(Op, Box<E<'a>>),
-	Ass(Op, Box<E<'a>>),
-	#[default]
-	Error,
-}
-
-fn print_prio(e: E, prio: u8, f: &mut Printer, ctx: &mut PrintContext) {
+fn print_prio(e: &Expr, prio: u8, f: &mut Printer, ctx: &mut PrintContext) {
 	match e {
-		E::Atom(a) => {
-			match a {
-				Term::Op(_) => unreachable!(),
-				Term::Arg(v) => f.val(v, ctx),
-				Term::Insn(i) => f.val(&**i, ctx),
-				Term::Rand => f.word("random"),
-			};
+		Expr::Arg(v) => {
+			f.val(v, ctx);
 		}
-		E::Bin(op, a, b) => {
-			let (text, prio2) = op_str(op);
+		Expr::Insn(i) => {
+			f.val(i, ctx);
+		}
+		Expr::Rand => {
+			f.word("random");
+		}
+		Expr::Bin(op, a, b) => {
+			let (text, prio2) = binop(*op);
 			if prio2 < prio {
 				f.word("(").no_space();
 			}
-			print_prio(*a, prio2, f, ctx);
+			print_prio(a, prio2, f, ctx);
 			f.word(text);
-			print_prio(*b, prio2 + 1, f, ctx);
+			print_prio(b, prio2 + 1, f, ctx);
 			if prio2 < prio {
 				f.no_space().word(")");
 			}
 		}
-		E::Un(op, a) => {
-			let (text, prio) = op_str(op);
-			f.word(text).no_space();
-			print_prio(*a, prio, f, ctx);
+		Expr::Unary(op, a) => {
+			f.word(unop(*op)).no_space();
+			print_prio(a, 10, f, ctx);
 		}
-		E::Ass(op, a) => {
-			let (text, prio) = op_str(op);
-			f.word(text);
-			print_prio(*a, prio, f, ctx);
-		}
-		E::Error => {
-			write!(f, "(EXPR MISSING)");
+		Expr::Assign(op, a) => {
+			f.word(assop(*op));
+			print_prio(a, 0, f, ctx);
 		}
 	}
 }
 
 #[rustfmt::skip]
-fn op_str(op: Op) -> (&'static str, u8) {
+fn binop(op: BinOp) -> (&'static str, u8) {
 	match op {
-		Op::Eq      => ("==", 4),
-		Op::Ne      => ("!=", 4),
-		Op::Lt      => ("<",  4),
-		Op::Gt      => (">",  4),
-		Op::Le      => ("<=", 4),
-		Op::Ge      => (">=", 4),
-		Op::BoolAnd => ("&&", 3),
-		Op::And     => ("&", 3),
-		Op::Or      => ("|", 1),
-		Op::Add     => ("+", 5),
-		Op::Sub     => ("-", 5),
-		Op::Xor     => ("^", 2),
-		Op::Mul     => ("*", 6),
-		Op::Div     => ("/", 6),
-		Op::Mod     => ("%", 6),
+		BinOp::Eq      => ("==", 4),
+		BinOp::Ne      => ("!=", 4),
+		BinOp::Lt      => ("<",  4),
+		BinOp::Gt      => (">",  4),
+		BinOp::Le      => ("<=", 4),
+		BinOp::Ge      => (">=", 4),
+		BinOp::BoolAnd => ("&&", 3),
+		BinOp::And     => ("&", 3),
+		BinOp::Or      => ("|", 1),
+		BinOp::Add     => ("+", 5),
+		BinOp::Sub     => ("-", 5),
+		BinOp::Xor     => ("^", 2),
+		BinOp::Mul     => ("*", 6),
+		BinOp::Div     => ("/", 6),
+		BinOp::Mod     => ("%", 6),
+	}
+}
 
-		Op::Not    => ("!", 10),
-		Op::Neg    => ("-", 10),
-		Op::Inv    => ("~", 10),
+#[rustfmt::skip]
+fn unop(op: UnOp) -> &'static str {
+	match op {
+		UnOp::Not => "!",
+		UnOp::Neg => "-",
+		UnOp::Inv => "~",
+	}
+}
 
-		Op::Ass    => ("=",  0),
-		Op::MulAss => ("*=", 0),
-		Op::DivAss => ("/=", 0),
-		Op::ModAss => ("%=", 0),
-		Op::AddAss => ("+=", 0),
-		Op::SubAss => ("-=", 0),
-		Op::AndAss => ("&=", 0),
-		Op::XorAss => ("^=", 0),
-		Op::OrAss  => ("|=", 0),
+#[rustfmt::skip]
+fn assop(op: AssOp) -> &'static str {
+	match op {
+		AssOp::Ass    => "=",
+		AssOp::MulAss => "*=",
+		AssOp::DivAss => "/=",
+		AssOp::ModAss => "%=",
+		AssOp::AddAss => "+=",
+		AssOp::SubAss => "-=",
+		AssOp::AndAss => "&=",
+		AssOp::XorAss => "^=",
+		AssOp::OrAss  => "|=",
 	}
 }
