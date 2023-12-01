@@ -124,7 +124,7 @@ impl Print for Arg {
 			Arg::Flag(v) => f.val(v, ctx),
 			Arg::Var(v) => f.term("var").field().val(v, ctx),
 			Arg::Global(v) => f.term("global").field().val(v, ctx),
-			Arg::Attr(v) => f.term("attr").field().val(v, ctx),
+			Arg::Attr(v) => f.term("system").field().val(v, ctx),
 			Arg::CharAttr(v, w) => f.val(v, ctx).no_space().word(".").no_space().val(w, ctx),
 			Arg::Code(v) => f.val(v, ctx),
 			Arg::Expr(v) => f.val(v, ctx),
