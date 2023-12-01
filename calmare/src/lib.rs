@@ -1,6 +1,7 @@
 #![feature(decl_macro)]
 
-pub use calmare_syntax::Printer;
+pub mod print;
+pub use print::Printer;
 
 mod scena;
 mod types;

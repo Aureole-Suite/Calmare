@@ -5,5 +5,4 @@ edition = "2021"
 
 [dependencies]
 themelios.workspace = true
-calmare-syntax.workspace = true
 extend = "1.2.0"
