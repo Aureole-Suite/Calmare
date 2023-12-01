@@ -60,7 +60,28 @@ impl Print for types::TString {
 }
 
 impl Print for types::Text {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-		self.0.print(f, ctx)
+	fn print(&self, f: &mut Printer, _ctx: &mut PrintContext) {
+		f.word("{").line();
+		f.indent(|f| {
+			let str = self.0.as_str();
+			let has_wait = str.ends_with('\t');
+			let str = str.strip_suffix('\t').unwrap_or(str);
+			let mut iter = str.chars().peekable();
+			while let Some(ch) = iter.next() {
+				match ch {
+					'\n' => f.line(),
+					'\t' => write!(f, "♯W"),
+					'\r' if iter.peek() == Some(&'\n') => write!(f, "♯r").line(),
+					'\r' => write!(f, "♯r♯").line(),
+					' ' | '　' if f.is_line() => write!(f, "♯{ch}"),
+					'{' | '}' => write!(f, "♯{ch}"),
+					ch => write!(f, "{ch}"),
+				};
+			}
+			if !has_wait {
+				write!(f, "♯A");
+			}
+		});
+		f.line().word("}");
 	}
 }
