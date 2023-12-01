@@ -595,6 +595,10 @@ fn text_page(f: &mut Writer, s: &Text) -> Result<(), WriteError> {
 				}
 			}
 
+			'♥' => {
+				f.slice(&falcom_sjis::encode_char('㈱').unwrap());
+			}
+
 			char => {
 				if let Some(enc) = falcom_sjis::encode_char(char) {
 					f.slice(&enc)

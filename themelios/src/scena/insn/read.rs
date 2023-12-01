@@ -472,6 +472,7 @@ fn text_page(f: &mut Reader) -> Result<(Text, bool)> {
 				match result {
 					// write literal sharp sign as its raw sjis bytes encoding
 					Ok('♯') => buf.push_str("♯129x♯242x"),
+					Ok('㈱') => buf.push('♥'),
 					Ok(ch) => buf.push(ch),
 					Err(enc) => {
 						for ch in enc {
