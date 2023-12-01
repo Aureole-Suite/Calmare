@@ -85,14 +85,6 @@ impl Printer {
 		self
 	}
 
-	pub fn str(&mut self, str: &str) -> &mut Self {
-		write!(self, "{str:?}").space() // TODO
-	}
-
-	pub fn comment(&mut self, str: &str) -> &mut Self {
-		write!(self, "// {str}").line()
-	}
-
 	pub fn block<T>(&mut self, f: impl FnOnce(&mut Self) -> T) -> T {
 		assert!(!self.newline);
 		let v = self.no_space().word(":").line().indent(f);
@@ -147,17 +139,4 @@ impl<'a> Drop for TermPrinter<'a> {
 			(_, true) => self.printer.no_space().word("]"),
 		};
 	}
-}
-
-#[test]
-fn test1() {
-	let mut p = Printer::new();
-	let mut t = p.term("");
-	t.field().term("4");
-	t.field().term("8");
-	drop(t);
-	p.term("").field().term("a").field().term("4");
-	p.term("hello").field().space();
-	p.line();
-	println!("{:?}", p.finish());
 }
