@@ -107,6 +107,12 @@ impl Print for String {
 	}
 }
 
+impl Parse for String {
+	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+		todo!()
+	}
+}
+
 trait Hex {
 	fn print_hex(&self, f: &mut Printer);
 }

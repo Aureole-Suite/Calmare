@@ -1,6 +1,8 @@
 use crate::{parse, Parse, ParseContext, Parser};
 use crate::{Print, PrintContext, Printer};
 
+pub mod strukt;
+
 pub macro int($($type:ty),*) {
 	$(impl Print for $type {
 		fn print(&self, f: &mut Printer, _ctx: &mut PrintContext) {
@@ -88,13 +90,4 @@ pub macro newtype_hex($type:ty) {
 			Parse::parse(f, ctx).map(Self)
 		}
 	}
-}
-
-pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
-	$(impl Print for $type {
-		fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-			let Self { $($field),* } = &self;
-			$(f.kv_line(stringify!($field), $field, ctx);)*
-		}
-	})+
 }

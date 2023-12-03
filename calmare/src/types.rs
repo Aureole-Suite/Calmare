@@ -82,6 +82,12 @@ impl Print for types::TString {
 	}
 }
 
+impl Parse for types::TString {
+	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+		Parse::parse(f, ctx).map(Self)
+	}
+}
+
 impl Print for types::Text {
 	fn print(&self, f: &mut Printer, _ctx: &mut PrintContext) {
 		f.word("{").line();
