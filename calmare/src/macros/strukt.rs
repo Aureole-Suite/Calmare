@@ -34,21 +34,24 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 			});
 
 			#[allow(unused_mut)]
-			let mut failures: Vec<&str> = Vec::new();
+			let mut missing: Vec<&str> = Vec::new();
 
 			$(
 				let $field = $field.get();
 				if $field.is_none() {
-					failures.push(concat!("`", stringify!($field), "`"));
+					missing.push(concat!("`", stringify!($field), "`"));
 				}
 			)*
 
-			if failures.is_empty() {
-				Ok(Self {
-					$($field: $field.unwrap(),)*
-				})
+			if missing.is_empty() {
+				$(
+					let Some(Some($field)) = $field else {
+						return Err(parse::Diagnostic::DUMMY);
+					};
+				)*
+				Ok(Self { $($field,)* })
 			} else {
-				Err(parse::Diagnostic::error(start, "missing fields").note(start, failures.join(", ")))
+				Err(parse::Diagnostic::error(start, "missing fields").note(start, missing.join(", ")))
 			}
 		}
 	})+
@@ -57,7 +60,7 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 pub trait ParseField: Default {
 	type Output;
 	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()>;
-	fn get(self) -> Option<Self::Output>;
+	fn get(self) -> Option<Option<Self::Output>>;
 }
 
 #[derive(Debug, Clone)]
@@ -89,7 +92,7 @@ impl<T: Parse> ParseField for PlainField<T> {
 		Ok(())
 	}
 
-	fn get(self) -> Option<Self::Output> {
-		self.value
+	fn get(self) -> Option<Option<Self::Output>> {
+		self.head_span.map(|_| self.value)
 	}
 }
