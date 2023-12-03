@@ -116,9 +116,7 @@ impl Parse for ed6::LookPoint {
 
 		let start = f.pos();
 		f.lines(|f| {
-			let start = f.pos();
-			let word = f.word()?;
-			let span = start | f.pos();
+			let parse::Spanned(span, word) = f.try_spanned(|f| f.word())?;
 			match word {
 				"pos" => pos.parse_field(f, ctx, span),
 				"radius" => radius.parse_field(f, ctx, span),
