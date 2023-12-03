@@ -25,7 +25,7 @@ impl Print for ed6::Scena {
 
 		for entry in &self.entries {
 			f.line();
-			f.word("entry").block(|f| entry.print(f, ctx));
+			f.word("entry").val(entry, ctx);
 		}
 
 		if !self.ch.is_empty() || !self.cp.is_empty() {
@@ -37,29 +37,24 @@ impl Print for ed6::Scena {
 
 		for npc in &self.npcs {
 			f.line();
-			f.word("npc")
-				.val(LocalCharId(n), ctx)
-				.block(|f| npc.print(f, ctx));
+			f.word("npc").val(LocalCharId(n), ctx).val(npc, ctx);
 			n += 1;
 		}
 
 		for monster in &self.monsters {
 			f.line();
-			f.word("monster")
-				.val(LocalCharId(n), ctx)
-				.block(|f| monster.print(f, ctx));
+			f.word("monster").val(LocalCharId(n), ctx).val(monster, ctx);
 			n += 1;
 		}
 
 		for (i, event) in self.events.iter().enumerate() {
 			f.line();
-			f.val(EventId(i as u16), ctx).block(|f| event.print(f, ctx));
+			f.val(EventId(i as u16), ctx).val(event, ctx);
 		}
 
 		for (i, lp) in self.look_points.iter().enumerate() {
 			f.line();
-			f.val(LookPointId(i as u16), ctx)
-				.block(|f| lp.print(f, ctx));
+			f.val(LookPointId(i as u16), ctx).val(lp, ctx);
 		}
 
 		for (i, func) in self.functions.iter().enumerate() {

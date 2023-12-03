@@ -5,7 +5,9 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 	$(impl Print for $type {
 		fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 			let Self { $($field),* } = &self;
-			$(f.word(stringify!($field)).val($field, ctx).line();)*
+			f.block(|f| {
+				$(f.word(stringify!($field)).val($field, ctx).line();)*
+			})
 		}
 	})+
 
