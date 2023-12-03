@@ -42,7 +42,6 @@ impl Diagnostic {
 	}
 
 	pub fn emit(self, parser: &mut Parser) {
-		println!("{}", std::backtrace::Backtrace::force_capture());
 		parser.diagnostics.push(self);
 	}
 
