@@ -199,14 +199,22 @@ impl<'src> Parser<'src> {
 		Ok(())
 	}
 
-	pub fn term(&mut self) -> Result<TermParser<'_, 'src>> {
+	pub fn term<T>(&mut self, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<T> {
 		self.check("[")?;
-		Ok(TermParser::new(self, true))
+		self.space()?;
+		let v = f(self)?;
+		self.space()?;
+		self.check("]")?;
+		Ok(v)
 	}
 
-	pub fn tuple(&mut self) -> Result<TermParser<'_, 'src>> {
+	pub fn tuple<T>(&mut self, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<T> {
 		self.check("(")?;
-		Ok(TermParser::new(self, false))
+		self.space()?;
+		let v = f(self)?;
+		self.space()?;
+		self.check(")")?;
+		Ok(v)
 	}
 
 	pub fn number(&mut self) -> Result<&'src str> {
@@ -221,49 +229,5 @@ impl<'src> Parser<'src> {
 			}
 		}
 		Ok(self.span_text(pos | self.pos()))
-	}
-}
-
-pub struct TermParser<'a, 'src> {
-	parser: &'a mut Parser<'src>,
-	named: bool,
-	count: usize,
-}
-
-impl<'a, 'src> TermParser<'a, 'src> {
-	pub fn new(parser: &'a mut Parser<'src>, named: bool) -> Self {
-		Self {
-			parser,
-			named,
-			count: 0,
-		}
-	}
-
-	pub fn field(&mut self) -> Result<&mut Parser<'src>> {
-		if self.count != 0 {
-			self.parser.space()?;
-			self.parser.check(",")?;
-		}
-		self.count += 1;
-		self.parser.space()?;
-		Ok(self.parser)
-	}
-
-	pub fn finish(self) -> Result<&'a mut Parser<'src>> {
-		if !self.named && self.count == 1 {
-			self.parser.space()?;
-			self.parser.check(",")?;
-		} else if self.count > 0 {
-			self.parser.space()?;
-			let _ = self.parser.check(",");
-		}
-
-		self.parser.space()?;
-		if self.named {
-			self.parser.check("]")?;
-		} else {
-			self.parser.check(")")?
-		}
-		Ok(self.parser)
 	}
 }

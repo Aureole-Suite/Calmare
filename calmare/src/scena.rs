@@ -19,11 +19,14 @@ impl Parse for scena::FuncId {
 	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
 		f.check_word("fn")?;
 		f.space()?;
-		let mut term = f.term()?;
-		let a = Parse::parse(term.field()?, ctx)?;
-		let b = Parse::parse(term.field()?, ctx)?;
-		term.finish()?;
-		Ok(scena::FuncId(a, b))
+		f.term(|f| {
+			let a = Parse::parse(f, ctx)?;
+			f.space()?;
+			f.check(",")?;
+			f.space()?;
+			let b = Parse::parse(f, ctx)?;
+			Ok(scena::FuncId(a, b))
+		})
 	}
 }
 
