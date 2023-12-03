@@ -142,9 +142,13 @@ impl<'src> Parser<'src> {
 		let prev_indent = std::mem::replace(&mut self.indent, target_indent);
 
 		loop {
+			if self.string().is_empty() {
+				break;
+			}
+
 			let pos1 = self.pos();
 			let ok = f(self).emit(self).is_some();
-			if self.pos() == pos1 {
+			if ok && self.pos() == pos1 {
 				Diagnostic::error(pos1, "line parsed as empty — this is probably a bug").emit(self);
 				self.pat(|_| true);
 			}
@@ -153,7 +157,7 @@ impl<'src> Parser<'src> {
 			let pos = self.pos();
 			let _ = self.space();
 
-			if self.last_indent < self.indent || self.string().is_empty() {
+			if self.last_indent < self.indent {
 				break;
 			}
 
