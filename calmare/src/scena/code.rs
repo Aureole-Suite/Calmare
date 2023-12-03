@@ -3,15 +3,15 @@ use themelios::scena::{
 	insn::{Arg, Expr, Insn},
 };
 
-use crate::{Print, PrintContext, Printer};
+use crate::{Print, Printer};
 
 mod expr;
 
 impl Print for Code {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+	fn print(&self, f: &mut Printer) {
 		f.block(|f| {
 			for insn in self.iter() {
-				insn.print(f, ctx);
+				insn.print(f);
 				if !f.is_line() {
 					f.line();
 				}
@@ -21,23 +21,23 @@ impl Print for Code {
 }
 
 impl Print for Insn {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+	fn print(&self, f: &mut Printer) {
 		match self.parts() {
 			("if", [args @ .., Arg::Code(yes), Arg::Code(no)]) => {
 				f.word("if");
 				for arg in args {
-					f.val(arg, ctx);
+					f.val(arg);
 				}
-				f.val(yes, ctx);
+				f.val(yes);
 				if no.len() == 1 && no[0].name == "if" {
-					f.word("else").val(&no[0], ctx);
+					f.word("else").val(&no[0]);
 				} else {
-					f.word("else").val(no, ctx);
+					f.word("else").val(no);
 				}
 			}
 
 			(_, [param, expr @ Arg::Expr(_)]) => {
-				f.val(param, ctx).val(expr, ctx);
+				f.val(param).val(expr);
 			}
 
 			("Menu", args) => {
@@ -46,12 +46,12 @@ impl Print for Insn {
 				for arg in args {
 					if matches!(arg, Arg::TString(_)) {
 						f.line().indent(|f| {
-							f.val(arg, ctx);
+							f.val(arg);
 							write!(f, "// {n}");
 						});
 						n += 1;
 					} else {
-						f.val(arg, ctx);
+						f.val(arg);
 					}
 				}
 			}
@@ -59,7 +59,7 @@ impl Print for Insn {
 			_ => {
 				f.word(&self.name);
 				for arg in &self.args {
-					f.val(arg, ctx);
+					f.val(arg);
 				}
 			}
 		}
@@ -67,67 +67,67 @@ impl Print for Insn {
 }
 
 impl Print for Arg {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+	fn print(&self, f: &mut Printer) {
 		match self {
-			Arg::Label(v) => f.val(v, ctx),
+			Arg::Label(v) => f.val(v),
 
-			Arg::Int(v) => f.val(v, ctx),
-			Arg::String(v) => f.val(v, ctx),
-			Arg::Time(v) => f.val(v, ctx),
-			Arg::Angle(v) => f.val(v, ctx),
-			Arg::Angle32(v) => f.val(v, ctx),
-			Arg::Speed(v) => f.val(v, ctx),
-			Arg::AngularSpeed(v) => f.val(v, ctx),
-			Arg::Length(v) => f.val(v, ctx),
-			Arg::Color(v) => f.val(v, ctx),
+			Arg::Int(v) => f.val(v),
+			Arg::String(v) => f.val(v),
+			Arg::Time(v) => f.val(v),
+			Arg::Angle(v) => f.val(v),
+			Arg::Angle32(v) => f.val(v),
+			Arg::Speed(v) => f.val(v),
+			Arg::AngularSpeed(v) => f.val(v),
+			Arg::Length(v) => f.val(v),
+			Arg::Color(v) => f.val(v),
 
-			Arg::Pos2(v) => f.val(v, ctx),
-			Arg::Pos3(v) => f.val(v, ctx),
-			Arg::RPos3(v) => f.val(v, ctx),
+			Arg::Pos2(v) => f.val(v),
+			Arg::Pos3(v) => f.val(v),
+			Arg::RPos3(v) => f.val(v),
 
-			Arg::TString(v) => f.val(v, ctx),
-			Arg::Text(v) => f.val(v, ctx),
+			Arg::TString(v) => f.val(v),
+			Arg::Text(v) => f.val(v),
 			Arg::Tuple(v) => {
 				for v in v {
-					f.val(v, ctx);
+					f.val(v);
 				}
 				f
 			}
 
-			Arg::File(v) => f.val(v, ctx),
-			Arg::Battle(v) => f.val(v, ctx),
-			Arg::Bgm(v) => f.val(v, ctx),
-			Arg::Item(v) => f.val(v, ctx),
-			Arg::Magic(v) => f.val(v, ctx),
-			Arg::Name(v) => f.val(v, ctx),
-			Arg::Quest(v) => f.val(v, ctx),
-			Arg::Recipe(v) => f.val(v, ctx),
-			Arg::Shop(v) => f.val(v, ctx),
-			Arg::Sound(v) => f.val(v, ctx),
-			Arg::Town(v) => f.val(v, ctx),
+			Arg::File(v) => f.val(v),
+			Arg::Battle(v) => f.val(v),
+			Arg::Bgm(v) => f.val(v),
+			Arg::Item(v) => f.val(v),
+			Arg::Magic(v) => f.val(v),
+			Arg::Name(v) => f.val(v),
+			Arg::Quest(v) => f.val(v),
+			Arg::Recipe(v) => f.val(v),
+			Arg::Shop(v) => f.val(v),
+			Arg::Sound(v) => f.val(v),
+			Arg::Town(v) => f.val(v),
 
-			Arg::Func(v) => f.val(v, ctx),
-			Arg::LookPoint(v) => f.val(v, ctx),
-			Arg::Event(v) => f.val(v, ctx),
+			Arg::Func(v) => f.val(v),
+			Arg::LookPoint(v) => f.val(v),
+			Arg::Event(v) => f.val(v),
 
-			Arg::Entrance(v) => f.term("entrance").field().val(v, ctx),
-			Arg::Object(v) => f.term("object").field().val(v, ctx),
-			Arg::ForkId(v) => f.term("fork").field().val(v, ctx),
-			Arg::MenuId(v) => f.term("menu").field().val(v, ctx),
-			Arg::EffId(v) => f.term("eff").field().val(v, ctx),
-			Arg::EffInstanceId(v) => f.term("eff_instance").field().val(v, ctx),
-			Arg::ChipId(v) => f.term("chip").field().val(v, ctx),
-			Arg::VisId(v) => f.term("vis").field().val(v, ctx),
+			Arg::Entrance(v) => f.term("entrance").field().val(v),
+			Arg::Object(v) => f.term("object").field().val(v),
+			Arg::ForkId(v) => f.term("fork").field().val(v),
+			Arg::MenuId(v) => f.term("menu").field().val(v),
+			Arg::EffId(v) => f.term("eff").field().val(v),
+			Arg::EffInstanceId(v) => f.term("eff_instance").field().val(v),
+			Arg::ChipId(v) => f.term("chip").field().val(v),
+			Arg::VisId(v) => f.term("vis").field().val(v),
 
-			Arg::Char(v) => f.val(v, ctx),
+			Arg::Char(v) => f.val(v),
 
-			Arg::Flag(v) => f.val(v, ctx),
-			Arg::Var(v) => f.term("var").field().val(v, ctx),
-			Arg::Global(v) => f.term("global").field().val(v, ctx),
-			Arg::Attr(v) => f.term("system").field().val(v, ctx),
-			Arg::CharAttr(v, w) => f.val(v, ctx).no_space().word(".").no_space().val(w, ctx),
-			Arg::Code(v) => f.val(v, ctx),
-			Arg::Expr(v) => f.val(v, ctx),
+			Arg::Flag(v) => f.val(v),
+			Arg::Var(v) => f.term("var").field().val(v),
+			Arg::Global(v) => f.term("global").field().val(v),
+			Arg::Attr(v) => f.term("system").field().val(v),
+			Arg::CharAttr(v, w) => f.val(v).no_space().word(".").no_space().val(w),
+			Arg::Code(v) => f.val(v),
+			Arg::Expr(v) => f.val(v),
 
 			Arg::QuestTask(v) => f.hex(v),
 			Arg::QuestFlags(v) => f.hex(v),
@@ -142,7 +142,7 @@ impl Print for Arg {
 }
 
 impl Print for Expr {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-		expr::print(self, f, ctx)
+	fn print(&self, f: &mut Printer) {
+		expr::print(self, f)
 	}
 }

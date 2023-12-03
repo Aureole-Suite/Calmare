@@ -1,17 +1,17 @@
-use crate::{PrintContext, Printer};
+use crate::Printer;
 use themelios::scena::insn::{AssOp, BinOp, Expr, UnOp};
 
-pub fn print(e: &Expr, f: &mut Printer, ctx: &mut PrintContext) {
-	print_prio(e, 0, f, ctx)
+pub fn print(e: &Expr, f: &mut Printer) {
+	print_prio(e, 0, f)
 }
 
-fn print_prio(e: &Expr, prio: u8, f: &mut Printer, ctx: &mut PrintContext) {
+fn print_prio(e: &Expr, prio: u8, f: &mut Printer) {
 	match e {
 		Expr::Arg(v) => {
-			f.val(v, ctx);
+			f.val(v);
 		}
 		Expr::Insn(i) => {
-			f.val(i, ctx);
+			f.val(i);
 		}
 		Expr::Rand => {
 			f.word("random");
@@ -21,20 +21,20 @@ fn print_prio(e: &Expr, prio: u8, f: &mut Printer, ctx: &mut PrintContext) {
 			if prio2 < prio {
 				f.word("(").no_space();
 			}
-			print_prio(a, prio2, f, ctx);
+			print_prio(a, prio2, f);
 			f.word(text);
-			print_prio(b, prio2 + 1, f, ctx);
+			print_prio(b, prio2 + 1, f);
 			if prio2 < prio {
 				f.no_space().word(")");
 			}
 		}
 		Expr::Unary(op, a) => {
 			f.word(unop(*op)).no_space();
-			print_prio(a, 10, f, ctx);
+			print_prio(a, 10, f);
 		}
 		Expr::Assign(op, a) => {
 			f.word(assop(*op));
-			print_prio(a, 0, f, ctx);
+			print_prio(a, 0, f);
 		}
 	}
 }

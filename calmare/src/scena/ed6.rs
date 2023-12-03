@@ -1,8 +1,8 @@
 use themelios::scena::{ed6, ChipId, EventId, LocalCharId, LookPointId};
 use themelios::types::FileId;
 
-use crate::{parse, Parse, ParseContext, Parser};
-use crate::{Print, PrintContext, Printer};
+use crate::{parse, Parse, Parser};
+use crate::{Print, Printer};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct LocalFuncId(u16);
@@ -10,112 +10,110 @@ struct LocalFuncId(u16);
 crate::macros::newtype_term!(LocalFuncId, "fn");
 
 impl Print for ed6::Scena {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+	fn print(&self, f: &mut Printer) {
 		f.word("scena").block(|f| {
-			f.word("name").val(&self.path, ctx).val(&self.map, ctx).line();
-			f.word("town").val(self.town, ctx).line();
-			f.word("bgm").val(self.bgm, ctx).line();
-			f.word("item_use").val(self.item_use, ctx).line();
+			f.word("name").val(&self.path).val(&self.map).line();
+			f.word("town").val(self.town).line();
+			f.word("bgm").val(self.bgm).line();
+			f.word("item_use").val(self.item_use).line();
 			for (i, a) in self.includes.iter().enumerate() {
 				if *a != FileId::NONE {
-					f.word("scp").val(i as u16, ctx).val(a, ctx).line();
+					f.word("scp").val(i as u16).val(a).line();
 				}
 			}
 		});
 
 		for entry in &self.entries {
 			f.line();
-			f.word("entry").val(entry, ctx);
+			f.word("entry").val(entry);
 		}
 
 		if !self.ch.is_empty() || !self.cp.is_empty() {
 			f.line();
 		}
-		print_chcp(&self.ch, &self.cp, ctx, f);
+		print_chcp(&self.ch, &self.cp, f);
 
 		let mut n = 0;
 
 		for npc in &self.npcs {
 			f.line();
-			f.word("npc").val(LocalCharId(n), ctx).val(npc, ctx);
+			f.word("npc").val(LocalCharId(n)).val(npc);
 			n += 1;
 		}
 
 		for monster in &self.monsters {
 			f.line();
-			f.word("monster").val(LocalCharId(n), ctx).val(monster, ctx);
+			f.word("monster").val(LocalCharId(n)).val(monster);
 			n += 1;
 		}
 
 		for (i, event) in self.events.iter().enumerate() {
 			f.line();
-			f.val(EventId(i as u16), ctx).val(event, ctx);
+			f.val(EventId(i as u16)).val(event);
 		}
 
 		for (i, lp) in self.look_points.iter().enumerate() {
 			f.line();
-			f.val(LookPointId(i as u16), ctx).val(lp, ctx);
+			f.val(LookPointId(i as u16)).val(lp);
 		}
 
 		for (i, func) in self.functions.iter().enumerate() {
 			f.line();
-			f.val(LocalFuncId(i as u16), ctx).val(func, ctx);
+			f.val(LocalFuncId(i as u16)).val(func);
 		}
 	}
 }
 
 impl Parse for ed6::Scena {
-	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		f.lines(|f| match f.word()? {
 			"scena" => Ok(()),
 			"entry" => {
 				f.space()?;
-				let l: ed6::Entry = Parse::parse(f, ctx)?;
+				let l: ed6::Entry = Parse::parse(f)?;
 				Ok(())
 			}
 			"chip" => {
 				f.space()?;
-				let id = Parse::parse(f, ctx)
-					.or_else(|_| f.term(|f| Parse::parse(f, ctx)).map(ChipId))?;
+				let id = Parse::parse(f).or_else(|_| f.term(|f| Parse::parse(f)).map(ChipId))?;
 				Ok(())
 			}
 			"npc" => {
 				f.space()?;
-				let id = Parse::parse(f, ctx)
-					.or_else(|_| f.term(|f| Parse::parse(f, ctx)).map(LocalCharId))?;
+				let id =
+					Parse::parse(f).or_else(|_| f.term(|f| Parse::parse(f)).map(LocalCharId))?;
 				f.space()?;
-				let l: ed6::Npc = Parse::parse(f, ctx)?;
+				let l: ed6::Npc = Parse::parse(f)?;
 				Ok(())
 			}
 			"monster" => {
 				f.space()?;
-				let id = Parse::parse(f, ctx)
-					.or_else(|_| f.term(|f| Parse::parse(f, ctx)).map(LocalCharId))?;
+				let id =
+					Parse::parse(f).or_else(|_| f.term(|f| Parse::parse(f)).map(LocalCharId))?;
 				f.space()?;
-				let l: ed6::Monster = Parse::parse(f, ctx)?;
+				let l: ed6::Monster = Parse::parse(f)?;
 				Ok(())
 			}
 			"event" => {
 				f.space()?;
-				let id = Parse::parse(f, ctx)
-					.or_else(|_| f.term(|f| Parse::parse(f, ctx)).map(EventId))?;
+				let id = Parse::parse(f).or_else(|_| f.term(|f| Parse::parse(f)).map(EventId))?;
 				f.space()?;
-				let l: ed6::Event = Parse::parse(f, ctx)?;
+				let l: ed6::Event = Parse::parse(f)?;
 				Ok(())
 			}
 			"look_point" => {
 				f.space()?;
-				let id = Parse::parse(f, ctx)
-					.or_else(|_| f.term(|f| Parse::parse(f, ctx)).map(LookPointId))?;
+				let id =
+					Parse::parse(f).or_else(|_| f.term(|f| Parse::parse(f)).map(LookPointId))?;
 				f.space()?;
-				let l: ed6::LookPoint = Parse::parse(f, ctx)?;
+				let l: ed6::LookPoint = Parse::parse(f)?;
 				println!("{:?} {:?}", id, l);
 				Ok(())
 			}
 			"fn" => {
 				f.space()?;
-				let id = Parse::parse(f, ctx)
-					.or_else(|_| f.term(|f| Parse::parse(f, ctx)).map(LocalFuncId))?;
+				let id =
+					Parse::parse(f).or_else(|_| f.term(|f| Parse::parse(f)).map(LocalFuncId))?;
 				println!("fn {:?}", id);
 				Ok(())
 			}
@@ -144,7 +142,7 @@ impl Parse for ed6::Scena {
 	}
 }
 
-fn print_chcp(ch: &[FileId], cp: &[FileId], ctx: &mut PrintContext, f: &mut Printer) {
+fn print_chcp(ch: &[FileId], cp: &[FileId], f: &mut Printer) {
 	let mut ch = ch.iter();
 	let mut cp = cp.iter();
 	let mut i = 0;
@@ -154,14 +152,14 @@ fn print_chcp(ch: &[FileId], cp: &[FileId], ctx: &mut PrintContext, f: &mut Prin
 		if ch.is_none() && cp.is_none() {
 			break;
 		}
-		f.val(ChipId(i), ctx);
+		f.val(ChipId(i));
 		if let Some(ch) = ch {
-			f.val(ch, ctx);
+			f.val(ch);
 		} else {
 			f.word("null");
 		}
 		if let Some(cp) = cp {
-			f.val(cp, ctx);
+			f.val(cp);
 		} else {
 			f.word("null");
 		}

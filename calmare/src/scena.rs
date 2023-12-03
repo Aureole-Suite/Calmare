@@ -4,23 +4,23 @@ mod code;
 mod ed6;
 
 use crate::macros::{newtype_hex, newtype_term};
-use crate::{parse, Parse, ParseContext, Parser};
-use crate::{Print, PrintContext, Printer};
+use crate::{parse, Parse, Parser};
+use crate::{Print, Printer};
 
 impl Print for scena::FuncId {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+	fn print(&self, f: &mut Printer) {
 		let mut term = f.term("fn");
-		term.field().val(self.0, ctx);
-		term.field().val(self.1, ctx);
+		term.field().val(self.0);
+		term.field().val(self.1);
 	}
 }
 
 impl Parse for scena::FuncId {
-	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		f.check_word("fn")?.space()?.term(|f| {
-			let a = Parse::parse(f, ctx)?;
+			let a = Parse::parse(f)?;
 			f.space()?.check(",")?.space()?;
-			let b = Parse::parse(f, ctx)?;
+			let b = Parse::parse(f)?;
 			Ok(scena::FuncId(a, b))
 		})
 	}
@@ -37,16 +37,16 @@ newtype_term!(scena::EntryId, "entry");
 newtype_hex!(scena::EntryFlags);
 
 impl Print for scena::CharId {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+	fn print(&self, f: &mut Printer) {
 		use scena::CharId as C;
 		match self {
-			C::Party(v) => f.term("field_party").field().val(v, ctx),
-			C::Local(v) => f.val(v, ctx),
-			C::Custom(v) => f.term("custom").field().val(v, ctx),
-			C::Party2(v) => f.term("party").field().val(v, ctx),
+			C::Party(v) => f.term("field_party").field().val(v),
+			C::Local(v) => f.val(v),
+			C::Custom(v) => f.term("custom").field().val(v),
+			C::Party2(v) => f.term("party").field().val(v),
 			C::Self_ => f.word("self"),
 			C::Null => f.word("null"),
-			C::Name(v) => f.val(v, ctx),
+			C::Name(v) => f.val(v),
 			C::Chest => f.word("chest"),
 		};
 	}

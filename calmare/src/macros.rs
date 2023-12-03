@@ -1,17 +1,17 @@
-use crate::{parse, Parse, ParseContext, Parser};
-use crate::{Print, PrintContext, Printer};
+use crate::{parse, Parse, Parser};
+use crate::{Print, Printer};
 
 pub mod strukt;
 
 pub macro int($($type:ty),*) {
 	$(impl Print for $type {
-		fn print(&self, f: &mut Printer, _ctx: &mut PrintContext) {
+		fn print(&self, f: &mut Printer) {
 			write!(f, "{:?}", self);
 		}
 	})*
 
 	$(impl Parse for $type {
-		fn parse(f: &mut Parser, _ctx: &mut ParseContext) -> parse::Result<Self> {
+		fn parse(f: &mut Parser) -> parse::Result<Self> {
 			let s = f.number()?;
 			let res = if let Some(s) = s.strip_prefix("0x") {
 				Self::from_str_radix(s, 16)
@@ -27,13 +27,13 @@ pub macro int($($type:ty),*) {
 
 pub macro float($($type:ty),*) {
 	$(impl Print for $type {
-		fn print(&self, f: &mut Printer, _ctx: &mut PrintContext) {
+		fn print(&self, f: &mut Printer) {
 			write!(f, "{:?}", self);
 		}
 	})*
 
 	$(impl Parse for $type {
-		fn parse(f: &mut Parser, _ctx: &mut ParseContext) -> parse::Result<Self> {
+		fn parse(f: &mut Parser) -> parse::Result<Self> {
 			let s = f.number()?;
 			let res = s.parse();
 			res.map_err(|e| {
@@ -45,31 +45,31 @@ pub macro float($($type:ty),*) {
 
 pub macro newtype_term($type:ty, $term:literal) {
 	impl Print for $type {
-		fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+		fn print(&self, f: &mut Printer) {
 			let Self(v) = self;
-			f.term($term).field().val(v, ctx);
+			f.term($term).field().val(v);
 		}
 	}
 
 	impl Parse for $type {
-		fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+		fn parse(f: &mut Parser) -> parse::Result<Self> {
 			f.check_word($term)?;
 			f.space()?;
-			f.term(|f| Parse::parse(f, ctx)).map(Self)
+			f.term(|f| Parse::parse(f)).map(Self)
 		}
 	}
 }
 
 pub macro newtype_unit($type:ty, $suf:literal) {
 	impl Print for $type {
-		fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+		fn print(&self, f: &mut Printer) {
 			let Self(v) = self;
-			f.val(v, ctx).no_space().word($suf);
+			f.val(v).no_space().word($suf);
 		}
 	}
 	impl Parse for $type {
-		fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
-			let v = Parse::parse(f, ctx)?;
+		fn parse(f: &mut Parser) -> parse::Result<Self> {
+			let v = Parse::parse(f)?;
 			f.check_word($suf)?;
 			Ok(Self(v))
 		}
@@ -78,15 +78,15 @@ pub macro newtype_unit($type:ty, $suf:literal) {
 
 pub macro newtype_hex($type:ty) {
 	impl Print for $type {
-		fn print(&self, f: &mut Printer, _ctx: &mut PrintContext) {
+		fn print(&self, f: &mut Printer) {
 			let Self(v) = self;
 			f.hex(v);
 		}
 	}
 
 	impl Parse for $type {
-		fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
-			Parse::parse(f, ctx).map(Self)
+		fn parse(f: &mut Parser) -> parse::Result<Self> {
+			Parse::parse(f).map(Self)
 		}
 	}
 }

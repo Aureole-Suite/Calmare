@@ -13,15 +13,9 @@ mod types;
 
 mod macros;
 
-#[derive(Debug)]
-pub struct PrintContext {}
-
-#[derive(Debug)]
-pub struct ParseContext {}
-
 impl Printer {
-	fn val(&mut self, val: impl Print, ctx: &mut PrintContext) -> &mut Self {
-		val.print(self, ctx);
+	fn val(&mut self, val: impl Print) -> &mut Self {
+		val.print(self);
 		self.space()
 	}
 
@@ -32,37 +26,37 @@ impl Printer {
 }
 
 pub trait Print {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext);
+	fn print(&self, f: &mut Printer);
 }
 
 pub trait Parse: Sized {
-	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self>;
+	fn parse(f: &mut Parser) -> parse::Result<Self>;
 }
 
 macros::int!(u8, u16, u32, u64, i8, i16, i32, i64);
 macros::float!(f32, f64);
 
 impl<T: Print> Print for &T {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-		T::print(self, f, ctx)
+	fn print(&self, f: &mut Printer) {
+		T::print(self, f)
 	}
 }
 
 impl<T: Print> Print for Box<T> {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-		T::print(self, f, ctx)
+	fn print(&self, f: &mut Printer) {
+		T::print(self, f)
 	}
 }
 
 impl<T: Parse> Parse for Box<T> {
-	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
-		T::parse(f, ctx).map(Box::new)
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
+		T::parse(f).map(Box::new)
 	}
 }
 
 impl<T: Print + ToOwned> Print for Cow<'_, T> {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-		T::print(self, f, ctx)
+	fn print(&self, f: &mut Printer) {
+		T::print(self, f)
 	}
 }
 
@@ -70,57 +64,57 @@ impl<'a, T: ToOwned> Parse for Cow<'a, T>
 where
 	T::Owned: Parse,
 {
-	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
-		Parse::parse(f, ctx).map(Cow::Owned)
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
+		Parse::parse(f).map(Cow::Owned)
 	}
 }
 
 impl<A: Print, B: Print> Print for (A, B) {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-		f.val(&self.0, ctx).val(&self.1, ctx);
+	fn print(&self, f: &mut Printer) {
+		f.val(&self.0).val(&self.1);
 	}
 }
 
 impl<A: Parse, B: Parse> Parse for (A, B) {
-	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
-		let a = A::parse(f, ctx)?;
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
+		let a = A::parse(f)?;
 		f.space()?;
-		let b = B::parse(f, ctx)?;
+		let b = B::parse(f)?;
 		Ok((a, b))
 	}
 }
 
 impl<A: Print, B: Print, C: Print> Print for (A, B, C) {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-		f.val(&self.0, ctx).val(&self.1, ctx).val(&self.2, ctx);
+	fn print(&self, f: &mut Printer) {
+		f.val(&self.0).val(&self.1).val(&self.2);
 	}
 }
 
 impl<A: Parse, B: Parse, C: Parse> Parse for (A, B, C) {
-	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
-		let a = A::parse(f, ctx)?;
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
+		let a = A::parse(f)?;
 		f.space()?;
-		let b = B::parse(f, ctx)?;
+		let b = B::parse(f)?;
 		f.space()?;
-		let c = C::parse(f, ctx)?;
+		let c = C::parse(f)?;
 		Ok((a, b, c))
 	}
 }
 
 impl Print for str {
-	fn print(&self, f: &mut Printer, _ctx: &mut PrintContext) {
+	fn print(&self, f: &mut Printer) {
 		write!(f, "{self:?}"); // TODO
 	}
 }
 
 impl Print for String {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-		self.as_str().print(f, ctx)
+	fn print(&self, f: &mut Printer) {
+		self.as_str().print(f)
 	}
 }
 
 impl Parse for String {
-	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		Ok(String::new()) // TODO
 	}
 }

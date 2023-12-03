@@ -16,12 +16,12 @@ fn main() -> anyhow::Result<()> {
 		themelios::scena::code::normalize::normalize(&mut scena.functions).unwrap();
 
 		let mut printer = calmare::Printer::new();
-		scena.print(&mut printer, &mut calmare::PrintContext {});
+		scena.print(&mut printer);
 		let output = printer.finish();
 		print!("{}", output);
 		let mut parser = calmare::Parser::new(&output);
 		let v: Option<themelios::scena::ed6::Scena> =
-			calmare::Parse::parse(&mut parser, &mut calmare::ParseContext {}).emit(&mut parser);
+			calmare::Parse::parse(&mut parser).emit(&mut parser);
 		print_diags(&file, &output, parser.diagnostics());
 		assert_eq!(v.unwrap(), scena);
 

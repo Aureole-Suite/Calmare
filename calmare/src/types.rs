@@ -1,16 +1,16 @@
 use crate::macros::{newtype_hex, newtype_term, newtype_unit};
-use crate::{parse, Parse, ParseContext, Parser};
-use crate::{Print, PrintContext, Printer};
+use crate::{parse, Parse, Parser};
+use crate::{Print, Printer};
 use themelios::types;
 
 impl Print for types::Label {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+	fn print(&self, f: &mut Printer) {
 		write!(f, "{:?}", self);
 	}
 }
 
 impl Print for types::FileId {
-	fn print(&self, f: &mut Printer, _ctx: &mut PrintContext) {
+	fn print(&self, f: &mut Printer) {
 		write!(f.term("file").field(), "0x{:08X}", self.0);
 	}
 }
@@ -37,63 +37,63 @@ newtype_unit!(types::AngularSpeed, "deg/s");
 newtype_unit!(types::Length, "mm");
 
 impl Print for types::Pos2 {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+	fn print(&self, f: &mut Printer) {
 		let mut term = f.term("");
-		term.field().val(self.x, ctx);
+		term.field().val(self.x);
 		term.field().word("null");
-		term.field().val(self.z, ctx);
+		term.field().val(self.z);
 	}
 }
 
 impl Parse for types::Pos2 {
-	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		f.tuple(|f| {
-			let x = Parse::parse(f, ctx)?;
+			let x = Parse::parse(f)?;
 			f.space()?.check(",")?.space()?;
 			f.check_word("null")?;
 			f.space()?.check(",")?.space()?;
-			let z = Parse::parse(f, ctx)?;
+			let z = Parse::parse(f)?;
 			Ok(types::Pos2 { x, z })
 		})
 	}
 }
 
 impl Print for types::Pos3 {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+	fn print(&self, f: &mut Printer) {
 		let mut term = f.term("");
-		term.field().val(self.x, ctx);
-		term.field().val(self.y, ctx);
-		term.field().val(self.z, ctx);
+		term.field().val(self.x);
+		term.field().val(self.y);
+		term.field().val(self.z);
 	}
 }
 
 impl Parse for types::Pos3 {
-	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		f.tuple(|f| {
-			let x = Parse::parse(f, ctx)?;
+			let x = Parse::parse(f)?;
 			f.space()?.check(",")?.space()?;
-			let y = Parse::parse(f, ctx)?;
+			let y = Parse::parse(f)?;
 			f.space()?.check(",")?.space()?;
-			let z = Parse::parse(f, ctx)?;
+			let z = Parse::parse(f)?;
 			Ok(types::Pos3 { x, y, z })
 		})
 	}
 }
 
 impl Print for types::TString {
-	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
-		self.0.print(f, ctx)
+	fn print(&self, f: &mut Printer) {
+		self.0.print(f)
 	}
 }
 
 impl Parse for types::TString {
-	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
-		Parse::parse(f, ctx).map(Self)
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
+		Parse::parse(f).map(Self)
 	}
 }
 
 impl Print for types::Text {
-	fn print(&self, f: &mut Printer, _ctx: &mut PrintContext) {
+	fn print(&self, f: &mut Printer) {
 		f.word("{").line();
 		f.indent(|f| {
 			let str = self.0.as_str();

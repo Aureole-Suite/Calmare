@@ -1,25 +1,25 @@
-use crate::{parse, Parse, ParseContext, Parser};
-use crate::{Print, PrintContext, Printer};
+use crate::{parse, Parse, Parser};
+use crate::{Print, Printer};
 
 pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 	$(impl Print for $type {
-		fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+		fn print(&self, f: &mut Printer) {
 			let Self { $($field),* } = &self;
 			f.block(|f| {
-				$(f.word(stringify!($field)).val($field, ctx).line();)*
+				$(f.word(stringify!($field)).val($field).line();)*
 			})
 		}
 	})+
 
 	$(impl Parse for $type {
-		fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+		fn parse(f: &mut Parser) -> parse::Result<Self> {
 			let start = f.pos();
 			f.check(":")?.space()?;
 			$(let mut $field = PlainField::default();)*
 
 			let mut first_error = true;
 			f.lines(|f| match f.word()? {
-				$(word @ stringify!($field) => $field.parse_field(word, f, ctx),)*
+				$(word @ stringify!($field) => $field.parse_field(word, f),)*
 				word => {
 					let mut diag = parse::Diagnostic::error(f.span_of(word), "unknown field");
 					if first_error {
@@ -56,12 +56,7 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 
 pub trait ParseField: Default {
 	type Output;
-	fn parse_field<'src>(
-		&mut self,
-		word: &'src str,
-		f: &mut Parser<'src>,
-		ctx: &mut ParseContext,
-	) -> parse::Result<()>;
+	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()>;
 	fn get(self) -> Option<Self::Output>;
 }
 
@@ -83,19 +78,14 @@ impl<T> Default for PlainField<T> {
 impl<T: Parse> ParseField for PlainField<T> {
 	type Output = T;
 
-	fn parse_field<'src>(
-		&mut self,
-		word: &'src str,
-		f: &mut Parser<'src>,
-		ctx: &mut ParseContext,
-	) -> parse::Result<()> {
+	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()> {
 		if let Some(prev_span) = self.head_span.replace(f.span_of(word)) {
 			parse::Diagnostic::error(f.span_of(word), "duplicate item")
 				.note(prev_span, "previous here")
 				.emit(f);
 		}
 		f.space()?;
-		self.value = Some(T::parse(f, ctx)?);
+		self.value = Some(T::parse(f)?);
 		Ok(())
 	}
 
