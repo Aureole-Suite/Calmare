@@ -174,18 +174,6 @@ impl<'src> Parser<'src> {
 		self.indent = prev_indent;
 	}
 
-	pub fn spanned<T>(&mut self, f: impl FnOnce(&mut Self) -> T) -> Spanned<T> {
-		let pos = self.pos();
-		let v = f(self);
-		(pos | self.pos()).on(v)
-	}
-
-	pub fn try_spanned<T>(&mut self, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<Spanned<T>> {
-		let pos = self.pos();
-		let v = f(self)?;
-		Ok((pos | self.pos()).on(v))
-	}
-
 	pub fn word(&mut self) -> Result<&'src str> {
 		let start = self.pos();
 		if self
@@ -199,9 +187,10 @@ impl<'src> Parser<'src> {
 	}
 
 	pub fn check_word(&mut self, word: &str) -> Result<()> {
-		let Spanned(span, aword) = self.spanned(|f| f.word());
+		let pos = self.pos();
+		let aword = self.word();
 		if aword != Ok(word) {
-			return Err(Diagnostic::error(span, format!("expected `{word}`")));
+			return Err(Diagnostic::error(pos | self.pos(), format!("expected `{word}`")));
 		}
 		Ok(())
 	}

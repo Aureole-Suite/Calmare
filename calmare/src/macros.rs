@@ -12,14 +12,14 @@ pub macro int($($type:ty),*) {
 
 	$(impl Parse for $type {
 		fn parse(f: &mut Parser, _ctx: &mut ParseContext) -> parse::Result<Self> {
-			let parse::Spanned(span, s) = f.try_spanned(|f| f.number())?;
+			let s = f.number()?;
 			let res = if let Some(s) = s.strip_prefix("0x") {
 				Self::from_str_radix(s, 16)
 			} else {
 				s.parse()
 			};
 			res.map_err(|e| {
-				parse::Diagnostic::error(span, format!("could not parse {}: {}", stringify!($type), e))
+				parse::Diagnostic::error(f.span_of(s), format!("could not parse {}: {}", stringify!($type), e))
 			})
 		}
 	})*
@@ -34,10 +34,10 @@ pub macro float($($type:ty),*) {
 
 	$(impl Parse for $type {
 		fn parse(f: &mut Parser, _ctx: &mut ParseContext) -> parse::Result<Self> {
-			let parse::Spanned(span, s) = f.try_spanned(|f| f.number())?;
+			let s = f.number()?;
 			let res = s.parse();
 			res.map_err(|e| {
-				parse::Diagnostic::error(span, format!("could not parse {}: {}", stringify!($type), e))
+				parse::Diagnostic::error(f.span_of(s), format!("could not parse {}: {}", stringify!($type), e))
 			})
 		}
 	})*
