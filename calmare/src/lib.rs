@@ -2,6 +2,8 @@
 #![feature(pattern)]
 
 pub mod print;
+use std::borrow::Cow;
+
 pub use print::Printer;
 pub mod parse;
 pub use parse::Parser;
@@ -60,6 +62,21 @@ impl<T: Print> Print for Box<T> {
 impl<T: Parse> Parse for Box<T> {
 	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
 		T::parse(f, ctx).map(Box::new)
+	}
+}
+
+impl<T: Print + ToOwned> Print for Cow<'_, T> {
+	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
+		T::print(self, f, ctx)
+	}
+}
+
+impl<'a, T: ToOwned> Parse for Cow<'a, T>
+where
+	T::Owned: Parse,
+{
+	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+		Parse::parse(f, ctx).map(Cow::Owned)
 	}
 }
 
