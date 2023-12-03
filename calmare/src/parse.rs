@@ -199,17 +199,13 @@ impl<'src> Parser<'src> {
 		Ok(())
 	}
 
-	pub fn term(&mut self) -> Result<(&'src str, TermParser<'_, 'src>)> {
-		let word = self.word()?;
-		Ok((word, TermParser::new(self, true)))
-	}
-
-	pub fn check_term(&mut self, word: &str) -> Result<TermParser<'_, 'src>> {
-		self.check_word(word)?;
+	pub fn term(&mut self) -> Result<TermParser<'_, 'src>> {
+		self.check("[")?;
 		Ok(TermParser::new(self, true))
 	}
 
 	pub fn tuple(&mut self) -> Result<TermParser<'_, 'src>> {
+		self.check("(")?;
 		Ok(TermParser::new(self, false))
 	}
 
@@ -247,12 +243,7 @@ impl<'a, 'src> TermParser<'a, 'src> {
 		if self.count != 0 {
 			self.parser.space()?;
 			self.parser.check(",")?;
-		} else if self.named {
-			self.parser.space()?;
-			self.parser.check("[")?;
-		} else {
-			self.parser.check("(")?;
-		};
+		}
 		self.count += 1;
 		self.parser.space()?;
 		Ok(self.parser)

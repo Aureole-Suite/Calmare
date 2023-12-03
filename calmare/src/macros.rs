@@ -53,9 +53,10 @@ pub macro newtype_term($type:ty, $term:literal) {
 
 	impl Parse for $type {
 		fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
-			let mut tup = f.check_term($term)?;
-			let v = Parse::parse(tup.field()?, ctx)?;
-			tup.finish()?;
+			f.check_word($term)?;
+			let mut term = f.term()?;
+			let v = Parse::parse(term.field()?, ctx)?;
+			term.finish()?;
 			Ok(Self(v))
 		}
 	}
