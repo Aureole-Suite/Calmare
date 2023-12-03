@@ -1,4 +1,4 @@
-use crate::{Parse, Parser, ParseContext, parse};
+use crate::{parse, Parse, ParseContext, Parser};
 use crate::{Print, PrintContext, Printer};
 
 pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
@@ -15,21 +15,18 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 
 			let mut first_error = true;
 			let start = f.pos();
-			f.lines(|f| {
-				let parse::Spanned(span, word) = f.try_spanned(|f| f.word())?;
-				match word {
-					$(stringify!($field) => $field.parse_field(f, ctx, span),)*
-					_ => {
-						let mut diag = parse::Diagnostic::error(span, "unknown field");
-						if first_error {
-							first_error = false;
-							diag = diag.note(span, format!(
-								"allowed fields are {}",
-								[$(concat!("`", stringify!($field), "`")),*].join(", ")
-							));
-						}
-						Err(diag)
+			f.lines(|f| match f.word()? {
+				$(word @ stringify!($field) => $field.parse_field(word, f, ctx),)*
+				word => {
+					let mut diag = parse::Diagnostic::error(f.span_of(word), "unknown field");
+					if first_error {
+						first_error = false;
+						diag = diag.note(f.span_of(word), format!(
+							"allowed fields are {}",
+							[$(concat!("`", stringify!($field), "`")),*].join(", ")
+						));
 					}
+					Err(diag)
 				}
 			});
 			let span = start | f.pos();
@@ -57,11 +54,11 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 
 pub trait ParseField: Default {
 	type Output;
-	fn parse_field(
+	fn parse_field<'src>(
 		&mut self,
-		f: &mut Parser,
+		word: &'src str,
+		f: &mut Parser<'src>,
 		ctx: &mut ParseContext,
-		head_span: parse::Span,
 	) -> parse::Result<()>;
 	fn get(self) -> Option<Self::Output>;
 }
@@ -84,14 +81,14 @@ impl<T> Default for PlainField<T> {
 impl<T: Parse> ParseField for PlainField<T> {
 	type Output = T;
 
-	fn parse_field(
+	fn parse_field<'src>(
 		&mut self,
-		f: &mut Parser,
+		word: &'src str,
+		f: &mut Parser<'src>,
 		ctx: &mut ParseContext,
-		head_span: parse::Span,
 	) -> parse::Result<()> {
-		if let Some(prev_span) = self.head_span.replace(head_span) {
-			parse::Diagnostic::error(head_span, "duplicate item")
+		if let Some(prev_span) = self.head_span.replace(f.span_of(word)) {
+			parse::Diagnostic::error(f.span_of(word), "duplicate item")
 				.note(prev_span, "previous here")
 				.emit(f);
 		}

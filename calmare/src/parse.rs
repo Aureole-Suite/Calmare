@@ -40,8 +40,21 @@ impl<'src> Parser<'src> {
 		self.diagnostics.as_ref()
 	}
 
-	fn span_text(&self, s: Span) -> &'src str {
+	pub fn span_text(&self, s: Span) -> &'src str {
 		&self.source[s.as_range()]
+	}
+
+	pub fn span_of(&self, text: &'src str) -> Span {
+		// from https://github.com/rust-lang/rfcs/pull/2796
+		let range = self.source.as_bytes().as_ptr_range();
+		let subrange = text.as_bytes().as_ptr_range();
+		assert!(subrange.start >= range.start);
+		assert!(subrange.end <= range.end);
+		unsafe {
+			let start = subrange.start.offset_from(range.start) as usize;
+			let end = subrange.end.offset_from(range.start) as usize;
+			Span::new(start) | Span::new(end)
+		}
 	}
 
 	fn string(&self) -> &'src str {
