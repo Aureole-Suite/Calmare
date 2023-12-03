@@ -1,6 +1,6 @@
 use crate::macros::{newtype_hex, newtype_term, newtype_unit};
 use crate::{parse, Parse, ParseContext, Parser};
-use crate::{Print, PrintContext, Printer, PrinterExt};
+use crate::{Print, PrintContext, Printer};
 use themelios::types;
 
 impl Print for types::Label {

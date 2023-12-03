@@ -3,7 +3,7 @@ use themelios::scena::{
 	insn::{Arg, Expr, Insn},
 };
 
-use crate::{Print, PrintContext, Printer, PrinterExt};
+use crate::{Print, PrintContext, Printer};
 
 mod expr;
 

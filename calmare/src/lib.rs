@@ -19,8 +19,7 @@ pub struct PrintContext {}
 #[derive(Debug)]
 pub struct ParseContext {}
 
-#[extend::ext]
-pub(crate) impl Printer {
+impl Printer {
 	fn val(&mut self, val: impl Print, ctx: &mut PrintContext) -> &mut Self {
 		val.print(self, ctx);
 		self.space()

@@ -5,7 +5,7 @@ mod ed6;
 
 use crate::macros::{newtype_hex, newtype_term};
 use crate::{parse, Parse, ParseContext, Parser};
-use crate::{Print, PrintContext, Printer, PrinterExt as _};
+use crate::{Print, PrintContext, Printer};
 
 impl Print for scena::FuncId {
 	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {

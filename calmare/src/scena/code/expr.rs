@@ -1,4 +1,4 @@
-use crate::{PrintContext, Printer, PrinterExt};
+use crate::{PrintContext, Printer};
 use themelios::scena::insn::{AssOp, BinOp, Expr, UnOp};
 
 pub fn print(e: &Expr, f: &mut Printer, ctx: &mut PrintContext) {

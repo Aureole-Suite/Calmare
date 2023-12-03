@@ -2,7 +2,7 @@ use themelios::scena::{ed6, ChipId, EventId, LocalCharId, LookPointId};
 use themelios::types::FileId;
 
 use crate::{parse, Parse, ParseContext, Parser};
-use crate::{Print, PrintContext, Printer, PrinterExt};
+use crate::{Print, PrintContext, Printer};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct LocalFuncId(u16);
