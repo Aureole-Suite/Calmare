@@ -13,8 +13,8 @@ pub struct Parser<'a> {
 	pos: usize,
 	// current indentation level
 	indent: Indent<'a>,
-	// position before last .space() call
-	before_space: usize,
+	// position after any inline space at the last .space() call, at the first newline if any
+	after_space: usize,
 	// indentation at last .space() call
 	last_indent: Option<Indent<'a>>,
 	diagnostics: Vec<Diagnostic>,
@@ -26,7 +26,7 @@ impl<'src> Parser<'src> {
 			source,
 			pos: 0,
 			indent: Indent(""),
-			before_space: 0,
+			after_space: 0,
 			last_indent: None,
 			diagnostics: Vec::new(),
 		}
@@ -97,8 +97,8 @@ impl<'src> Parser<'src> {
 
 	pub fn space(&mut self) -> Result<&mut Self> {
 		if self.last_indent.is_none() {
-			self.before_space = self.pos;
 			self.inline_space();
+			self.after_space = self.pos;
 			// Intentionally short-circuiting
 			while self.pat('\r').is_some() | self.pat('\n').is_some() {
 				self.last_indent = Some(self.inline_space())
@@ -110,7 +110,7 @@ impl<'src> Parser<'src> {
 
 		if self.last_indent <= self.indent {
 			Err(Diagnostic::error(
-				Span::new(self.before_space),
+				Span::new(self.after_space),
 				"unexpected end of line",
 			))
 		} else {
@@ -153,8 +153,6 @@ impl<'src> Parser<'src> {
 				self.pat(|_| true);
 			}
 
-			self.pat_mul([' ', '\t']);
-			let pos = self.pos();
 			let _ = self.space();
 
 			if self.last_indent < self.indent {
@@ -166,7 +164,7 @@ impl<'src> Parser<'src> {
 			}
 
 			if ok {
-				Diagnostic::error(pos, "expected end of line").emit(self);
+				Diagnostic::error(Span::new(self.after_space), "expected end of line").emit(self);
 			}
 
 			while self.last_indent > self.indent {
