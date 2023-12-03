@@ -12,13 +12,13 @@ crate::macros::newtype_term!(LocalFuncId, "fn");
 impl Print for ed6::Scena {
 	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 		f.word("scena").block(|f| {
-			f.kv_line("name", (&self.path, &self.map), ctx);
-			f.kv_line("town", self.town, ctx);
-			f.kv_line("bgm", self.bgm, ctx);
-			f.kv_line("item_use", self.item_use, ctx);
+			f.word("name").val((&self.path, &self.map), ctx).line();
+			f.word("town").val(self.town, ctx).line();
+			f.word("bgm").val(self.bgm, ctx).line();
+			f.word("item_use").val(self.item_use, ctx).line();
 			for (i, a) in self.includes.iter().enumerate() {
 				if *a != FileId::NONE {
-					f.kv_line("scp", (i as u16, a), ctx);
+					f.word("scp").val((i as u16, a), ctx).line();
 				}
 			}
 		});

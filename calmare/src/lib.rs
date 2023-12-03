@@ -26,10 +26,6 @@ pub(crate) impl Printer {
 		self.space()
 	}
 
-	fn kv_line(&mut self, key: &str, val: impl Print, ctx: &mut PrintContext) -> &mut Self {
-		self.word(key).val(val, ctx).line()
-	}
-
 	fn hex(&mut self, val: impl Hex) -> &mut Self {
 		val.print_hex(self);
 		self.space()
