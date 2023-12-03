@@ -13,18 +13,18 @@ impl std::fmt::Debug for Span {
 }
 
 impl Span {
-	pub fn new(pos: usize) -> Self {
+	pub const fn new(pos: usize) -> Self {
 		Span {
 			start: pos,
 			end: pos,
 		}
 	}
 
-	pub fn at_start(&self) -> Self {
+	pub const fn at_start(&self) -> Self {
 		Span::new(self.start)
 	}
 
-	pub fn at_end(&self) -> Self {
+	pub const fn at_end(&self) -> Self {
 		Span::new(self.end)
 	}
 
@@ -35,16 +35,16 @@ impl Span {
 		}
 	}
 
-	pub fn connects(self, b: Span) -> bool {
+	pub const fn connects(self, b: Span) -> bool {
 		let a = self;
 		a.end == b.start
 	}
 
-	pub fn as_range(self) -> Range<usize> {
+	pub const fn as_range(self) -> Range<usize> {
 		self.start..self.end
 	}
 
-	pub fn on<T>(self, value: T) -> Spanned<T> {
+	pub const fn on<T>(self, value: T) -> Spanned<T> {
 		Spanned(self, value)
 	}
 }
