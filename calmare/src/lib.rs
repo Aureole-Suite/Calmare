@@ -1,7 +1,10 @@
 #![feature(decl_macro)]
+#![feature(pattern)]
 
 pub mod print;
 pub use print::Printer;
+pub mod parse;
+pub use parse::Parser;
 
 mod scena;
 mod types;
@@ -10,6 +13,9 @@ mod macros;
 
 #[derive(Debug)]
 pub struct PrintContext {}
+
+#[derive(Debug)]
+pub struct ParseContext {}
 
 #[extend::ext]
 pub(crate) impl Printer {
@@ -32,7 +38,12 @@ pub trait Print {
 	fn print(&self, f: &mut Printer, ctx: &mut PrintContext);
 }
 
-macros::number!(u8, u16, u32, u64, i8, i16, i32, i64, f32, f64);
+pub trait Parse: Sized {
+	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self>;
+}
+
+macros::int!(u8, u16, u32, u64, i8, i16, i32, i64);
+macros::float!(f32, f64);
 
 impl<T: Print> Print for &T {
 	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
@@ -46,15 +57,41 @@ impl<T: Print> Print for Box<T> {
 	}
 }
 
+impl<T: Parse> Parse for Box<T> {
+	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+		T::parse(f, ctx).map(Box::new)
+	}
+}
+
 impl<A: Print, B: Print> Print for (A, B) {
 	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 		f.val(&self.0, ctx).val(&self.1, ctx);
 	}
 }
 
+impl<A: Parse, B: Parse> Parse for (A, B) {
+	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+		let a = A::parse(f, ctx)?;
+		f.space()?;
+		let b = B::parse(f, ctx)?;
+		Ok((a, b))
+	}
+}
+
 impl<A: Print, B: Print, C: Print> Print for (A, B, C) {
 	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 		f.val(&self.0, ctx).val(&self.1, ctx).val(&self.2, ctx);
+	}
+}
+
+impl<A: Parse, B: Parse, C: Parse> Parse for (A, B, C) {
+	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+		let a = A::parse(f, ctx)?;
+		f.space()?;
+		let b = B::parse(f, ctx)?;
+		f.space()?;
+		let c = C::parse(f, ctx)?;
+		Ok((a, b, c))
 	}
 }
 

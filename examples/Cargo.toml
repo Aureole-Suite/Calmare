@@ -8,3 +8,4 @@ themelios.workspace = true
 calmare.workspace = true
 anyhow = "1.0"
 compact-debug = "0.1.0"
+codespan-reporting = "0.11.1"

@@ -1,4 +1,5 @@
 use crate::macros::{newtype_hex, newtype_term, newtype_unit};
+use crate::{parse, Parse, ParseContext, Parser};
 use crate::{Print, PrintContext, Printer, PrinterExt};
 use themelios::types;
 
@@ -44,12 +45,34 @@ impl Print for types::Pos2 {
 	}
 }
 
+impl Parse for types::Pos2 {
+	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+		let mut term = f.tuple()?;
+		let x = Parse::parse(term.field()?, ctx)?;
+		term.field()?.check_word("null")?;
+		let z = Parse::parse(term.field()?, ctx)?;
+		term.finish()?;
+		Ok(types::Pos2 { x, z })
+	}
+}
+
 impl Print for types::Pos3 {
 	fn print(&self, f: &mut Printer, ctx: &mut PrintContext) {
 		let mut term = f.term("");
 		term.field().val(self.x, ctx);
 		term.field().val(self.y, ctx);
 		term.field().val(self.z, ctx);
+	}
+}
+
+impl Parse for types::Pos3 {
+	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+		let mut term = f.tuple()?;
+		let x = Parse::parse(term.field()?, ctx)?;
+		let y = Parse::parse(term.field()?, ctx)?;
+		let z = Parse::parse(term.field()?, ctx)?;
+		term.finish()?;
+		Ok(types::Pos3 { x, y, z })
 	}
 }
 

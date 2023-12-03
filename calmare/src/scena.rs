@@ -1,8 +1,10 @@
 use themelios::scena;
+
 mod code;
 mod ed6;
 
 use crate::macros::{newtype_hex, newtype_term};
+use crate::{parse, Parse, ParseContext, Parser};
 use crate::{Print, PrintContext, Printer, PrinterExt as _};
 
 impl Print for scena::FuncId {
@@ -10,6 +12,16 @@ impl Print for scena::FuncId {
 		let mut term = f.term("fn");
 		term.field().val(self.0, ctx);
 		term.field().val(self.1, ctx);
+	}
+}
+
+impl Parse for scena::FuncId {
+	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+		let mut term = f.check_term("fn")?;
+		let a = Parse::parse(term.field()?, ctx)?;
+		let b = Parse::parse(term.field()?, ctx)?;
+		term.finish()?;
+		Ok(scena::FuncId(a, b))
 	}
 }
 

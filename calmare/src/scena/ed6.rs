@@ -1,6 +1,9 @@
-use crate::{Print, PrintContext, Printer, PrinterExt};
 use themelios::scena::{ed6, ChipId, EventId, LocalCharId, LookPointId};
 use themelios::types::FileId;
+
+use crate::parse::{Diagnostic, Span};
+use crate::{parse, Parse, ParseContext, Parser};
+use crate::{Print, PrintContext, Printer, PrinterExt};
 
 struct LocalFuncId(u16);
 
@@ -98,4 +101,132 @@ crate::macros::strukt! {
 	struct ed6::Monster { name, pos, angle, chip, flags, unk2, battle, flag, unk3, }
 	struct ed6::Event { pos1, pos2, flags, func, unk1, }
 	struct ed6::LookPoint { pos, radius, bubble_pos, flags, func, unk1, }
+}
+
+impl Parse for ed6::LookPoint {
+	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+		let mut first_error = true;
+
+		let mut pos = PlainField::default();
+		let mut radius = PlainField::default();
+		let mut bubble_pos = PlainField::default();
+		let mut flags = PlainField::default();
+		let mut func = PlainField::default();
+		let mut unk1 = PlainField::default();
+
+		let start = f.pos();
+		f.lines(|f| {
+			let start = f.pos();
+			let word = f.word()?;
+			let span = start | f.pos();
+			match word {
+				"pos" => pos.parse_field(f, ctx, span),
+				"radius" => radius.parse_field(f, ctx, span),
+				"bubble_pos" => bubble_pos.parse_field(f, ctx, span),
+				"flags" => flags.parse_field(f, ctx, span),
+				"func" => func.parse_field(f, ctx, span),
+				"unk1" => unk1.parse_field(f, ctx, span),
+				_ => {
+					let mut diag = Diagnostic::error(span, "unknown field");
+					if first_error {
+						first_error = false;
+						diag = diag.note(span, "allowed fields are `pos`, `radius`, ...");
+					}
+					Err(diag)
+				}
+			}
+		});
+		let span = start | f.pos();
+
+		#[allow(unused_mut)]
+		let mut failures: Vec<&str> = Vec::new();
+
+		let pos = pos.get();
+		if pos.is_none() {
+			failures.push("`pos`");
+		}
+		let radius = radius.get();
+		if radius.is_none() {
+			failures.push("`radius`");
+		}
+		let bubble_pos = bubble_pos.get();
+		if bubble_pos.is_none() {
+			failures.push("`bubble_pos`");
+		}
+		let flags = flags.get();
+		if flags.is_none() {
+			failures.push("`flags`");
+		}
+		let func = func.get();
+		if func.is_none() {
+			failures.push("`func`");
+		}
+		let unk1 = unk1.get();
+		if unk1.is_none() {
+			failures.push("`unk1`");
+		}
+
+		if failures.is_empty() {
+			Ok(Self {
+				pos: pos.unwrap(),
+				radius: radius.unwrap(),
+				bubble_pos: bubble_pos.unwrap(),
+				flags: flags.unwrap(),
+				func: func.unwrap(),
+				unk1: unk1.unwrap(),
+			})
+		} else {
+			Err(Diagnostic::error(span, "missing fields").note(span, failures.join(", ")))
+		}
+	}
+}
+
+pub trait ParseField: Default {
+	type Output;
+	fn parse_field(
+		&mut self,
+		f: &mut Parser,
+		ctx: &mut ParseContext,
+		head_span: Span,
+	) -> parse::Result<()>;
+	fn get(self) -> Option<Self::Output>;
+}
+
+#[derive(Debug, Clone)]
+struct PlainField<T> {
+	head_span: Option<Span>,
+	value: Option<T>,
+}
+
+impl<T> Default for PlainField<T> {
+	fn default() -> Self {
+		Self {
+			head_span: None,
+			value: None,
+		}
+	}
+}
+
+impl<T: Parse> ParseField for PlainField<T> {
+	type Output = T;
+
+	fn parse_field(
+		&mut self,
+		f: &mut Parser,
+		ctx: &mut ParseContext,
+		head_span: Span,
+	) -> parse::Result<()> {
+		if let Some(prev_span) = self.head_span.replace(head_span) {
+			Diagnostic::error(head_span, "duplicate item")
+				.note(prev_span, "previous here")
+				.emit(f);
+		}
+		f.space()?;
+		self.value = Some(T::parse(f, ctx)?);
+		Ok(())
+	}
+
+	fn get(self) -> Option<Self::Output> {
+		self.value
+	}
 }
