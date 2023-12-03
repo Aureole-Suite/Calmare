@@ -77,9 +77,9 @@ impl<'src> Parser<'src> {
 		self.string().strip_prefix(pat).map(|suf| self.eat(suf))
 	}
 
-	pub fn check(&mut self, c: &str) -> Result<()> {
+	pub fn check(&mut self, c: &str) -> Result<&mut Self> {
 		match self.pat(c) {
-			Some(_) => Ok(()),
+			Some(_) => Ok(self),
 			None => Err(Diagnostic::error(self.pos(), format!("expected `{c}`"))),
 		}
 	}
@@ -95,7 +95,7 @@ impl<'src> Parser<'src> {
 		}
 	}
 
-	pub fn space(&mut self) -> Result<()> {
+	pub fn space(&mut self) -> Result<&mut Self> {
 		if self.last_indent.is_none() {
 			self.before_space = self.pos;
 			self.inline_space();
@@ -114,7 +114,7 @@ impl<'src> Parser<'src> {
 				"unexpected end of line",
 			))
 		} else {
-			Ok(())
+			Ok(self)
 		}
 	}
 
@@ -190,30 +190,29 @@ impl<'src> Parser<'src> {
 		Ok(self.span_text(start | self.pos()))
 	}
 
-	pub fn check_word(&mut self, word: &str) -> Result<()> {
+	pub fn check_word(&mut self, word: &str) -> Result<&mut Self> {
 		let pos = self.pos();
 		let aword = self.word();
 		if aword != Ok(word) {
-			return Err(Diagnostic::error(pos | self.pos(), format!("expected `{word}`")));
+			return Err(Diagnostic::error(
+				pos | self.pos(),
+				format!("expected `{word}`"),
+			));
 		}
-		Ok(())
+		Ok(self)
 	}
 
 	pub fn term<T>(&mut self, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<T> {
-		self.check("[")?;
-		self.space()?;
+		self.check("[")?.space()?;
 		let v = f(self)?;
-		self.space()?;
-		self.check("]")?;
+		self.space()?.check("]")?;
 		Ok(v)
 	}
 
 	pub fn tuple<T>(&mut self, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<T> {
-		self.check("(")?;
-		self.space()?;
+		self.check("(")?.space()?;
 		let v = f(self)?;
-		self.space()?;
-		self.check(")")?;
+		self.space()?.check(")")?;
 		Ok(v)
 	}
 

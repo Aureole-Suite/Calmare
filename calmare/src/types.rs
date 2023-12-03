@@ -49,13 +49,9 @@ impl Parse for types::Pos2 {
 	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
 		f.tuple(|f| {
 			let x = Parse::parse(f, ctx)?;
-			f.space()?;
-			f.check(",")?;
-			f.space()?;
+			f.space()?.check(",")?.space()?;
 			f.check_word("null")?;
-			f.space()?;
-			f.check(",")?;
-			f.space()?;
+			f.space()?.check(",")?.space()?;
 			let z = Parse::parse(f, ctx)?;
 			Ok(types::Pos2 { x, z })
 		})
@@ -75,13 +71,9 @@ impl Parse for types::Pos3 {
 	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
 		f.tuple(|f| {
 			let x = Parse::parse(f, ctx)?;
-			f.space()?;
-			f.check(",")?;
-			f.space()?;
+			f.space()?.check(",")?.space()?;
 			let y = Parse::parse(f, ctx)?;
-			f.space()?;
-			f.check(",")?;
-			f.space()?;
+			f.space()?.check(",")?.space()?;
 			let z = Parse::parse(f, ctx)?;
 			Ok(types::Pos3 { x, y, z })
 		})
