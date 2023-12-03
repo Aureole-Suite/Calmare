@@ -16,6 +16,13 @@ pub struct Diagnostic {
 }
 
 impl Diagnostic {
+	/// Used to return a `Err()` without actually giving a diagnostic.
+	pub const DUMMY: Diagnostic = Diagnostic {
+		level: Level::Info,
+		text: Spanned(Span::new(usize::MAX), String::new()),
+		notes: Vec::new(),
+	};
+
 	pub fn new(level: Level, span: Span, text: impl ToString) -> Diagnostic {
 		Diagnostic {
 			level,
@@ -42,7 +49,9 @@ impl Diagnostic {
 	}
 
 	pub fn emit(self, parser: &mut Parser) {
-		parser.diagnostics.push(self);
+		if self != Self::DUMMY {
+			parser.diagnostics.push(self);
+		}
 	}
 
 	pub fn is_fatal(&self) -> bool {
