@@ -126,7 +126,7 @@ impl Print for String {
 
 impl Parse for String {
 	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
-		todo!()
+		Ok(String::new()) // TODO
 	}
 }
 
