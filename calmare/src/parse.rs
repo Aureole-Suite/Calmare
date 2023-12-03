@@ -222,9 +222,9 @@ impl<'src> Parser<'src> {
 			self.pat_mul_nonempty(|c: char| c.is_ascii_hexdigit(), "hex digits")?;
 		} else {
 			let _ = self.pat('-');
-			self.pat_mul_nonempty(|c: char| c.is_ascii_hexdigit(), "digits")?;
+			self.pat_mul_nonempty(|c: char| c.is_ascii_digit(), "digits")?;
 			if self.pat('.').is_some() {
-				self.pat_mul_nonempty(|c: char| c.is_ascii_hexdigit(), "digits")?;
+				self.pat_mul_nonempty(|c: char| c.is_ascii_digit(), "digits")?;
 			}
 		}
 		Ok(self.span_text(pos | self.pos()))
