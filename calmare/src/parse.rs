@@ -166,7 +166,7 @@ impl<'src> Parser<'src> {
 			}
 
 			if ok {
-				Diagnostic::error(pos, "unexpected data at end of line").emit(self);
+				Diagnostic::error(pos, "expected end of line").emit(self);
 			}
 
 			while self.last_indent > self.indent {

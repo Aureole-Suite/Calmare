@@ -4,6 +4,7 @@ use themelios::types::FileId;
 use crate::{parse, Parse, ParseContext, Parser};
 use crate::{Print, PrintContext, Printer, PrinterExt};
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct LocalFuncId(u16);
 
 crate::macros::newtype_term!(LocalFuncId, "fn");
@@ -65,6 +66,86 @@ impl Print for ed6::Scena {
 			f.line();
 			f.val(LocalFuncId(i as u16), ctx).val(func, ctx);
 		}
+	}
+}
+
+impl Parse for ed6::Scena {
+	fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+		f.lines(|f| match f.word()? {
+			"scena" => Ok(()),
+			"entry" => {
+				f.space()?;
+				let l: ed6::Entry = Parse::parse(f, ctx)?;
+				Ok(())
+			}
+			"chip" => {
+				f.space()?;
+				let id = Parse::parse(f, ctx)
+					.or_else(|_| f.term(|f| Parse::parse(f, ctx)).map(ChipId))?;
+				Ok(())
+			}
+			"npc" => {
+				f.space()?;
+				let id = Parse::parse(f, ctx)
+					.or_else(|_| f.term(|f| Parse::parse(f, ctx)).map(LocalCharId))?;
+				f.space()?;
+				let l: ed6::Npc = Parse::parse(f, ctx)?;
+				Ok(())
+			}
+			"monster" => {
+				f.space()?;
+				let id = Parse::parse(f, ctx)
+					.or_else(|_| f.term(|f| Parse::parse(f, ctx)).map(LocalCharId))?;
+				f.space()?;
+				let l: ed6::Monster = Parse::parse(f, ctx)?;
+				Ok(())
+			}
+			"event" => {
+				f.space()?;
+				let id = Parse::parse(f, ctx)
+					.or_else(|_| f.term(|f| Parse::parse(f, ctx)).map(EventId))?;
+				f.space()?;
+				let l: ed6::Event = Parse::parse(f, ctx)?;
+				Ok(())
+			}
+			"look_point" => {
+				f.space()?;
+				let id = Parse::parse(f, ctx)
+					.or_else(|_| f.term(|f| Parse::parse(f, ctx)).map(LookPointId))?;
+				f.space()?;
+				let l: ed6::LookPoint = Parse::parse(f, ctx)?;
+				println!("{:?} {:?}", id, l);
+				Ok(())
+			}
+			"fn" => {
+				f.space()?;
+				let id = Parse::parse(f, ctx)
+					.or_else(|_| f.term(|f| Parse::parse(f, ctx)).map(LocalFuncId))?;
+				println!("fn {:?}", id);
+				Ok(())
+			}
+			e => Err(parse::Diagnostic::error(
+				f.span_of(e),
+				"invalid declaration",
+			)),
+		});
+		use themelios::types::*;
+		Ok(ed6::Scena {
+			path: String::from(""),
+			map: String::from(""),
+			town: TownId(0),
+			bgm: BgmId(0),
+			item_use: themelios::scena::FuncId(0, 0),
+			includes: [FileId::NONE; 8],
+			ch: vec![],
+			cp: vec![],
+			npcs: vec![],
+			monsters: vec![],
+			events: vec![],
+			look_points: vec![],
+			entries: vec![],
+			functions: vec![],
+		})
 	}
 }
 

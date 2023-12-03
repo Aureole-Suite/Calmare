@@ -11,10 +11,11 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 
 	$(impl Parse for $type {
 		fn parse(f: &mut Parser, ctx: &mut ParseContext) -> parse::Result<Self> {
+			let start = f.pos();
+			f.check(":")?.space()?;
 			$(let mut $field = PlainField::default();)*
 
 			let mut first_error = true;
-			let start = f.pos();
 			f.lines(|f| match f.word()? {
 				$(word @ stringify!($field) => $field.parse_field(word, f, ctx),)*
 				word => {
@@ -29,7 +30,6 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 					Err(diag)
 				}
 			});
-			let span = start | f.pos();
 
 			#[allow(unused_mut)]
 			let mut failures: Vec<&str> = Vec::new();
@@ -46,7 +46,7 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 					$($field: $field.unwrap(),)*
 				})
 			} else {
-				Err(parse::Diagnostic::error(span, "missing fields").note(span, failures.join(", ")))
+				Err(parse::Diagnostic::error(start, "missing fields").note(start, failures.join(", ")))
 			}
 		}
 	})+
