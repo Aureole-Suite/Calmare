@@ -75,36 +75,33 @@ impl Parse for ed6::Scena {
 			}
 			"chip" => {
 				f.space()?;
-				let id = Parse::parse(f).or_else(|_| f.term(|f| Parse::parse(f)).map(ChipId))?;
+				let id = Parse::parse(f).or_else(|_| f.term(Parse::parse).map(ChipId))?;
 				Ok(())
 			}
 			"npc" => {
 				f.space()?;
-				let id =
-					Parse::parse(f).or_else(|_| f.term(|f| Parse::parse(f)).map(LocalCharId))?;
+				let id = Parse::parse(f).or_else(|_| f.term(Parse::parse).map(LocalCharId))?;
 				f.space()?;
 				let l: ed6::Npc = Parse::parse(f)?;
 				Ok(())
 			}
 			"monster" => {
 				f.space()?;
-				let id =
-					Parse::parse(f).or_else(|_| f.term(|f| Parse::parse(f)).map(LocalCharId))?;
+				let id = Parse::parse(f).or_else(|_| f.term(Parse::parse).map(LocalCharId))?;
 				f.space()?;
 				let l: ed6::Monster = Parse::parse(f)?;
 				Ok(())
 			}
 			"event" => {
 				f.space()?;
-				let id = Parse::parse(f).or_else(|_| f.term(|f| Parse::parse(f)).map(EventId))?;
+				let id = Parse::parse(f).or_else(|_| f.term(Parse::parse).map(EventId))?;
 				f.space()?;
 				let l: ed6::Event = Parse::parse(f)?;
 				Ok(())
 			}
 			"look_point" => {
 				f.space()?;
-				let id =
-					Parse::parse(f).or_else(|_| f.term(|f| Parse::parse(f)).map(LookPointId))?;
+				let id = Parse::parse(f).or_else(|_| f.term(Parse::parse).map(LookPointId))?;
 				f.space()?;
 				let l: ed6::LookPoint = Parse::parse(f)?;
 				println!("{:?} {:?}", id, l);
@@ -112,8 +109,7 @@ impl Parse for ed6::Scena {
 			}
 			"fn" => {
 				f.space()?;
-				let id =
-					Parse::parse(f).or_else(|_| f.term(|f| Parse::parse(f)).map(LocalFuncId))?;
+				let id = Parse::parse(f).or_else(|_| f.term(Parse::parse).map(LocalFuncId))?;
 				println!("fn {:?}", id);
 				Ok(())
 			}

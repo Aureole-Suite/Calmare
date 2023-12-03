@@ -55,7 +55,7 @@ pub macro newtype_term($type:ty, $term:literal) {
 		fn parse(f: &mut Parser) -> parse::Result<Self> {
 			f.check_word($term)?;
 			f.space()?;
-			f.term(|f| Parse::parse(f)).map(Self)
+			f.term(Parse::parse).map(Self)
 		}
 	}
 }
