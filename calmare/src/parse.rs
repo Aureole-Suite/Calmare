@@ -221,3 +221,32 @@ impl<'src> Parser<'src> {
 		Ok(self.span_text(pos | self.pos()))
 	}
 }
+
+#[test]
+fn test() {
+	let text = "\
+word
+    word
+      word
+      word
+  word
+word
+";
+	let mut parser = Parser::new(text);
+	let mut n = 0;
+	parser.lines(|f| {
+		n += 1;
+		f.check_word("word").unwrap().space().unwrap().lines(|f| {
+			n += 1;
+			f.check_word("word").unwrap().space().unwrap().lines(|f| {
+				n += 1;
+				f.check_word("word").unwrap();
+				Ok(())
+			});
+			Ok(())
+		});
+		Ok(())
+	});
+	assert_eq!(parser.diagnostics().len(), 1);
+	assert_eq!(n, 5);
+}
