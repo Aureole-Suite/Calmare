@@ -15,6 +15,14 @@ impl Print for types::FileId {
 	}
 }
 
+impl Parse for types::FileId {
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
+		f.check_word("file")?;
+		f.space()?;
+		f.term(Parse::parse).map(Self)
+	}
+}
+
 newtype_hex!(types::Color);
 
 newtype_term!(types::BattleId, "battle");

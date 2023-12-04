@@ -76,6 +76,10 @@ impl Parse for ed6::Scena {
 			"chip" => {
 				f.space()?;
 				let id = Parse::parse(f).or_else(|_| f.term(Parse::parse).map(ChipId))?;
+				f.space()?;
+				let file1 = FileId::parse(f);
+				f.space()?;
+				let file2 = FileId::parse(f);
 				Ok(())
 			}
 			"npc" => {
