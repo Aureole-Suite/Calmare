@@ -21,7 +21,7 @@ fn main() -> anyhow::Result<()> {
 		print!("{}", output);
 		let mut parser = calmare::Parser::new(&output);
 		let v: Option<themelios::scena::ed6::Scena> =
-			calmare::Parse::parse(&mut parser).emit(&mut parser);
+			calmare::ParseBlock::parse_block(&mut parser).emit(&mut parser);
 		print_diags(&file, &output, parser.diagnostics());
 		assert_eq!(v.unwrap(), scena);
 

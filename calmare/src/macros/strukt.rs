@@ -1,4 +1,4 @@
-use crate::{parse, Parse, Parser};
+use crate::{parse, Parse, ParseBlock, Parser};
 use crate::{PrintBlock, Printer};
 
 pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
@@ -9,10 +9,9 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 		}
 	})+
 
-	$(impl Parse for $type {
-		fn parse(f: &mut Parser) -> parse::Result<Self> {
+	$(impl ParseBlock for $type {
+		fn parse_block(f: &mut Parser) -> parse::Result<Self> {
 			let start = f.pos();
-			f.check(":")?.space()?;
 			$(let mut $field = PlainField::default();)*
 
 			let mut first_error = true;

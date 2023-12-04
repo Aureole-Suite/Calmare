@@ -30,6 +30,13 @@ impl Printer {
 	}
 }
 
+impl Parser<'_> {
+	fn val_block<T: ParseBlock>(&mut self) -> parse::Result<T> {
+		self.check(":")?.space()?;
+		T::parse_block(self)
+	}
+}
+
 pub trait Print {
 	fn print(&self, f: &mut Printer);
 }
@@ -40,6 +47,10 @@ pub trait PrintBlock {
 
 pub trait Parse: Sized {
 	fn parse(f: &mut Parser) -> parse::Result<Self>;
+}
+
+pub trait ParseBlock: Sized {
+	fn parse_block(f: &mut Parser) -> parse::Result<Self>;
 }
 
 macros::int!(u8, u16, u32, u64, i8, i16, i32, i64);
@@ -72,6 +83,12 @@ impl<T: PrintBlock> PrintBlock for Box<T> {
 impl<T: Parse> Parse for Box<T> {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		T::parse(f).map(Box::new)
+	}
+}
+
+impl<T: ParseBlock> ParseBlock for Box<T> {
+	fn parse_block(f: &mut Parser) -> parse::Result<Self> {
+		T::parse_block(f).map(Box::new)
 	}
 }
 

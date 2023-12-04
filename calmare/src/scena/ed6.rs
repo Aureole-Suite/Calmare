@@ -1,7 +1,7 @@
 use themelios::scena::{ed6, ChipId, EventId, LocalCharId, LookPointId};
 use themelios::types::FileId;
 
-use crate::{parse, Parse, Parser};
+use crate::{parse, Parse, ParseBlock, Parser};
 use crate::{PrintBlock, Printer};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -64,13 +64,13 @@ impl PrintBlock for ed6::Scena {
 	}
 }
 
-impl Parse for ed6::Scena {
-	fn parse(f: &mut Parser) -> parse::Result<Self> {
+impl ParseBlock for ed6::Scena {
+	fn parse_block(f: &mut Parser) -> parse::Result<Self> {
 		f.lines(|f| match f.word()? {
 			"scena" => Ok(()),
 			"entry" => {
 				f.space()?;
-				let l: ed6::Entry = Parse::parse(f)?;
+				let l = f.val_block::<ed6::Entry>()?;
 				Ok(())
 			}
 			"chip" => {
@@ -86,28 +86,28 @@ impl Parse for ed6::Scena {
 				f.space()?;
 				let id = Parse::parse(f).or_else(|_| f.term(Parse::parse).map(LocalCharId))?;
 				f.space()?;
-				let l: ed6::Npc = Parse::parse(f)?;
+				let l = f.val_block::<ed6::Npc>()?;
 				Ok(())
 			}
 			"monster" => {
 				f.space()?;
 				let id = Parse::parse(f).or_else(|_| f.term(Parse::parse).map(LocalCharId))?;
 				f.space()?;
-				let l: ed6::Monster = Parse::parse(f)?;
+				let l = f.val_block::<ed6::Monster>()?;
 				Ok(())
 			}
 			"event" => {
 				f.space()?;
 				let id = Parse::parse(f).or_else(|_| f.term(Parse::parse).map(EventId))?;
 				f.space()?;
-				let l: ed6::Event = Parse::parse(f)?;
+				let l = f.val_block::<ed6::Event>()?;
 				Ok(())
 			}
 			"look_point" => {
 				f.space()?;
 				let id = Parse::parse(f).or_else(|_| f.term(Parse::parse).map(LookPointId))?;
 				f.space()?;
-				let l: ed6::LookPoint = Parse::parse(f)?;
+				let l = f.val_block::<ed6::LookPoint>()?;
 				println!("{:?} {:?}", id, l);
 				Ok(())
 			}
