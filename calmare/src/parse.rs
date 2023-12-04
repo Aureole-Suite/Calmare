@@ -108,14 +108,7 @@ impl<'src> Parser<'src> {
 			}
 		}
 
-		if self.last_indent <= self.indent {
-			Err(Diagnostic::error(
-				Span::new(self.after_space),
-				"unexpected end of line",
-			))
-		} else {
-			Ok(self)
-		}
+		Ok(self)
 	}
 
 	fn inline_space(&mut self) -> Indent<'src> {
