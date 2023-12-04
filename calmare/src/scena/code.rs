@@ -3,20 +3,18 @@ use themelios::scena::{
 	insn::{Arg, Expr, Insn},
 };
 
-use crate::{Print, Printer};
+use crate::{Print, PrintBlock, Printer};
 
 mod expr;
 
-impl Print for Code {
-	fn print(&self, f: &mut Printer) {
-		f.block(|f| {
-			for insn in self.iter() {
-				insn.print(f);
-				if !f.is_line() {
-					f.line();
-				}
+impl PrintBlock for Code {
+	fn print_block(&self, f: &mut Printer) {
+		for insn in self.iter() {
+			insn.print(f);
+			if !f.is_line() {
+				f.line();
 			}
-		});
+		}
 	}
 }
 
@@ -28,11 +26,11 @@ impl Print for Insn {
 				for arg in args {
 					f.val(arg);
 				}
-				f.val(yes);
+				f.val_block(yes);
 				if no.len() == 1 && no[0].name == "if" {
 					f.word("else").val(&no[0]);
 				} else {
-					f.word("else").val(no);
+					f.word("else").val_block(no);
 				}
 			}
 
@@ -126,7 +124,7 @@ impl Print for Arg {
 			Arg::Global(v) => f.term("global").field().val(v),
 			Arg::Attr(v) => f.term("system").field().val(v),
 			Arg::CharAttr(v, w) => f.val(v).no_space().word(".").no_space().val(w),
-			Arg::Code(v) => f.val(v),
+			Arg::Code(v) => f.val_block(v),
 			Arg::Expr(v) => f.val(v),
 
 			Arg::QuestTask(v) => f.hex(v),

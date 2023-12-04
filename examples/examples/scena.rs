@@ -1,5 +1,5 @@
 use calmare::parse::{self, Emit as _};
-use calmare::Print as _;
+use calmare::PrintBlock as _;
 use themelios::scena::ed6::Scena;
 use themelios::scena::insn_set::{self, Game, Variant};
 fn main() -> anyhow::Result<()> {
@@ -16,7 +16,7 @@ fn main() -> anyhow::Result<()> {
 		themelios::scena::code::normalize::normalize(&mut scena.functions).unwrap();
 
 		let mut printer = calmare::Printer::new();
-		scena.print(&mut printer);
+		scena.print_block(&mut printer);
 		let output = printer.finish();
 		print!("{}", output);
 		let mut parser = calmare::Parser::new(&output);

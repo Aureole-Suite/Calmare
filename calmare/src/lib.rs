@@ -19,6 +19,11 @@ impl Printer {
 		self.space()
 	}
 
+	fn val_block(&mut self, val: impl PrintBlock) -> &mut Self {
+		self.block(|f| val.print_block(f));
+		self.space()
+	}
+
 	fn hex(&mut self, val: impl Hex) -> &mut Self {
 		val.print_hex(self);
 		self.space()
@@ -27,6 +32,10 @@ impl Printer {
 
 pub trait Print {
 	fn print(&self, f: &mut Printer);
+}
+
+pub trait PrintBlock {
+	fn print_block(&self, f: &mut Printer);
 }
 
 pub trait Parse: Sized {
@@ -42,9 +51,21 @@ impl<T: Print> Print for &T {
 	}
 }
 
+impl<T: PrintBlock> PrintBlock for &T {
+	fn print_block(&self, f: &mut Printer) {
+		T::print_block(self, f)
+	}
+}
+
 impl<T: Print> Print for Box<T> {
 	fn print(&self, f: &mut Printer) {
 		T::print(self, f)
+	}
+}
+
+impl<T: PrintBlock> PrintBlock for Box<T> {
+	fn print_block(&self, f: &mut Printer) {
+		T::print_block(self, f)
 	}
 }
 

@@ -2,15 +2,15 @@ use themelios::scena::{ed6, ChipId, EventId, LocalCharId, LookPointId};
 use themelios::types::FileId;
 
 use crate::{parse, Parse, Parser};
-use crate::{Print, Printer};
+use crate::{PrintBlock, Printer};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct LocalFuncId(u16);
 
 crate::macros::newtype_term!(LocalFuncId, "fn");
 
-impl Print for ed6::Scena {
-	fn print(&self, f: &mut Printer) {
+impl PrintBlock for ed6::Scena {
+	fn print_block(&self, f: &mut Printer) {
 		f.word("scena").block(|f| {
 			f.word("name").val(&self.path).val(&self.map).line();
 			f.word("town").val(self.town).line();
@@ -25,7 +25,7 @@ impl Print for ed6::Scena {
 
 		for entry in &self.entries {
 			f.line();
-			f.word("entry").val(entry);
+			f.word("entry").val_block(entry);
 		}
 
 		if !self.ch.is_empty() || !self.cp.is_empty() {
@@ -37,29 +37,29 @@ impl Print for ed6::Scena {
 
 		for npc in &self.npcs {
 			f.line();
-			f.word("npc").val(LocalCharId(n)).val(npc);
+			f.word("npc").val(LocalCharId(n)).val_block(npc);
 			n += 1;
 		}
 
 		for monster in &self.monsters {
 			f.line();
-			f.word("monster").val(LocalCharId(n)).val(monster);
+			f.word("monster").val(LocalCharId(n)).val_block(monster);
 			n += 1;
 		}
 
 		for (i, event) in self.events.iter().enumerate() {
 			f.line();
-			f.val(EventId(i as u16)).val(event);
+			f.val(EventId(i as u16)).val_block(event);
 		}
 
 		for (i, lp) in self.look_points.iter().enumerate() {
 			f.line();
-			f.val(LookPointId(i as u16)).val(lp);
+			f.val(LookPointId(i as u16)).val_block(lp);
 		}
 
 		for (i, func) in self.functions.iter().enumerate() {
 			f.line();
-			f.val(LocalFuncId(i as u16)).val(func);
+			f.val(LocalFuncId(i as u16)).val_block(func);
 		}
 	}
 }

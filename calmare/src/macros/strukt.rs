@@ -1,13 +1,11 @@
 use crate::{parse, Parse, Parser};
-use crate::{Print, Printer};
+use crate::{PrintBlock, Printer};
 
 pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
-	$(impl Print for $type {
-		fn print(&self, f: &mut Printer) {
+	$(impl PrintBlock for $type {
+		fn print_block(&self, f: &mut Printer) {
 			let Self { $($field),* } = &self;
-			f.block(|f| {
-				$(f.word(stringify!($field)).val($field).line();)*
-			})
+			$(f.word(stringify!($field)).val($field).line();)*
 		}
 	})+
 
