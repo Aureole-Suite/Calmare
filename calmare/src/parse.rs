@@ -5,18 +5,14 @@ mod span;
 use std::str::pattern::Pattern;
 
 pub use diagnostic::{Diagnostic, Emit, Level, Result};
-use indent::Indent;
+pub use indent::{Indent, Space};
 pub use span::{Span, Spanned};
 
 pub struct Parser<'a> {
 	source: &'a str,
 	pos: usize,
-	// current indentation level
 	indent: Indent<'a>,
-	// position after any inline space at the last .space() call, at the first newline if any
-	after_space: usize,
-	// indentation at last .space() call
-	last_indent: Option<Indent<'a>>,
+	last_space: Option<Space<'a>>,
 	diagnostics: Vec<Diagnostic>,
 }
 
@@ -25,9 +21,8 @@ impl<'src> Parser<'src> {
 		Parser {
 			source,
 			pos: 0,
-			indent: Indent(""),
-			after_space: 0,
-			last_indent: None,
+			indent: Indent(&source[..0]),
+			last_space: None,
 			diagnostics: Vec::new(),
 		}
 	}
@@ -69,7 +64,7 @@ impl<'src> Parser<'src> {
 		let len = self.string().len() - suffix.len();
 		let s = &self.string()[..len];
 		self.pos += len;
-		self.last_indent = None;
+		self.last_space = None;
 		s
 	}
 
@@ -96,33 +91,42 @@ impl<'src> Parser<'src> {
 	}
 
 	pub fn space(&mut self) -> Result<&mut Self> {
-		if self.last_indent.is_none() {
-			self.inline_space();
-			self.after_space = self.pos;
-			// Intentionally short-circuiting
-			while self.pat('\r').is_some() | self.pat('\n').is_some() {
-				self.last_indent = Some(self.inline_space())
-			}
-			if self.string().is_empty() {
-				self.last_indent = Some(Indent(""))
-			}
-		}
-
+		self.space2();
 		Ok(self)
 	}
 
-	fn inline_space(&mut self) -> Indent<'src> {
+	pub fn space2(&mut self) -> Space<'src> {
+		if self.last_space.is_none() {
+			let space = self.inline_space();
+			let mut indent = None;
+			// Intentionally short-circuiting
+			while self.pat('\r').is_some() | self.pat('\n').is_some() {
+				indent = Some(Indent(self.inline_space()));
+			}
+			if self.string().is_empty() {
+				indent = Some(Indent(""))
+			}
+			self.last_space = Some(match indent {
+				Some(indent) => Space::Indent { space, indent },
+				None => Space::Space { space },
+			})
+		}
+		self.last_space.unwrap()
+	}
+
+	fn inline_space(&mut self) -> &'src str {
 		let start = self.pos();
 		self.pat_mul([' ', '\t']);
 		if self.pat("//").is_some() {
 			self.pat_mul(|c| c != '\n');
 		}
-		Indent(self.span_text(start | self.pos()))
+		self.span_text(start | self.pos())
 	}
 
 	pub fn lines(&mut self, mut f: impl FnMut(&mut Self) -> Result<()>) {
+		let space = self.space2();
 		let target_indent = {
-			match self.last_indent {
+			match space.indent() {
 				Some(target_indent) => {
 					if target_indent <= self.indent {
 						return;
@@ -146,23 +150,23 @@ impl<'src> Parser<'src> {
 				self.pat(|_| true);
 			}
 
-			let _ = self.space();
+			let mut space = self.space2();
 
-			if self.last_indent < self.indent {
+			if space < self.indent {
 				break;
 			}
 
-			if self.last_indent == self.indent {
+			if space == self.indent {
 				continue;
 			}
 
 			if ok {
-				Diagnostic::error(Span::new(self.after_space), "expected end of line").emit(self);
+				Diagnostic::error(self.span_of(space.space()).at_end(), "expected end of line").emit(self);
 			}
 
-			while self.last_indent > self.indent {
+			while space > self.indent {
 				self.pat(|_| true);
-				let _ = self.space();
+				space = self.space2();
 			}
 		}
 
