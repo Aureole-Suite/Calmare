@@ -72,6 +72,10 @@ impl<'src> Parser<'src> {
 		self.rest().strip_prefix(pat).map(|suf| self.eat(suf))
 	}
 
+	fn any_char(&mut self) -> Option<char> {
+		self.pat(|_| true).map(|a| a.chars().next().unwrap())
+	}
+
 	fn pat_mul(&mut self, pat: impl Pattern<'src>) -> &'src str {
 		self.eat(self.rest().trim_start_matches(pat))
 	}
@@ -268,6 +272,25 @@ impl<'src> Parser<'src> {
 			}
 		}
 		Ok(self.span_text(pos | self.pos()))
+	}
+
+	pub fn string(&mut self) -> Result<String> {
+		self.check_space()?;
+		let pos = self.pos();
+		self.pat('"')
+			.ok_or_else(|| Diagnostic::error(pos, "expected string"))?;
+		let mut out = String::new();
+		loop {
+			if self.rest().starts_with('\n') || self.rest().is_empty() {
+				return Err(Diagnostic::error(pos | self.pos(), "unterminated string"));
+			}
+			match self.any_char().unwrap() {
+				'"' => break,
+				'\\' => unimplemented!(), // will be ♯ later
+				char => out.push(char),
+			}
+		}
+		Ok(out)
 	}
 }
 

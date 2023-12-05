@@ -153,7 +153,7 @@ impl Print for String {
 
 impl Parse for String {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		Ok(String::new()) // TODO
+		f.string()
 	}
 }
 
