@@ -70,6 +70,7 @@ impl PrintBlock for ed6::Scena {
 #[allow(unused_variables)]
 impl ParseBlock for ed6::Scena {
 	fn parse_block(f: &mut Parser) -> parse::Result<Self> {
+		let mut chcps = PackedIndices::new();
 		let mut npcs_monsters = PackedIndices::new();
 		let mut events = PackedIndices::new();
 		let mut look_points = PackedIndices::new();
@@ -83,9 +84,13 @@ impl ParseBlock for ed6::Scena {
 				Ok(())
 			}
 			word @ "chip" => {
-				let id = parse_id(f, word, ChipId)?;
-				let file1 = f.val::<FileId>()?;
-				let file2 = f.val::<FileId>()?;
+				// TODO handle null
+				let (span, id) = parse_id(f, word, ChipId)?;
+				chcps.insert(f, span, id.0 as usize, |f| {
+					let ch = f.val::<FileId>()?;
+					let cp = f.val::<FileId>()?;
+					Ok((ch, cp))
+				});
 				Ok(())
 			}
 			word @ "npc" => {
@@ -124,6 +129,7 @@ impl ParseBlock for ed6::Scena {
 			e => Err(Diagnostic::error(f.span_of(e), "invalid declaration")),
 		});
 
+		let (ch, cp) = chcps.finish(f, "chip").into_iter().unzip();
 		let (npcs, monsters) = chars(f, npcs_monsters);
 		let events = events.finish(f, "event");
 		let look_points = look_points.finish(f, "look_point");
@@ -137,8 +143,8 @@ impl ParseBlock for ed6::Scena {
 			bgm: BgmId(0),
 			item_use: themelios::scena::FuncId(0, 0),
 			includes: [FileId::NONE; 8],
-			ch: vec![],
-			cp: vec![],
+			ch,
+			cp,
 			npcs,
 			monsters,
 			events,
