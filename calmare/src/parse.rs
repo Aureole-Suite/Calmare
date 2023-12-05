@@ -68,25 +68,25 @@ impl<'src> Parser<'src> {
 		s
 	}
 
-	pub fn pat(&mut self, pat: impl Pattern<'src>) -> Option<&'src str> {
+	fn pat(&mut self, pat: impl Pattern<'src>) -> Option<&'src str> {
 		self.string().strip_prefix(pat).map(|suf| self.eat(suf))
+	}
+
+	fn pat_mul(&mut self, pat: impl Pattern<'src>) -> &'src str {
+		self.eat(self.string().trim_start_matches(pat))
+	}
+
+	fn pat_mul_nonempty(&mut self, pat: impl Pattern<'src>, what: &str) -> Result<&'src str> {
+		match self.pat_mul(pat) {
+			"" => Err(Diagnostic::error(self.pos(), format!("expected {what}"))),
+			v => Ok(v),
+		}
 	}
 
 	pub fn check(&mut self, c: &str) -> Result<&mut Self> {
 		match self.pat(c) {
 			Some(_) => Ok(self),
 			None => Err(Diagnostic::error(self.pos(), format!("expected `{c}`"))),
-		}
-	}
-
-	pub fn pat_mul(&mut self, pat: impl Pattern<'src>) -> &'src str {
-		self.eat(self.string().trim_start_matches(pat))
-	}
-
-	pub fn pat_mul_nonempty(&mut self, pat: impl Pattern<'src>, what: &str) -> Result<&'src str> {
-		match self.pat_mul(pat) {
-			"" => Err(Diagnostic::error(self.pos(), format!("expected {what}"))),
-			v => Ok(v),
 		}
 	}
 
