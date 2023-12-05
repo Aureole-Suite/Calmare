@@ -138,7 +138,7 @@ impl<'src> Parser<'src> {
 		}
 		let prev_indent = std::mem::replace(&mut self.indent, target_indent);
 
-		while !self.string().is_empty() {
+		loop {
 			let space = self.space2();
 
 			if space == self.indent {
