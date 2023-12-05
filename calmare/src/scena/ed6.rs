@@ -1,7 +1,10 @@
+use std::collections::BTreeMap;
+
 use themelios::scena::{ed6, ChipId, EventId, LocalCharId, LookPointId};
 use themelios::types::FileId;
 
-use crate::{parse, Parse, ParseBlock, Parser};
+use crate::parse::{self, Diagnostic, Emit as _, Span};
+use crate::{Parse, ParseBlock, Parser};
 use crate::{PrintBlock, Printer};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -64,51 +67,68 @@ impl PrintBlock for ed6::Scena {
 	}
 }
 
+#[allow(unused_variables)]
 impl ParseBlock for ed6::Scena {
 	fn parse_block(f: &mut Parser) -> parse::Result<Self> {
+		let mut npcs_monsters = PackedIndices::new();
+		let mut events = PackedIndices::new();
+		let mut look_points = PackedIndices::new();
+		let mut entries = Vec::new();
+		let mut functions = PackedIndices::new();
+
 		f.lines(|f| match f.word()? {
-			"scena" => Ok(()),
-			"entry" => {
-				let l = f.val_block::<ed6::Entry>()?;
+			word @ "scena" => Ok(()),
+			word @ "entry" => {
+				entries.push(f.val_block()?);
 				Ok(())
 			}
-			"chip" => {
-				let id = parse_id(f, ChipId)?;
+			word @ "chip" => {
+				let id = parse_id(f, word, ChipId)?;
 				let file1 = f.val::<FileId>()?;
 				let file2 = f.val::<FileId>()?;
 				Ok(())
 			}
-			"npc" => {
+			word @ "npc" => {
+				let pos = f.pos();
 				let id = f.val::<LocalCharId>()?;
-				let l = f.val_block::<ed6::Npc>()?;
+				let span = pos | f.pos();
+				npcs_monsters.insert(f, span, id.0 as usize, |f| {
+					f.val_block().map(NpcOrMonster::Npc)
+				});
 				Ok(())
 			}
-			"monster" => {
+			word @ "monster" => {
+				let pos = f.pos();
 				let id = f.val::<LocalCharId>()?;
-				let l = f.val_block::<ed6::Monster>()?;
+				let span = pos | f.pos();
+				npcs_monsters.insert(f, span, id.0 as usize, |f| {
+					f.val_block().map(NpcOrMonster::Monster)
+				});
 				Ok(())
 			}
-			"event" => {
-				let id = parse_id(f, EventId)?;
-				let l = f.val_block::<ed6::Event>()?;
+			word @ "event" => {
+				let (span, id) = parse_id(f, word, EventId)?;
+				events.insert(f, span, id.0 as usize, |f| f.val_block());
 				Ok(())
 			}
-			"look_point" => {
-				let id = parse_id(f, LookPointId)?;
-				let l = f.val_block::<ed6::LookPoint>()?;
-				println!("{:?} {:?}", id, l);
+			word @ "look_point" => {
+				let (span, id) = parse_id(f, word, LookPointId)?;
+				look_points.insert(f, span, id.0 as usize, |f| f.val_block());
 				Ok(())
 			}
-			"fn" => {
-				let id = parse_id(f, LocalFuncId)?;
-				println!("fn {:?}", id);
+			word @ "fn" => {
+				let (span, id) = parse_id(f, word, LocalFuncId)?;
+				functions.insert(f, span, id.0 as usize, |f| Err(Diagnostic::DUMMY));
 				Ok(())
 			}
-			e => Err(parse::Diagnostic::error(
-				f.span_of(e),
-				"invalid declaration",
-			)),
+			e => Err(Diagnostic::error(f.span_of(e), "invalid declaration")),
 		});
+
+		let (npcs, monsters) = chars(f, npcs_monsters);
+		let events = events.finish(f, "event");
+		let look_points = look_points.finish(f, "look_point");
+		let functions = functions.finish(f, "fn");
+
 		use themelios::types::*;
 		Ok(ed6::Scena {
 			path: String::from(""),
@@ -119,20 +139,28 @@ impl ParseBlock for ed6::Scena {
 			includes: [FileId::NONE; 8],
 			ch: vec![],
 			cp: vec![],
-			npcs: vec![],
-			monsters: vec![],
-			events: vec![],
-			look_points: vec![],
-			entries: vec![],
-			functions: vec![],
+			npcs,
+			monsters,
+			events,
+			look_points,
+			entries,
+			functions,
 		})
 	}
 }
 
-fn parse_id<U: Parse, T: Parse>(f: &mut Parser<'_>, func: impl FnOnce(U) -> T) -> parse::Result<T> {
+fn parse_id<'src, U: Parse, T: Parse>(
+	f: &mut Parser<'src>,
+	word: &'src str,
+	func: impl FnOnce(U) -> T,
+) -> parse::Result<(Span, T)> {
 	match f.try_parse(|f| f.term(|f| f.val()))? {
-		Some(v) => Ok(func(v)),
-		None => f.val(),
+		Some(v) => Ok((f.span_of(word) | f.pos(), func(v))),
+		None => {
+			let start = f.pos();
+			let v = f.val()?;
+			Ok((start | f.pos(), v))
+		}
 	}
 }
 
@@ -168,4 +196,82 @@ crate::macros::strukt::strukt! {
 	struct ed6::Monster { name, pos, angle, chip, flags, unk2, battle, flag, unk3, }
 	struct ed6::Event { pos1, pos2, flags, func, unk1, }
 	struct ed6::LookPoint { pos, radius, bubble_pos, flags, func, unk1, }
+}
+
+#[derive(Debug, Clone)]
+struct PackedIndices<V> {
+	items: BTreeMap<usize, (Span, Option<V>)>,
+}
+
+impl<V> Default for PackedIndices<V> {
+	fn default() -> Self {
+		Self {
+			items: Default::default(),
+		}
+	}
+}
+
+impl<V> PackedIndices<V> {
+	pub fn new() -> Self {
+		Self::default()
+	}
+
+	pub fn insert(
+		&mut self,
+		f: &mut Parser,
+		s: Span,
+		n: usize,
+		func: impl FnOnce(&mut Parser) -> parse::Result<V>,
+	) {
+		let val = func(f).emit(f);
+		if let Some((prev, _)) = self.items.insert(n, (s, val)) {
+			Diagnostic::error(s, "duplicate item")
+				.with_note(prev, "previous here")
+				.emit(f);
+		}
+	}
+
+	pub fn finish(self, diag: &mut Parser, word: &str) -> Vec<V> {
+		let mut vs = Vec::with_capacity(self.items.len());
+		let mut expect = 0;
+		for (k, (s, v)) in self.items {
+			if k != expect {
+				Diagnostic::error(s, format!("missing {word}[{expect}]")).emit(diag);
+			}
+			expect = k + 1;
+			vs.extend(v)
+		}
+		vs
+	}
+}
+
+#[derive(Debug, Clone)]
+enum NpcOrMonster<A, B> {
+	Npc(A),
+	Monster(B),
+}
+
+fn chars<A, B>(diag: &mut Parser, items: PackedIndices<NpcOrMonster<A, B>>) -> (Vec<A>, Vec<B>) {
+	let misorder = items
+		.items
+		.iter()
+		.skip_while(|a| !matches!(&a.1 .1, Some(NpcOrMonster::Monster(_))))
+		.find(|a| matches!(&a.1 .1, Some(NpcOrMonster::Npc(_))));
+	if let Some((k, (s, _))) = misorder {
+		let (_, (prev, _)) = items.items.range(..k).last().unwrap();
+		Diagnostic::error(*prev, "monsters must come after npcs")
+			.with_note(*s, "is before this npc")
+			.emit(diag);
+	}
+
+	let mut npcs = Vec::new();
+	let mut monsters = Vec::new();
+	for m in items.finish(diag, "char") {
+		match m {
+			NpcOrMonster::Npc(n) => npcs.push(n),
+			NpcOrMonster::Monster(m) => monsters.push(m),
+		}
+	}
+
+	(npcs, monsters)
 }
