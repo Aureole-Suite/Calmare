@@ -121,6 +121,7 @@ impl<'src> Parser<'src> {
 	fn inline_space(&mut self) -> &'src str {
 		let start = self.pos();
 		self.pat_mul([' ', '\t']);
+		// TODO don't include comments in return value
 		if self.pat("//").is_some() {
 			self.pat_mul(|c| c != '\n');
 		}
@@ -129,52 +130,57 @@ impl<'src> Parser<'src> {
 
 	pub fn lines(&mut self, mut f: impl FnMut(&mut Self) -> Result<()>) {
 		let space = self.space2();
-		let target_indent = {
-			match space.indent() {
-				Some(target_indent) => {
-					if target_indent <= self.indent && self.pos != 0 {
-						return;
-					}
-					target_indent
-				}
-				None => self.indent,
-			}
+		let target_indent = match space.indent() {
+			Some(target_indent) if target_indent <= self.indent && self.pos != 0 => return,
+			Some(target_indent) => target_indent,
+			None => self.indent, // TODO just parse a single line without looping
 		};
 		let prev_indent = std::mem::replace(&mut self.indent, target_indent);
 
-		loop {
-			if self.string().is_empty() {
+		while !self.string().is_empty() {
+			let space = self.space2();
+
+			if space == self.indent {
+				self.indent = space.indent().unwrap();
+			} else if space <= prev_indent {
+				break
+			} else {
+				let span = self.span_of(space.indent().unwrap().0);
+				let mut error = Diagnostic::error(span, "unexpected indent");
+				error = error.note(self.span_of(prev_indent.0), "it's more than here...");
+				if space < self.indent {
+					error = error.note(self.span_of(self.indent.0), "...but less than here");
+				} else {
+					error = error.note(self.span_of(self.indent.0), "...but uncomparable to here");
+					error = error.note(self.span_of(self.indent.0), "did you mix tabs and spaces?");
+				}
+				while self.space2() > prev_indent {
+					self.pat(|_| true);
+				}
+				error = error.note(self.pos(), "skipping to here");
+				error.emit(self);
 				break;
 			}
 
 			let pos1 = self.pos();
-			let mut ok = f(self).emit(self).is_some();
+			let ok = f(self).emit(self).is_some();
 			if self.pos() == pos1 {
 				if ok {
 					Diagnostic::error(pos1, "line parsed as empty — this is a bug").emit(self);
-					ok = false;
 				}
 				self.pat(|_| true);
 			}
 
-			let mut space = self.space2();
-
-			if space < self.indent {
-				break;
-			}
-
-			if space == self.indent {
-				continue;
-			}
-
-			if ok {
+			if self.space2() > self.indent {
 				let span = self.span_of(space.space()).at_end();
-				Diagnostic::error(span, "expected end of line").emit(self);
-			}
-
-			while space > self.indent {
-				self.pat(|_| true);
-				space = self.space2();
+				let mut error = Diagnostic::error(span, "expected end of line");
+				while self.space2() > self.indent {
+					self.pat(|_| true);
+				}
+				error = error.note(self.pos(), "skipping to here");
+				if ok {
+					error.emit(self);
+				}
 			}
 		}
 
@@ -240,9 +246,14 @@ fn test() {
 word
     word
       word
-      word
-  word
+     \tword // error: mixed tabs and spaces
+    word
+  word // error: not an indentation level
 word
+ word
+   word
+   word
+  \tword // error: mixed
 ";
 	let mut parser = Parser::new(text);
 	let mut n = 0;
@@ -259,6 +270,8 @@ word
 		});
 		Ok(())
 	});
-	assert_eq!(parser.diagnostics().len(), 1);
-	assert_eq!(n, 5);
+	println!("{:#?}", parser.diagnostics());
+	assert!(parser.string().is_empty());
+	assert_eq!(parser.diagnostics().len(), 3);
+	assert_eq!(n, 8);
 }
