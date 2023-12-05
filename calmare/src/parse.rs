@@ -144,9 +144,12 @@ impl<'src> Parser<'src> {
 			}
 
 			let pos1 = self.pos();
-			let ok = f(self).emit(self).is_some();
-			if ok && self.pos() == pos1 {
-				Diagnostic::error(pos1, "line parsed as empty — this is probably a bug").emit(self);
+			let mut ok = f(self).emit(self).is_some();
+			if self.pos() == pos1 {
+				if ok {
+					Diagnostic::error(pos1, "line parsed as empty — this is a bug").emit(self);
+					ok = false;
+				}
 				self.pat(|_| true);
 			}
 
@@ -161,7 +164,8 @@ impl<'src> Parser<'src> {
 			}
 
 			if ok {
-				Diagnostic::error(self.span_of(space.space()).at_end(), "expected end of line").emit(self);
+				let span = self.span_of(space.space()).at_end();
+				Diagnostic::error(span, "expected end of line").emit(self);
 			}
 
 			while space > self.indent {
