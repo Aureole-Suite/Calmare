@@ -91,19 +91,13 @@ impl<'src> Parser<'src> {
 		}
 	}
 
-	#[deprecated]
-	pub fn space(&mut self) -> Result<&mut Self> {
-		self.space2();
-		Ok(self)
-	}
-
 	pub fn no_space(&mut self) -> &mut Self {
 		assert!(self.last_space.is_none());
 		self.last_space = Some(self.pos().on(Space::Inline));
 		self
 	}
 
-	fn space2(&mut self) -> Spanned<Space<'src>> {
+	fn space(&mut self) -> Spanned<Space<'src>> {
 		if self.last_space.is_none() {
 			let startpos = self.pos;
 			let space = self.inline_space();
@@ -137,7 +131,7 @@ impl<'src> Parser<'src> {
 	}
 
 	pub fn lines(&mut self, mut f: impl FnMut(&mut Self) -> Result<()>) {
-		let Space::Indent(target_indent) = *self.space2() else {
+		let Space::Indent(target_indent) = *self.space() else {
 			self.one_line(&mut f);
 			return;
 		};
@@ -147,7 +141,7 @@ impl<'src> Parser<'src> {
 		let prev_indent = std::mem::replace(&mut self.indent, target_indent);
 
 		loop {
-			let space = self.space2();
+			let space = self.space();
 
 			if *space == self.indent {
 				self.indent = space.indent().unwrap();
@@ -163,7 +157,7 @@ impl<'src> Parser<'src> {
 					error = error.note(self.span_of(self.indent.0), "...but uncomparable to here");
 					error = error.note(self.span_of(self.indent.0), "did you mix tabs and spaces?");
 				}
-				while *self.space2() > prev_indent {
+				while *self.space() > prev_indent {
 					self.pat(|_| true);
 				}
 				error = error.note(self.pos(), "skipping to here");
@@ -178,7 +172,7 @@ impl<'src> Parser<'src> {
 	}
 
 	fn check_space(&mut self) -> Result<()> {
-		let space = self.space2();
+		let space = self.space();
 		if *space > self.indent
 			|| matches!(*space, Space::Indent(indent) if std::ptr::eq(indent.0, self.indent.0))
 		{
@@ -201,10 +195,10 @@ impl<'src> Parser<'src> {
 			self.pat(|_| true);
 		}
 
-		let space = self.space2();
+		let space = self.space();
 		if *space > self.indent {
 			let mut error = Diagnostic::error(space.span.at_end(), "expected end of line");
-			while *self.space2() > self.indent {
+			while *self.space() > self.indent {
 				self.pat(|_| true);
 			}
 			error = error.note(self.pos(), "skipping to here");
