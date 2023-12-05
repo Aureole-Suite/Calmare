@@ -18,7 +18,6 @@ impl Print for types::FileId {
 impl Parse for types::FileId {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		f.check_word("file")?;
-		f.space()?;
 		f.term(Parse::parse).map(Self)
 	}
 }
@@ -57,9 +56,9 @@ impl Parse for types::Pos2 {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		f.tuple(|f| {
 			let x = Parse::parse(f)?;
-			f.space()?.check(",")?.space()?;
+			f.check(",")?;
 			f.check_word("null")?;
-			f.space()?.check(",")?.space()?;
+			f.check(",")?;
 			let z = Parse::parse(f)?;
 			Ok(types::Pos2 { x, z })
 		})
@@ -79,9 +78,9 @@ impl Parse for types::Pos3 {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		f.tuple(|f| {
 			let x = Parse::parse(f)?;
-			f.space()?.check(",")?.space()?;
+			f.check(",")?;
 			let y = Parse::parse(f)?;
-			f.space()?.check(",")?.space()?;
+			f.check(",")?;
 			let z = Parse::parse(f)?;
 			Ok(types::Pos3 { x, y, z })
 		})

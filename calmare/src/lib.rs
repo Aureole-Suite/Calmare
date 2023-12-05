@@ -32,7 +32,7 @@ impl Printer {
 
 impl Parser<'_> {
 	fn val_block<T: ParseBlock>(&mut self) -> parse::Result<T> {
-		self.check(":")?.space()?;
+		self.check(":")?;
 		T::parse_block(self)
 	}
 }
@@ -116,7 +116,6 @@ impl<A: Print, B: Print> Print for (A, B) {
 impl<A: Parse, B: Parse> Parse for (A, B) {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		let a = A::parse(f)?;
-		f.space()?;
 		let b = B::parse(f)?;
 		Ok((a, b))
 	}
@@ -131,9 +130,7 @@ impl<A: Print, B: Print, C: Print> Print for (A, B, C) {
 impl<A: Parse, B: Parse, C: Parse> Parse for (A, B, C) {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		let a = A::parse(f)?;
-		f.space()?;
 		let b = B::parse(f)?;
-		f.space()?;
 		let c = C::parse(f)?;
 		Ok((a, b, c))
 	}

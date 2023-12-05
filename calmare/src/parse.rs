@@ -91,9 +91,16 @@ impl<'src> Parser<'src> {
 		}
 	}
 
+	#[deprecated]
 	pub fn space(&mut self) -> Result<&mut Self> {
 		self.space2();
 		Ok(self)
+	}
+
+	pub fn no_space(&mut self) -> &mut Self {
+		assert!(self.last_space.is_none());
+		self.last_space = Some(self.pos().on(Space::Inline));
+		self
 	}
 
 	fn space2(&mut self) -> Spanned<Space<'src>> {
@@ -234,20 +241,21 @@ impl<'src> Parser<'src> {
 	}
 
 	pub fn term<T>(&mut self, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<T> {
-		self.check("[")?.space()?;
+		self.check("[")?;
 		let v = f(self)?;
-		self.space()?.check("]")?;
+		self.check("]")?;
 		Ok(v)
 	}
 
 	pub fn tuple<T>(&mut self, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<T> {
-		self.check("(")?.space()?;
+		self.check("(")?;
 		let v = f(self)?;
-		self.space()?.check(")")?;
+		self.check(")")?;
 		Ok(v)
 	}
 
 	pub fn number(&mut self) -> Result<&'src str> {
+		self.check_space()?;
 		let pos = self.pos();
 		if self.pat("0x").is_some() {
 			self.pat_mul_nonempty(|c: char| c.is_ascii_hexdigit(), "hex digits")?;
