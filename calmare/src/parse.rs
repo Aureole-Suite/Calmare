@@ -292,6 +292,14 @@ impl<'src> Parser<'src> {
 		}
 		Ok(out)
 	}
+
+	pub fn eof(&self) -> Result<()> {
+		if self.rest().is_empty() {
+			Ok(())
+		} else {
+			Err(Diagnostic::error(self.pos(), "expected end of file"))
+		}
+	}
 }
 
 #[test]
@@ -324,8 +332,8 @@ word
 		});
 		Ok(())
 	});
+	parser.eof().emit(&mut parser);
 	println!("{:#?}", parser.diagnostics());
-	assert!(parser.rest().is_empty());
 	assert_eq!(parser.diagnostics().len(), 3);
 	assert_eq!(n, 8);
 }
