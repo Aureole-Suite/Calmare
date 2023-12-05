@@ -64,49 +64,49 @@ pub trait ParseBlock: Sized {
 macros::int!(u8, u16, u32, u64, i8, i16, i32, i64);
 macros::float!(f32, f64);
 
-impl<T: Print> Print for &T {
+impl<T: Print + ?Sized> Print for &T {
 	fn print(&self, f: &mut Printer) {
 		T::print(self, f)
 	}
 }
 
-impl<T: PrintBlock> PrintBlock for &T {
+impl<T: PrintBlock + ?Sized> PrintBlock for &T {
 	fn print_block(&self, f: &mut Printer) {
 		T::print_block(self, f)
 	}
 }
 
-impl<T: Print> Print for Box<T> {
+impl<T: Print + ?Sized> Print for Box<T> {
 	fn print(&self, f: &mut Printer) {
 		T::print(self, f)
 	}
 }
 
-impl<T: PrintBlock> PrintBlock for Box<T> {
+impl<T: PrintBlock + ?Sized> PrintBlock for Box<T> {
 	fn print_block(&self, f: &mut Printer) {
 		T::print_block(self, f)
 	}
 }
 
-impl<T: Parse> Parse for Box<T> {
+impl<T: Parse + ?Sized> Parse for Box<T> {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		f.val().map(Box::new)
 	}
 }
 
-impl<T: ParseBlock> ParseBlock for Box<T> {
+impl<T: ParseBlock + ?Sized> ParseBlock for Box<T> {
 	fn parse_block(f: &mut Parser) -> parse::Result<Self> {
 		T::parse_block(f).map(Box::new)
 	}
 }
 
-impl<T: Print + ToOwned> Print for Cow<'_, T> {
+impl<T: Print + ToOwned + ?Sized> Print for Cow<'_, T> {
 	fn print(&self, f: &mut Printer) {
 		T::print(self, f)
 	}
 }
 
-impl<'a, T: ToOwned> Parse for Cow<'a, T>
+impl<'a, T: ToOwned + ?Sized> Parse for Cow<'a, T>
 where
 	T::Owned: Parse,
 {
