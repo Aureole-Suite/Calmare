@@ -210,9 +210,9 @@ impl<'src> Parser<'src> {
 
 	fn check_space(&mut self) -> Result<()> {
 		let space = self.space();
-		if space.1 > self.indent
-			|| matches!(space.1, Space::Indent(indent) if std::ptr::eq(indent.0, self.indent.0))
-		{
+		let is_at_indent =
+			matches!(space.1, Space::Indent(indent) if std::ptr::eq(indent.0, self.indent.0));
+		if space.1 > self.indent || is_at_indent {
 			Ok(())
 		} else {
 			Err(Diagnostic::error(space.0, "unexpected end of line"))
