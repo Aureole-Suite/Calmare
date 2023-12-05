@@ -97,23 +97,23 @@ impl<'src> Parser<'src> {
 
 	pub fn space2(&mut self) -> Space<'src> {
 		if self.last_space.is_none() {
-			let (space, mut indent) = if self.pos == 0 {
-				(&self.source[..0], Some(Indent(self.inline_space())))
-			} else {
-				(self.inline_space(), None)
-			};
+			let startpos = self.pos;
+			let space = self.inline_space();
+			let mut kind = indent::SpaceKind::Space;
 
 			// Intentionally short-circuiting
 			while self.pat('\r').is_some() | self.pat('\n').is_some() {
-				indent = Some(Indent(self.inline_space()));
+				kind = indent::SpaceKind::Indent(Indent(self.inline_space()));
 			}
-			if self.string().is_empty() {
-				indent = Some(Indent(""))
+
+			if startpos == 0 {
+				kind = indent::SpaceKind::Indent(Indent(&self.source[..0]));
 			}
-			self.last_space = Some(match indent {
-				Some(indent) => Space::Indent { space, indent },
-				None => Space::Space { space },
-			})
+			if self.pos == self.source.len() {
+				kind = indent::SpaceKind::End
+			}
+
+			self.last_space = Some(Space { space, kind })
 		}
 		self.last_space.unwrap()
 	}
