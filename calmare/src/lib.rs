@@ -35,6 +35,10 @@ impl Parser<'_> {
 		T::parse(self)
 	}
 
+	fn try_val<T: Parse>(&mut self) -> parse::Result<Option<T>> {
+		self.try_parse(T::parse)
+	}
+
 	fn val_block<T: ParseBlock>(&mut self) -> parse::Result<T> {
 		self.check(":")?;
 		T::parse_block(self)

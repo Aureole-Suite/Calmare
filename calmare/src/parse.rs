@@ -193,6 +193,17 @@ impl<'src> Parser<'src> {
 			.emit(self);
 	}
 
+	pub fn try_parse<T>(&mut self, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<Option<T>> {
+		self.space();
+		let pos = self.pos();
+		let diag = self.diagnostics().len();
+		match f(self) {
+			Ok(v) => Ok(Some(v)),
+			Err(_) if self.pos() == pos && self.diagnostics().len() == diag => Ok(None),
+			Err(e) => Err(e),
+		}
+	}
+
 	fn check_space(&mut self) -> Result<()> {
 		let space = self.space();
 		if space.1 > self.indent

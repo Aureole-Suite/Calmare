@@ -73,34 +73,34 @@ impl ParseBlock for ed6::Scena {
 				Ok(())
 			}
 			"chip" => {
-				let id = f.val().or_else(|_| f.term(|f| f.val()).map(ChipId))?;
+				let id = parse_id(f, ChipId)?;
 				let file1 = f.val::<FileId>()?;
 				let file2 = f.val::<FileId>()?;
 				Ok(())
 			}
 			"npc" => {
-				let id = f.val().or_else(|_| f.term(|f| f.val()).map(LocalCharId))?;
+				let id = f.val::<LocalCharId>()?;
 				let l = f.val_block::<ed6::Npc>()?;
 				Ok(())
 			}
 			"monster" => {
-				let id = f.val().or_else(|_| f.term(|f| f.val()).map(LocalCharId))?;
+				let id = f.val::<LocalCharId>()?;
 				let l = f.val_block::<ed6::Monster>()?;
 				Ok(())
 			}
 			"event" => {
-				let id = f.val().or_else(|_| f.term(|f| f.val()).map(EventId))?;
+				let id = parse_id(f, EventId)?;
 				let l = f.val_block::<ed6::Event>()?;
 				Ok(())
 			}
 			"look_point" => {
-				let id = f.val().or_else(|_| f.term(|f| f.val()).map(LookPointId))?;
+				let id = parse_id(f, LookPointId)?;
 				let l = f.val_block::<ed6::LookPoint>()?;
 				println!("{:?} {:?}", id, l);
 				Ok(())
 			}
 			"fn" => {
-				let id = f.val().or_else(|_| f.term(|f| f.val()).map(LocalFuncId))?;
+				let id = parse_id(f, LocalFuncId)?;
 				println!("fn {:?}", id);
 				Ok(())
 			}
@@ -126,6 +126,13 @@ impl ParseBlock for ed6::Scena {
 			entries: vec![],
 			functions: vec![],
 		})
+	}
+}
+
+fn parse_id<U: Parse, T: Parse>(f: &mut Parser<'_>, func: impl FnOnce(U) -> T) -> parse::Result<T> {
+	match f.try_parse(|f| f.term(|f| f.val()))? {
+		Some(v) => Ok(func(v)),
+		None => f.val(),
 	}
 }
 
