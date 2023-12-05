@@ -171,9 +171,9 @@ impl<'src> Parser<'src> {
 		let pos1 = self.pos();
 		let ok = f(self).emit(self).is_some();
 		if self.pos() == pos1 {
-			if ok {
-				Diagnostic::error(pos1, "line parsed as empty — this is a bug").emit(self);
-			}
+			Diagnostic::error(pos1, "line parsed as empty — this is a bug")
+				.filter(ok)
+				.emit(self);
 			self.pat(|_| true);
 		}
 
