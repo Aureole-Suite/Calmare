@@ -1,4 +1,4 @@
-use super::{Parser, Span, Spanned};
+use super::{Parser, Span};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Level {
@@ -11,22 +11,25 @@ pub enum Level {
 #[must_use]
 pub struct Diagnostic {
 	pub level: Level,
-	pub text: Spanned<String>,
-	pub notes: Vec<Spanned<String>>,
+	pub span: Span,
+	pub text: String,
+	pub notes: Vec<(Span, String)>,
 }
 
 impl Diagnostic {
 	/// Used to return a `Err()` without actually giving a diagnostic.
 	pub const DUMMY: Diagnostic = Diagnostic {
 		level: Level::Info,
-		text: Spanned(Span::new(usize::MAX), String::new()),
+		span: Span::new(usize::MAX),
+		text: String::new(),
 		notes: Vec::new(),
 	};
 
 	pub fn new(level: Level, span: Span, text: impl ToString) -> Diagnostic {
 		Diagnostic {
 			level,
-			text: Spanned(span, text.to_string()),
+			span,
+			text: text.to_string(),
 			notes: Vec::new(),
 		}
 	}
@@ -44,7 +47,7 @@ impl Diagnostic {
 	}
 
 	pub fn note(mut self, span: Span, text: impl ToString) -> Diagnostic {
-		self.notes.push(span.on(text.to_string()));
+		self.notes.push((span, text.to_string()));
 		self
 	}
 

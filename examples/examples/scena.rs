@@ -55,10 +55,10 @@ pub fn print_diags(filename: &str, source: &str, diags: &[parse::Diagnostic]) {
 	let file_id = files.add(filename, source);
 
 	let mut diags = diags.to_owned();
-	diags.sort_by_key(|a| (a.text.0.start, a.text.0.end));
+	diags.sort_by_key(|a| (a.span.start, a.span.end));
 
 	for d in diags {
-		let mut l = vec![Label::primary(file_id, d.text.0.as_range()).with_message(&d.text.1)];
+		let mut l = vec![Label::primary(file_id, d.span.as_range()).with_message(&d.text)];
 		for n in &d.notes {
 			l.push(Label::secondary(file_id, n.0.as_range()).with_message(&n.1));
 		}
