@@ -84,6 +84,7 @@ impl<'src> Parser<'src> {
 	}
 
 	pub fn check(&mut self, c: &str) -> Result<&mut Self> {
+		self.check_space()?;
 		match self.pat(c) {
 			Some(_) => Ok(self),
 			None => Err(Diagnostic::error(self.pos(), format!("expected `{c}`"))),
@@ -169,6 +170,20 @@ impl<'src> Parser<'src> {
 		self.indent = prev_indent;
 	}
 
+	fn check_space(&mut self) -> Result<()> {
+		let space = self.space2();
+		if space > self.indent
+			|| matches!(space.kind, indent::SpaceKind::Indent(indent) if std::ptr::eq(indent.0, self.indent.0))
+		{
+			Ok(())
+		} else {
+			Err(Diagnostic::error(
+				self.span_of(space.space()),
+				"unexpected end of line",
+			))
+		}
+	}
+
 	fn one_line(&mut self, f: &mut impl FnMut(&mut Self) -> Result<()>) {
 		let pos1 = self.pos();
 		let ok = f(self).emit(self).is_some();
@@ -194,6 +209,7 @@ impl<'src> Parser<'src> {
 	}
 
 	pub fn word(&mut self) -> Result<&'src str> {
+		self.check_space()?;
 		let start = self.pos();
 		if self
 			.pat(|c| unicode_ident::is_xid_start(c) || c == '_')
@@ -206,6 +222,7 @@ impl<'src> Parser<'src> {
 	}
 
 	pub fn check_word(&mut self, word: &str) -> Result<&mut Self> {
+		self.check_space()?;
 		let pos = self.pos();
 		let aword = self.word();
 		if aword != Ok(word) {
@@ -265,9 +282,9 @@ word
 	let mut n = 0;
 	parser.lines(|f| {
 		n += 1;
-		f.check_word("word").unwrap().space().unwrap().lines(|f| {
+		f.check_word("word").unwrap().lines(|f| {
 			n += 1;
-			f.check_word("word").unwrap().space().unwrap().lines(|f| {
+			f.check_word("word").unwrap().lines(|f| {
 				n += 1;
 				f.check_word("word").unwrap();
 				Ok(())
