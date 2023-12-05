@@ -52,7 +52,7 @@ impl<'src> Parser<'src> {
 		}
 	}
 
-	fn string(&self) -> &'src str {
+	fn rest(&self) -> &'src str {
 		&self.source[self.pos..]
 	}
 
@@ -61,19 +61,19 @@ impl<'src> Parser<'src> {
 			self.source.as_bytes().as_ptr_range().end,
 			suffix.as_bytes().as_ptr_range().end,
 		);
-		let len = self.string().len() - suffix.len();
-		let s = &self.string()[..len];
+		let len = self.rest().len() - suffix.len();
+		let s = &self.rest()[..len];
 		self.pos += len;
 		self.last_space = None;
 		s
 	}
 
 	fn pat(&mut self, pat: impl Pattern<'src>) -> Option<&'src str> {
-		self.string().strip_prefix(pat).map(|suf| self.eat(suf))
+		self.rest().strip_prefix(pat).map(|suf| self.eat(suf))
 	}
 
 	fn pat_mul(&mut self, pat: impl Pattern<'src>) -> &'src str {
-		self.eat(self.string().trim_start_matches(pat))
+		self.eat(self.rest().trim_start_matches(pat))
 	}
 
 	fn pat_mul_nonempty(&mut self, pat: impl Pattern<'src>, what: &str) -> Result<&'src str> {
@@ -302,7 +302,7 @@ word
 		Ok(())
 	});
 	println!("{:#?}", parser.diagnostics());
-	assert!(parser.string().is_empty());
+	assert!(parser.rest().is_empty());
 	assert_eq!(parser.diagnostics().len(), 3);
 	assert_eq!(n, 8);
 }
