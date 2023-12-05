@@ -43,13 +43,6 @@ impl Span {
 	pub const fn as_range(self) -> Range<usize> {
 		self.start..self.end
 	}
-
-	pub const fn on<T>(self, value: T) -> Spanned<T> {
-		Spanned {
-			span: self,
-			spanned_value: value,
-		}
-	}
 }
 
 impl std::ops::BitOr for Span {
@@ -63,35 +56,5 @@ impl std::ops::BitOr for Span {
 impl std::ops::BitOrAssign for Span {
 	fn bitor_assign(&mut self, rhs: Self) {
 		*self = *self | rhs;
-	}
-}
-
-#[derive(Clone, Copy, Eq)]
-pub struct Spanned<T> {
-	pub span: Span,
-	pub spanned_value: T,
-}
-
-impl<T> std::ops::Deref for Spanned<T> {
-	type Target = T;
-
-	fn deref(&self) -> &T {
-		&self.spanned_value
-	}
-}
-
-impl<T: PartialEq> PartialEq for Spanned<T> {
-	fn eq(&self, other: &Self) -> bool {
-		self.spanned_value == other.spanned_value
-	}
-}
-
-impl<T: std::fmt::Debug> std::fmt::Debug for Spanned<T> {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		if f.alternate() {
-			self.span.fmt(f)?;
-			f.write_str("@")?;
-		}
-		self.spanned_value.fmt(f)
 	}
 }

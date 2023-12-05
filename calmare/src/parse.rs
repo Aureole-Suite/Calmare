@@ -6,13 +6,13 @@ use std::str::pattern::Pattern;
 
 pub use diagnostic::{Diagnostic, Emit, Level, Result};
 use indent::{Indent, Space};
-pub use span::{Span, Spanned};
+pub use span::Span;
 
 pub struct Parser<'a> {
 	source: &'a str,
 	pos: usize,
 	indent: Indent<'a>,
-	last_space: Option<Spanned<Space<'a>>>,
+	last_space: Option<(Span, Space<'a>)>,
 	diagnostics: Vec<Diagnostic>,
 }
 
@@ -93,11 +93,11 @@ impl<'src> Parser<'src> {
 
 	pub fn no_space(&mut self) -> &mut Self {
 		assert!(self.last_space.is_none());
-		self.last_space = Some(self.pos().on(Space::Inline));
+		self.last_space = Some((self.pos(), Space::Inline));
 		self
 	}
 
-	fn space(&mut self) -> Spanned<Space<'src>> {
+	fn space(&mut self) -> (Span, Space<'src>) {
 		if self.last_space.is_none() {
 			let startpos = self.pos;
 			let space = self.inline_space();
@@ -115,7 +115,7 @@ impl<'src> Parser<'src> {
 				kind = Space::End
 			}
 
-			self.last_space = Some(self.span_of(space).on(kind))
+			self.last_space = Some((self.span_of(space), kind))
 		}
 		self.last_space.unwrap()
 	}
@@ -131,7 +131,7 @@ impl<'src> Parser<'src> {
 	}
 
 	pub fn lines(&mut self, mut f: impl FnMut(&mut Self) -> Result<()>) {
-		let Space::Indent(target_indent) = *self.space() else {
+		let Space::Indent(target_indent) = self.space().1 else {
 			self.one_line(&mut f);
 			return;
 		};
@@ -143,15 +143,15 @@ impl<'src> Parser<'src> {
 		loop {
 			let space = self.space();
 
-			if *space == self.indent {
-				self.indent = space.indent().unwrap();
-			} else if *space <= prev_indent {
+			if space.1 == self.indent {
+				self.indent = space.1.indent().unwrap();
+			} else if space.1 <= prev_indent {
 				break;
 			} else {
-				let span = self.span_of(space.indent().unwrap().0);
+				let span = self.span_of(space.1.indent().unwrap().0);
 				let mut error = Diagnostic::error(span, "unexpected indent");
 				error = error.note(self.span_of(prev_indent.0), "it's more than here...");
-				if *space < self.indent {
+				if space.1 < self.indent {
 					error = error.note(self.span_of(self.indent.0), "...but less than here");
 				} else {
 					error = error.note(self.span_of(self.indent.0), "...but uncomparable to here");
@@ -178,29 +178,29 @@ impl<'src> Parser<'src> {
 		}
 
 		let space = self.space();
-		if *space > self.indent {
-			let error = Diagnostic::error(space.span.at_end(), "expected end of line").filter(ok);
+		if space.1 > self.indent {
+			let error = Diagnostic::error(space.0.at_end(), "expected end of line").filter(ok);
 			self.skip_until_indent(self.indent, error);
 		}
 	}
 
 	fn skip_until_indent(&mut self, indent: Indent<'src>, error: Diagnostic) {
-		while *self.space() > indent {
+		while self.space().1 > indent {
 			self.pat(|_| true);
 		}
 		error
-			.note(self.space().span.at_end(), "skipping to here")
+			.note(self.space().0.at_end(), "skipping to here")
 			.emit(self);
 	}
 
 	fn check_space(&mut self) -> Result<()> {
 		let space = self.space();
-		if *space > self.indent
-			|| matches!(*space, Space::Indent(indent) if std::ptr::eq(indent.0, self.indent.0))
+		if space.1 > self.indent
+			|| matches!(space.1, Space::Indent(indent) if std::ptr::eq(indent.0, self.indent.0))
 		{
 			Ok(())
 		} else {
-			Err(Diagnostic::error(space.span, "unexpected end of line"))
+			Err(Diagnostic::error(space.0, "unexpected end of line"))
 		}
 	}
 
