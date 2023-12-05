@@ -150,12 +150,12 @@ impl<'src> Parser<'src> {
 			} else {
 				let span = self.span_of(space.1.indent().unwrap().0);
 				let mut error = Diagnostic::error(span, "unexpected indent");
-				error = error.note(self.span_of(prev_indent.0), "it's more than here...");
+				error.note(self.span_of(prev_indent.0), "it's more than here...");
 				if space.1 < self.indent {
-					error = error.note(self.span_of(self.indent.0), "...but less than here");
+					error.note(self.span_of(self.indent.0), "...but less than here");
 				} else {
-					error = error.note(self.span_of(self.indent.0), "...but uncomparable to here");
-					error = error.note(self.span_of(self.indent.0), "did you mix tabs and spaces?");
+					error.note(self.span_of(self.indent.0), "...but uncomparable to here");
+					error.note(self.span_of(self.indent.0), "did you mix tabs and spaces?");
 				}
 				self.skip_until_indent(prev_indent, error);
 				break;
@@ -189,7 +189,7 @@ impl<'src> Parser<'src> {
 			self.pat(|_| true);
 		}
 		error
-			.note(self.space().0.at_end(), "skipping to here")
+			.with_note(self.space().0.at_end(), "skipping to here")
 			.emit(self);
 	}
 

@@ -21,7 +21,7 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 					let mut diag = parse::Diagnostic::error(f.span_of(word), "unknown field");
 					if first_error {
 						first_error = false;
-						diag = diag.note(f.span_of(word), format!(
+						diag.note(f.span_of(word), format!(
 							"allowed fields are {}",
 							[$(concat!("`", stringify!($field), "`")),*].join(", ")
 						));
@@ -48,7 +48,10 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 				)*
 				Ok(Self { $($field,)* })
 			} else {
-				Err(parse::Diagnostic::error(start, "missing fields").note(start, missing.join(", ")))
+				Err(
+					parse::Diagnostic::error(start, "missing fields")
+						.with_note(start, missing.join(", "))
+				)
 			}
 		}
 	})+
@@ -81,7 +84,7 @@ impl<T: Parse> ParseField for PlainField<T> {
 	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()> {
 		if let Some(prev_span) = self.head_span.replace(f.span_of(word)) {
 			parse::Diagnostic::error(f.span_of(word), "duplicate item")
-				.note(prev_span, "previous here")
+				.with_note(prev_span, "previous here")
 				.emit(f);
 		}
 		self.value = Some(T::parse(f)?);

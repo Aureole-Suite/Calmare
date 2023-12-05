@@ -46,8 +46,13 @@ impl Diagnostic {
 		Self::new(Level::Info, span, text)
 	}
 
-	pub fn note(mut self, span: Span, text: impl ToString) -> Diagnostic {
+	pub fn note(&mut self, span: Span, text: impl ToString) -> &mut Diagnostic {
 		self.notes.push((span, text.to_string()));
+		self
+	}
+
+	pub fn with_note(mut self, span: Span, text: impl ToString) -> Diagnostic {
+		self.note(span, text);
 		self
 	}
 
