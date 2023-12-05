@@ -78,15 +78,15 @@ impl ParseBlock for ed6::Scena {
 		let mut functions = PackedIndices::new();
 
 		f.lines(|f| {
-			let word = f.word()?;
-			match word {
+			let pos = f.pos();
+			match f.word()? {
 				"scena" => {}
 				"entry" => {
 					entries.push(f.val_block()?);
 				}
 				"chip" => {
 					// TODO handle null
-					let (span, id) = parse_id(f, word, ChipId)?;
+					let (span, id) = parse_id(f, pos, ChipId)?;
 					chcps.insert(f, span, id.0 as usize, |f| {
 						let ch = f.val::<FileId>()?;
 						let cp = f.val::<FileId>()?;
@@ -110,15 +110,15 @@ impl ParseBlock for ed6::Scena {
 					});
 				}
 				"event" => {
-					let (span, id) = parse_id(f, word, EventId)?;
+					let (span, id) = parse_id(f, pos, EventId)?;
 					events.insert(f, span, id.0 as usize, |f| f.val_block());
 				}
 				"look_point" => {
-					let (span, id) = parse_id(f, word, LookPointId)?;
+					let (span, id) = parse_id(f, pos, LookPointId)?;
 					look_points.insert(f, span, id.0 as usize, |f| f.val_block());
 				}
 				"fn" => {
-					let (span, id) = parse_id(f, word, LocalFuncId)?;
+					let (span, id) = parse_id(f, pos, LocalFuncId)?;
 					functions.insert(f, span, id.0 as usize, |f| Err(Diagnostic::DUMMY));
 				}
 				e => return Err(Diagnostic::error(f.span_of(e), "invalid declaration")),
@@ -152,13 +152,13 @@ impl ParseBlock for ed6::Scena {
 	}
 }
 
-fn parse_id<'src, U: Parse, T: Parse>(
-	f: &mut Parser<'src>,
-	word: &'src str,
+fn parse_id<U: Parse, T: Parse>(
+	f: &mut Parser<'_>,
+	pos: Span,
 	func: impl FnOnce(U) -> T,
 ) -> parse::Result<(Span, T)> {
 	match f.try_parse(|f| f.term(|f| f.val()))? {
-		Some(v) => Ok((f.span_of(word) | f.pos(), func(v))),
+		Some(v) => Ok((pos | f.pos(), func(v))),
 		None => {
 			let start = f.pos();
 			let v = f.val()?;
