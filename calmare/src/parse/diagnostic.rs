@@ -51,8 +51,16 @@ impl Diagnostic {
 		self
 	}
 
+	pub fn filter(self, enable: bool) -> Diagnostic {
+		if enable {
+			self
+		} else {
+			Diagnostic::DUMMY
+		}
+	}
+
 	pub fn emit(self, parser: &mut Parser) {
-		if self != Self::DUMMY {
+		if self.span != Self::DUMMY.span {
 			parser.diagnostics.push(self);
 		}
 	}

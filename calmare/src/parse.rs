@@ -157,11 +157,7 @@ impl<'src> Parser<'src> {
 					error = error.note(self.span_of(self.indent.0), "...but uncomparable to here");
 					error = error.note(self.span_of(self.indent.0), "did you mix tabs and spaces?");
 				}
-				while *self.space() > prev_indent {
-					self.pat(|_| true);
-				}
-				error = error.note(self.pos(), "skipping to here");
-				error.emit(self);
+				self.skip_until_indent(prev_indent, error);
 				break;
 			}
 
@@ -169,20 +165,6 @@ impl<'src> Parser<'src> {
 		}
 
 		self.indent = prev_indent;
-	}
-
-	fn check_space(&mut self) -> Result<()> {
-		let space = self.space();
-		if *space > self.indent
-			|| matches!(*space, Space::Indent(indent) if std::ptr::eq(indent.0, self.indent.0))
-		{
-			Ok(())
-		} else {
-			Err(Diagnostic::error(
-				space.span,
-				"unexpected end of line",
-			))
-		}
 	}
 
 	fn one_line(&mut self, f: &mut impl FnMut(&mut Self) -> Result<()>) {
@@ -197,14 +179,28 @@ impl<'src> Parser<'src> {
 
 		let space = self.space();
 		if *space > self.indent {
-			let mut error = Diagnostic::error(space.span.at_end(), "expected end of line");
-			while *self.space() > self.indent {
-				self.pat(|_| true);
-			}
-			error = error.note(self.pos(), "skipping to here");
-			if ok {
-				error.emit(self);
-			}
+			let error = Diagnostic::error(space.span.at_end(), "expected end of line").filter(ok);
+			self.skip_until_indent(self.indent, error);
+		}
+	}
+
+	fn skip_until_indent(&mut self, indent: Indent<'src>, error: Diagnostic) {
+		while *self.space() > indent {
+			self.pat(|_| true);
+		}
+		error
+			.note(self.space().span.at_end(), "skipping to here")
+			.emit(self);
+	}
+
+	fn check_space(&mut self) -> Result<()> {
+		let space = self.space();
+		if *space > self.indent
+			|| matches!(*space, Space::Indent(indent) if std::ptr::eq(indent.0, self.indent.0))
+		{
+			Ok(())
+		} else {
+			Err(Diagnostic::error(space.span, "unexpected end of line"))
 		}
 	}
 
