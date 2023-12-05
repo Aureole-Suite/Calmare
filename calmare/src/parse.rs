@@ -162,29 +162,34 @@ impl<'src> Parser<'src> {
 				break;
 			}
 
-			let pos1 = self.pos();
-			let ok = f(self).emit(self).is_some();
-			if self.pos() == pos1 {
-				if ok {
-					Diagnostic::error(pos1, "line parsed as empty — this is a bug").emit(self);
-				}
-				self.pat(|_| true);
-			}
-
-			if self.space2() > self.indent {
-				let span = self.span_of(space.space()).at_end();
-				let mut error = Diagnostic::error(span, "expected end of line");
-				while self.space2() > self.indent {
-					self.pat(|_| true);
-				}
-				error = error.note(self.pos(), "skipping to here");
-				if ok {
-					error.emit(self);
-				}
-			}
+			self.one_line(&mut f);
 		}
 
 		self.indent = prev_indent;
+	}
+
+	fn one_line(&mut self, f: &mut impl FnMut(&mut Self) -> Result<()>) {
+		let pos1 = self.pos();
+		let ok = f(self).emit(self).is_some();
+		if self.pos() == pos1 {
+			if ok {
+				Diagnostic::error(pos1, "line parsed as empty — this is a bug").emit(self);
+			}
+			self.pat(|_| true);
+		}
+
+		let space = self.space2();
+		if space > self.indent {
+			let span = self.span_of(space.space()).at_end();
+			let mut error = Diagnostic::error(span, "expected end of line");
+			while self.space2() > self.indent {
+				self.pat(|_| true);
+			}
+			error = error.note(self.pos(), "skipping to here");
+			if ok {
+				error.emit(self);
+			}
+		}
 	}
 
 	pub fn word(&mut self) -> Result<&'src str> {
