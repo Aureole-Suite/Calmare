@@ -97,8 +97,12 @@ impl<'src> Parser<'src> {
 
 	pub fn space2(&mut self) -> Space<'src> {
 		if self.last_space.is_none() {
-			let space = self.inline_space();
-			let mut indent = None;
+			let (space, mut indent) = if self.pos == 0 {
+				(&self.source[..0], Some(Indent(self.inline_space())))
+			} else {
+				(self.inline_space(), None)
+			};
+
 			// Intentionally short-circuiting
 			while self.pat('\r').is_some() | self.pat('\n').is_some() {
 				indent = Some(Indent(self.inline_space()));
@@ -128,7 +132,7 @@ impl<'src> Parser<'src> {
 		let target_indent = {
 			match space.indent() {
 				Some(target_indent) => {
-					if target_indent <= self.indent {
+					if target_indent <= self.indent && self.pos != 0 {
 						return;
 					}
 					target_indent
