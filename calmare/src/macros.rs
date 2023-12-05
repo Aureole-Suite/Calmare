@@ -54,7 +54,7 @@ pub macro newtype_term($type:ty, $term:literal) {
 	impl Parse for $type {
 		fn parse(f: &mut Parser) -> parse::Result<Self> {
 			f.check_word($term)?;
-			f.term(Parse::parse).map(Self)
+			f.term(|f| f.val()).map(Self)
 		}
 	}
 }
@@ -68,7 +68,7 @@ pub macro newtype_unit($type:ty, $suf:literal) {
 	}
 	impl Parse for $type {
 		fn parse(f: &mut Parser) -> parse::Result<Self> {
-			let v = Parse::parse(f)?;
+			let v = f.val()?;
 			f.no_space().check_word($suf)?;
 			Ok(Self(v))
 		}
@@ -85,7 +85,7 @@ pub macro newtype_hex($type:ty) {
 
 	impl Parse for $type {
 		fn parse(f: &mut Parser) -> parse::Result<Self> {
-			Parse::parse(f).map(Self)
+			f.val().map(Self)
 		}
 	}
 }

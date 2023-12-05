@@ -18,7 +18,7 @@ impl Print for types::FileId {
 impl Parse for types::FileId {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		f.check_word("file")?;
-		f.term(Parse::parse).map(Self)
+		f.term(|f| f.val()).map(Self)
 	}
 }
 
@@ -55,11 +55,11 @@ impl Print for types::Pos2 {
 impl Parse for types::Pos2 {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		f.tuple(|f| {
-			let x = Parse::parse(f)?;
+			let x = f.val()?;
 			f.check(",")?;
 			f.check_word("null")?;
 			f.check(",")?;
-			let z = Parse::parse(f)?;
+			let z = f.val()?;
 			Ok(types::Pos2 { x, z })
 		})
 	}
@@ -77,11 +77,11 @@ impl Print for types::Pos3 {
 impl Parse for types::Pos3 {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		f.tuple(|f| {
-			let x = Parse::parse(f)?;
+			let x = f.val()?;
 			f.check(",")?;
-			let y = Parse::parse(f)?;
+			let y = f.val()?;
 			f.check(",")?;
-			let z = Parse::parse(f)?;
+			let z = f.val()?;
 			Ok(types::Pos3 { x, y, z })
 		})
 	}
@@ -95,7 +95,7 @@ impl Print for types::TString {
 
 impl Parse for types::TString {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		Parse::parse(f).map(Self)
+		f.val().map(Self)
 	}
 }
 

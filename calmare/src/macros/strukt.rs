@@ -87,7 +87,7 @@ impl<T: Parse> ParseField for PlainField<T> {
 				.with_note(prev_span, "previous here")
 				.emit(f);
 		}
-		self.value = Some(T::parse(f)?);
+		self.value = Some(f.val()?);
 		Ok(())
 	}
 

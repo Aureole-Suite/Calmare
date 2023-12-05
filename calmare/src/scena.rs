@@ -18,9 +18,9 @@ impl Print for scena::FuncId {
 impl Parse for scena::FuncId {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		f.check_word("fn")?.term(|f| {
-			let a = Parse::parse(f)?;
+			let a = f.val()?;
 			f.check(",")?;
-			let b = Parse::parse(f)?;
+			let b = f.val()?;
 			Ok(scena::FuncId(a, b))
 		})
 	}

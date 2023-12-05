@@ -73,34 +73,34 @@ impl ParseBlock for ed6::Scena {
 				Ok(())
 			}
 			"chip" => {
-				let id = Parse::parse(f).or_else(|_| f.term(Parse::parse).map(ChipId))?;
-				let file1 = FileId::parse(f);
-				let file2 = FileId::parse(f);
+				let id = f.val().or_else(|_| f.term(|f| f.val()).map(ChipId))?;
+				let file1 = f.val::<FileId>()?;
+				let file2 = f.val::<FileId>()?;
 				Ok(())
 			}
 			"npc" => {
-				let id = Parse::parse(f).or_else(|_| f.term(Parse::parse).map(LocalCharId))?;
+				let id = f.val().or_else(|_| f.term(|f| f.val()).map(LocalCharId))?;
 				let l = f.val_block::<ed6::Npc>()?;
 				Ok(())
 			}
 			"monster" => {
-				let id = Parse::parse(f).or_else(|_| f.term(Parse::parse).map(LocalCharId))?;
+				let id = f.val().or_else(|_| f.term(|f| f.val()).map(LocalCharId))?;
 				let l = f.val_block::<ed6::Monster>()?;
 				Ok(())
 			}
 			"event" => {
-				let id = Parse::parse(f).or_else(|_| f.term(Parse::parse).map(EventId))?;
+				let id = f.val().or_else(|_| f.term(|f| f.val()).map(EventId))?;
 				let l = f.val_block::<ed6::Event>()?;
 				Ok(())
 			}
 			"look_point" => {
-				let id = Parse::parse(f).or_else(|_| f.term(Parse::parse).map(LookPointId))?;
+				let id = f.val().or_else(|_| f.term(|f| f.val()).map(LookPointId))?;
 				let l = f.val_block::<ed6::LookPoint>()?;
 				println!("{:?} {:?}", id, l);
 				Ok(())
 			}
 			"fn" => {
-				let id = Parse::parse(f).or_else(|_| f.term(Parse::parse).map(LocalFuncId))?;
+				let id = f.val().or_else(|_| f.term(|f| f.val()).map(LocalFuncId))?;
 				println!("fn {:?}", id);
 				Ok(())
 			}

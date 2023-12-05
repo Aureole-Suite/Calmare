@@ -31,6 +31,10 @@ impl Printer {
 }
 
 impl Parser<'_> {
+	fn val<T: Parse>(&mut self) -> parse::Result<T> {
+		T::parse(self)
+	}
+
 	fn val_block<T: ParseBlock>(&mut self) -> parse::Result<T> {
 		self.check(":")?;
 		T::parse_block(self)
@@ -82,7 +86,7 @@ impl<T: PrintBlock> PrintBlock for Box<T> {
 
 impl<T: Parse> Parse for Box<T> {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		T::parse(f).map(Box::new)
+		f.val().map(Box::new)
 	}
 }
 
@@ -103,7 +107,7 @@ where
 	T::Owned: Parse,
 {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		Parse::parse(f).map(Cow::Owned)
+		f.val().map(Cow::Owned)
 	}
 }
 
@@ -115,9 +119,7 @@ impl<A: Print, B: Print> Print for (A, B) {
 
 impl<A: Parse, B: Parse> Parse for (A, B) {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		let a = A::parse(f)?;
-		let b = B::parse(f)?;
-		Ok((a, b))
+		Ok((f.val()?, f.val()?))
 	}
 }
 
@@ -129,10 +131,7 @@ impl<A: Print, B: Print, C: Print> Print for (A, B, C) {
 
 impl<A: Parse, B: Parse, C: Parse> Parse for (A, B, C) {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		let a = A::parse(f)?;
-		let b = B::parse(f)?;
-		let c = C::parse(f)?;
-		Ok((a, b, c))
+		Ok((f.val()?, f.val()?, f.val()?))
 	}
 }
 
