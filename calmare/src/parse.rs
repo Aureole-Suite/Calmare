@@ -129,12 +129,13 @@ impl<'src> Parser<'src> {
 	}
 
 	pub fn lines(&mut self, mut f: impl FnMut(&mut Self) -> Result<()>) {
-		let space = self.space2();
-		let target_indent = match space.indent() {
-			Some(target_indent) if target_indent <= self.indent && self.pos != 0 => return,
-			Some(target_indent) => target_indent,
-			None => self.indent, // TODO just parse a single line without looping
+		let Some(target_indent) = self.space2().indent() else {
+			self.one_line(&mut f);
+			return;
 		};
+		if target_indent <= self.indent && self.pos != 0 {
+			return;
+		}
 		let prev_indent = std::mem::replace(&mut self.indent, target_indent);
 
 		while !self.string().is_empty() {
@@ -143,7 +144,7 @@ impl<'src> Parser<'src> {
 			if space == self.indent {
 				self.indent = space.indent().unwrap();
 			} else if space <= prev_indent {
-				break
+				break;
 			} else {
 				let span = self.span_of(space.indent().unwrap().0);
 				let mut error = Diagnostic::error(span, "unexpected indent");
