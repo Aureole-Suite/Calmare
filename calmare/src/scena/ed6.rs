@@ -77,56 +77,53 @@ impl ParseBlock for ed6::Scena {
 		let mut entries = Vec::new();
 		let mut functions = PackedIndices::new();
 
-		f.lines(|f| match f.word()? {
-			word @ "scena" => Ok(()),
-			word @ "entry" => {
-				entries.push(f.val_block()?);
-				Ok(())
+		f.lines(|f| {
+			let word = f.word()?;
+			match word {
+				"scena" => {}
+				"entry" => {
+					entries.push(f.val_block()?);
+				}
+				"chip" => {
+					// TODO handle null
+					let (span, id) = parse_id(f, word, ChipId)?;
+					chcps.insert(f, span, id.0 as usize, |f| {
+						let ch = f.val::<FileId>()?;
+						let cp = f.val::<FileId>()?;
+						Ok((ch, cp))
+					});
+				}
+				"npc" => {
+					let pos = f.pos();
+					let id = f.val::<LocalCharId>()?;
+					let span = pos | f.pos();
+					npcs_monsters.insert(f, span, id.0 as usize, |f| {
+						f.val_block().map(NpcOrMonster::Npc)
+					});
+				}
+				"monster" => {
+					let pos = f.pos();
+					let id = f.val::<LocalCharId>()?;
+					let span = pos | f.pos();
+					npcs_monsters.insert(f, span, id.0 as usize, |f| {
+						f.val_block().map(NpcOrMonster::Monster)
+					});
+				}
+				"event" => {
+					let (span, id) = parse_id(f, word, EventId)?;
+					events.insert(f, span, id.0 as usize, |f| f.val_block());
+				}
+				"look_point" => {
+					let (span, id) = parse_id(f, word, LookPointId)?;
+					look_points.insert(f, span, id.0 as usize, |f| f.val_block());
+				}
+				"fn" => {
+					let (span, id) = parse_id(f, word, LocalFuncId)?;
+					functions.insert(f, span, id.0 as usize, |f| Err(Diagnostic::DUMMY));
+				}
+				e => return Err(Diagnostic::error(f.span_of(e), "invalid declaration")),
 			}
-			word @ "chip" => {
-				// TODO handle null
-				let (span, id) = parse_id(f, word, ChipId)?;
-				chcps.insert(f, span, id.0 as usize, |f| {
-					let ch = f.val::<FileId>()?;
-					let cp = f.val::<FileId>()?;
-					Ok((ch, cp))
-				});
-				Ok(())
-			}
-			word @ "npc" => {
-				let pos = f.pos();
-				let id = f.val::<LocalCharId>()?;
-				let span = pos | f.pos();
-				npcs_monsters.insert(f, span, id.0 as usize, |f| {
-					f.val_block().map(NpcOrMonster::Npc)
-				});
-				Ok(())
-			}
-			word @ "monster" => {
-				let pos = f.pos();
-				let id = f.val::<LocalCharId>()?;
-				let span = pos | f.pos();
-				npcs_monsters.insert(f, span, id.0 as usize, |f| {
-					f.val_block().map(NpcOrMonster::Monster)
-				});
-				Ok(())
-			}
-			word @ "event" => {
-				let (span, id) = parse_id(f, word, EventId)?;
-				events.insert(f, span, id.0 as usize, |f| f.val_block());
-				Ok(())
-			}
-			word @ "look_point" => {
-				let (span, id) = parse_id(f, word, LookPointId)?;
-				look_points.insert(f, span, id.0 as usize, |f| f.val_block());
-				Ok(())
-			}
-			word @ "fn" => {
-				let (span, id) = parse_id(f, word, LocalFuncId)?;
-				functions.insert(f, span, id.0 as usize, |f| Err(Diagnostic::DUMMY));
-				Ok(())
-			}
-			e => Err(Diagnostic::error(f.span_of(e), "invalid declaration")),
+			Ok(())
 		});
 
 		let (ch, cp) = chcps.finish(f, "chip").into_iter().unzip();
