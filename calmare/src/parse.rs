@@ -66,7 +66,7 @@ impl<'src> Parser<'src> {
 		self.diagnostics.as_ref()
 	}
 
-	pub fn insn_set(&self) -> &InsnSet {
+	pub fn insn_set(&self) -> &'src InsnSet<'src> {
 		self.iset
 	}
 

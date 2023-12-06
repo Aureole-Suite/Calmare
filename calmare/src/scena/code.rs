@@ -87,7 +87,7 @@ impl Parse for Insn {
 		let Some(args) = f.insn_set().insns_rev.get(word) else {
 			return Err(Diagnostic::error(f.span(pos), "unknown instruction"));
 		};
-		Ok(Insn::new(word, parse_args(&args)?))
+		Ok(Insn::new(word, parse_args(f, args)?))
 	}
 }
 
@@ -166,8 +166,45 @@ impl Print for Arg {
 	}
 }
 
-fn parse_args(iargs: &[iset::Arg]) -> parse::Result<Vec<Arg>> {
-	Ok(vec![])
+fn parse_args(f: &mut Parser, iargs: &[iset::Arg]) -> parse::Result<Vec<Arg>> {
+	let mut out = Vec::new();
+	for iarg in iargs {
+		parse_arg(&mut out, f, iarg)?;
+	}
+	Ok(out)
+}
+
+fn parse_arg(out: &mut Vec<Arg>, f: &mut Parser<'_>, iarg: &iset::Arg) -> Result<(), Diagnostic> {
+	match iarg {
+		iset::Arg::Int(_, iset::IntArg::Const(_)) => {}
+		iset::Arg::Int(_, iarg) => {
+			out.push(parse_int_arg(f, *iarg)?);
+		}
+		iset::Arg::Misc(iarg) => parse_misc_arg(out, f, iarg)?,
+		iset::Arg::Tuple(iargs) => {
+			let mut first = true;
+			f.check("(")?;
+			let mut tup = Vec::new();
+			for iarg in iargs {
+				if first {
+					first = false;
+				} else {
+					f.check(",")?;
+				}
+				parse_arg(&mut tup, f, iarg)?;
+			}
+			f.check(")")?;
+		}
+	}
+	Ok(())
+}
+
+fn parse_int_arg(f: &mut Parser, iarg: iset::IntArg) -> parse::Result<Arg> {
+	todo!()
+}
+
+fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> parse::Result<()> {
+	todo!()
 }
 
 impl Print for Expr {
