@@ -87,7 +87,8 @@ impl ParseBlock for ed6::Scena {
 				}
 				"chip" => {
 					// TODO handle null
-					let (span, id) = parse_id(f, pos, ChipId)?;
+					let id = parse_id(f, ChipId)?;
+					let span = pos | f.pos();
 					let val = (|| {
 						let ch = f.val::<FileId>()?;
 						let cp = f.val::<FileId>()?;
@@ -96,31 +97,32 @@ impl ParseBlock for ed6::Scena {
 					chcps.insert(f, span, id.0 as usize, val);
 				}
 				"npc" => {
-					let pos = f.pos();
 					let id = f.val::<LocalCharId>()?;
 					let span = pos | f.pos();
 					let val = f.val_block().map(NpcOrMonster::Npc);
 					npcs_monsters.insert(f, span, id.0 as usize, val);
 				}
 				"monster" => {
-					let pos = f.pos();
 					let id = f.val::<LocalCharId>()?;
 					let span = pos | f.pos();
 					let val = f.val_block().map(NpcOrMonster::Monster);
 					npcs_monsters.insert(f, span, id.0 as usize, val);
 				}
 				"event" => {
-					let (span, id) = parse_id(f, pos, EventId)?;
+					let id = parse_id(f, EventId)?;
+					let span = pos | f.pos();
 					let val = f.val_block();
 					events.insert(f, span, id.0 as usize, val);
 				}
 				"look_point" => {
-					let (span, id) = parse_id(f, pos, LookPointId)?;
+					let id = parse_id(f, LookPointId)?;
+					let span = pos | f.pos();
 					let val = f.val_block();
 					look_points.insert(f, span, id.0 as usize, val);
 				}
 				"fn" => {
-					let (span, id) = parse_id(f, pos, LocalFuncId)?;
+					let id = parse_id(f, LocalFuncId)?;
+					let span = pos | f.pos();
 					functions.insert(f, span, id.0 as usize, Err(Diagnostic::DUMMY));
 				}
 				e => return Err(Diagnostic::error(f.span_of(e), "invalid declaration")),
@@ -156,15 +158,13 @@ impl ParseBlock for ed6::Scena {
 
 fn parse_id<U: Parse, T: Parse>(
 	f: &mut Parser<'_>,
-	pos: Span,
 	func: impl FnOnce(U) -> T,
-) -> parse::Result<(Span, T)> {
+) -> parse::Result<T> {
 	match f.try_parse(|f| f.term(|f| f.val()))? {
-		Some(v) => Ok((pos | f.pos(), func(v))),
+		Some(v) => Ok(func(v)),
 		None => {
-			let start = f.pos();
 			let v = f.val()?;
-			Ok((start | f.pos(), v))
+			Ok(v)
 		}
 	}
 }
