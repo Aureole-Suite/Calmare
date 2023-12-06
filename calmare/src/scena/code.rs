@@ -200,11 +200,75 @@ fn parse_arg(out: &mut Vec<Arg>, f: &mut Parser<'_>, iarg: &iset::Arg) -> Result
 }
 
 fn parse_int_arg(f: &mut Parser, iarg: iset::IntArg) -> parse::Result<Arg> {
-	todo!()
+	use iset::IntArg as IA;
+
+	fn term<T: Parse>(f: &mut Parser, word: &str) -> parse::Result<T> {
+		f.check_word(word)?.term(|f| f.val())
+	}
+
+	Ok(match iarg {
+		IA::Const(_) => unreachable!(),
+		IA::Int => Arg::Int(f.val()?),
+		IA::Address => Arg::Label(f.val()?),
+
+		IA::Time => Arg::Time(f.val()?),
+		IA::Length => Arg::Length(f.val()?),
+		IA::Speed => Arg::Speed(f.val()?),
+		IA::Angle => Arg::Angle(f.val()?),
+		IA::AngularSpeed => Arg::AngularSpeed(f.val()?),
+		IA::Angle32 => Arg::Angle32(f.val()?),
+		IA::Color => Arg::Color(f.val()?),
+
+		IA::FileId => Arg::File(f.val()?),
+		IA::BattleId => Arg::Battle(f.val()?),
+		IA::BgmId => Arg::Bgm(f.val()?),
+		IA::ItemId => Arg::Item(f.val()?),
+		IA::MagicId => Arg::Magic(f.val()?),
+		IA::NameId => Arg::Name(f.val()?),
+		IA::QuestId => Arg::Quest(f.val()?),
+		IA::RecipeId => Arg::Recipe(f.val()?),
+		IA::ShopId => Arg::Shop(f.val()?),
+		IA::SoundId => Arg::Sound(f.val()?),
+		IA::TownId => Arg::Town(f.val()?),
+		IA::FuncId => Arg::Func(f.val()?),
+		IA::LookPointId => Arg::LookPoint(f.val()?),
+		IA::EventId => Arg::Event(f.val()?),
+
+		IA::EntranceId => Arg::Entrance(term(f, "entrance")?),
+		IA::ObjectId => Arg::Object(term(f, "object")?),
+		IA::ForkId => Arg::ForkId(term(f, "fork")?),
+		IA::MenuId => Arg::MenuId(term(f, "menu")?),
+		IA::EffId => Arg::EffId(term(f, "eff")?),
+		IA::EffInstanceId => Arg::EffInstanceId(term(f, "eff_instance")?),
+		IA::ChipId => Arg::ChipId(term(f, "chip")?),
+		IA::VisId => Arg::VisId(term(f, "vis")?),
+
+		IA::CharId => Arg::Char(f.val()?),
+
+		IA::Flag => Arg::Flag(f.val()?),
+		IA::Var => Arg::Var(term(f, "var")?),
+		IA::Global => Arg::Global(term(f, "global")?),
+		IA::Attr => Arg::Attr(term(f, "system")?),
+		IA::CharAttr => {
+			let char = f.val()?;
+			f.no_space().check(".")?;
+			let attr = f.no_space().val()?;
+			Arg::CharAttr(char, attr)
+		}
+
+		IA::QuestTask => Arg::QuestTask(f.val()?),
+		IA::QuestFlags => Arg::SystemFlags(f.val()?),
+		IA::SystemFlags => Arg::SystemFlags(f.val()?),
+		IA::LookPointFlags => Arg::LookPointFlags(f.val()?),
+		IA::ObjectFlags => Arg::ObjectFlags(f.val()?),
+		IA::EventFlags => Arg::EventFlags(f.val()?),
+		IA::CharFlags => Arg::CharFlags(f.val()?),
+		IA::CharFlags2 => Arg::CharFlags2(f.val()?),
+	})
 }
 
 fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> parse::Result<()> {
-	todo!()
+	Err(Diagnostic::DUMMY)
 }
 
 impl Print for Expr {

@@ -9,6 +9,12 @@ impl Print for types::Label {
 	}
 }
 
+impl Parse for types::Label {
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
+		Err(parse::Diagnostic::DUMMY)
+	}
+}
+
 impl Print for types::FileId {
 	fn print(&self, f: &mut Printer) {
 		write!(f.term("file").field(), "0x{:08X}", self.0);
