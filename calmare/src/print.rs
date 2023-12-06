@@ -133,7 +133,6 @@ impl<'a> Drop for TermPrinter<'a> {
 	fn drop(&mut self) {
 		match (self.count, self.named) {
 			(0, false) => self.printer.word("()"),
-			(1, false) => self.printer.no_space().word(",)"),
 			(_, false) => self.printer.no_space().word(")"),
 			(0, true) => self.printer,
 			(_, true) => self.printer.no_space().word("]"),

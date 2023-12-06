@@ -131,3 +131,9 @@ impl Print for types::Text {
 		f.line().word("}");
 	}
 }
+
+impl Parse for types::Text {
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
+		Err(parse::Diagnostic::DUMMY)
+	}
+}

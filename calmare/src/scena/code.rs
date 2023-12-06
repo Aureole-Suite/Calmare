@@ -201,7 +201,6 @@ fn parse_arg(out: &mut Vec<Arg>, f: &mut Parser<'_>, iarg: &iset::Arg) -> Result
 
 fn parse_int_arg(f: &mut Parser, iarg: iset::IntArg) -> parse::Result<Arg> {
 	use iset::IntArg as IA;
-
 	Ok(match iarg {
 		IA::Const(_) => unreachable!(),
 		IA::Int => Arg::Int(f.val()?),
@@ -259,11 +258,80 @@ fn parse_int_arg(f: &mut Parser, iarg: iset::IntArg) -> parse::Result<Arg> {
 }
 
 fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> parse::Result<()> {
-	Err(Diagnostic::DUMMY)
+	fn list<F>(out: &mut Vec<Arg>, f: &mut Parser, mut func: F) -> parse::Result<()>
+	where
+		F: FnMut(&mut Parser) -> parse::Result<Arg>,
+	{
+		while f.pos().is_ok() {
+			out.push(func(f)?);
+		}
+		Ok(())
+	}
+
+	fn tuple<T, F>(f: &mut Parser, mut func: F) -> parse::Result<Vec<T>>
+	where
+		F: FnMut(&mut Parser) -> parse::Result<T>,
+	{
+		f.check("(")?;
+		let mut vals = Vec::new();
+		while !f.check(")").is_ok() {
+			if vals.is_empty() {
+				f.check(",").map_err(|mut e| {
+					e.text = "expected `,` or `)`".into();
+					e
+				})?;
+			}
+			vals.push(func(f)?);
+			f.pos()?;
+		}
+		Ok(vals)
+	}
+
+	use iset::MiscArg as MA;
+	match iarg {
+		MA::String => out.push(Arg::String(f.val()?)),
+		MA::TString => out.push(Arg::TString(f.val()?)),
+		MA::Text => out.push(Arg::Text(f.val()?)),
+		MA::Pos2 => out.push(Arg::Pos2(f.val()?)),
+		MA::Pos3 => out.push(Arg::Pos3(f.val()?)),
+		MA::RPos3 => out.push(Arg::RPos3(f.val()?)),
+		MA::Expr => out.push(Arg::Expr(f.val()?)),
+		MA::Fork => out.push(Arg::Code(f.val_block()?)),
+		MA::ForkLoop(_) => out.push(Arg::Code(f.val_block()?)),
+		MA::SwitchTable(_, _) => {
+			return Err(Diagnostic::error(
+				f.pos()?.as_span(),
+				"_switch is not yet implemented",
+			))
+		}
+		MA::QuestList => list(out, f, |f| f.val().map(Arg::QuestId))?,
+		MA::Menu => list(out, f, |f| f.val().map(Arg::TString))?,
+		MA::PartySelectMandatory => todo!(),
+		MA::PartySelectOptional => list(out, f, |f| f.val().map(Arg::NameId))?,
+		MA::TcMembers => out.push(Arg::Tuple(tuple(f, |f| f.val().map(Arg::NameId))?)),
+		MA::ED7CharAnimation => out.push(Arg::Tuple(tuple(f, |f| f.val().map(Arg::Int))?)),
+		MA::EvoSave => {
+			if f.insn_set().variant == iset::Variant::Evo {
+				out.push(Arg::Int(f.val()?))
+			}
+		}
+		MA::KaiSoundId => out.push(Arg::SoundId(f.val()?)),
+		MA::ED7BattlePos => out.push(Arg::BattleId(f.val()?)),
+		MA::FcPartyEquip => out.push(Arg::Int(f.val()?)),
+		MA::ScPartySetSlot => out.push(Arg::Int(f.val()?)),
+		MA::EffPlayPos => out.push(Arg::Pos3(f.val()?)), // TODO this is lossy. Bad.
+	}
+	Ok(())
 }
 
 impl Print for Expr {
 	fn print(&self, f: &mut Printer) {
 		expr::print(self, f)
+	}
+}
+
+impl Parse for Expr {
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
+		Err(Diagnostic::DUMMY)
 	}
 }
