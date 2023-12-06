@@ -87,21 +87,20 @@ impl<'src> Parser<'src> {
 		&self.source[self.pos..]
 	}
 
-	fn eat(&mut self, suffix: &'src str) -> &'src str {
-		assert_eq!(
-			self.source.as_bytes().as_ptr_range().end,
-			suffix.as_bytes().as_ptr_range().end,
-		);
-		let len = self.rest().len() - suffix.len();
+	pub fn advance(&mut self, len: usize) -> &'src str {
 		let s = &self.rest()[..len];
-		self.pos += len;
-		self.last_space = None;
-		self.allow_unindented = false;
+		if len > 0 {
+			self.pos += len;
+			self.last_space = None;
+			self.allow_unindented = false;
+		}
 		s
 	}
 
 	pub fn pat(&mut self, pat: impl Pattern<'src>) -> Option<&'src str> {
-		self.rest().strip_prefix(pat).map(|suf| self.eat(suf))
+		self.rest()
+			.strip_prefix(pat)
+			.map(|suffix| self.advance(self.rest().len() - suffix.len()))
 	}
 
 	pub fn any_char(&mut self) -> Option<char> {
@@ -109,7 +108,18 @@ impl<'src> Parser<'src> {
 	}
 
 	pub fn pat_mul(&mut self, pat: impl Pattern<'src>) -> &'src str {
-		self.eat(self.rest().trim_start_matches(pat))
+		let suffix = self.rest().trim_start_matches(pat);
+		self.advance(self.rest().len() - suffix.len())
+	}
+
+	fn peek_word(&mut self) -> Result<&'src str> {
+		self.pos()?;
+		let s = self.rest();
+		let suffix = s
+			.strip_prefix(|c| unicode_ident::is_xid_start(c) || c == '_')
+			.map(|suffix| suffix.trim_start_matches(unicode_ident::is_xid_continue))
+			.unwrap_or(s);
+		Ok(&s[..s.len() - suffix.len()])
 	}
 
 	pub fn text_since(&self, pos: SourcePos) -> &'src str {
@@ -239,27 +249,25 @@ impl<'src> Parser<'src> {
 	}
 
 	pub fn word(&mut self) -> Result<&'src str> {
-		let pos = self.pos()?;
-		if self
-			.pat(|c| unicode_ident::is_xid_start(c) || c == '_')
-			.is_none()
-		{
-			return Err(Diagnostic::error(pos.as_span(), "expected word"));
+		match self.peek_word()? {
+			s @ "" => Err(Diagnostic::error(self.span_of(s), "expected word")),
+			word => {
+				self.advance(word.len());
+				Ok(word)
+			}
 		}
-		self.pat_mul(unicode_ident::is_xid_continue);
-		Ok(self.text_since(pos))
 	}
 
 	pub fn check_word(&mut self, word: &str) -> Result<&mut Self> {
-		let pos = self.pos()?;
-		let aword = self.word();
-		if aword != Ok(word) {
-			return Err(Diagnostic::error(
-				self.span(pos),
+		if self.peek_word()? == word {
+			self.advance(word.len());
+			Ok(self)
+		} else {
+			Err(Diagnostic::error(
+				self.span_of(word),
 				format!("expected `{word}`"),
-			));
+			))
 		}
-		Ok(self)
 	}
 
 	pub fn eof(&self) -> Result<()> {
