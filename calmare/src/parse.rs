@@ -260,20 +260,6 @@ impl<'src> Parser<'src> {
 		Ok(self)
 	}
 
-	pub fn term<T>(&mut self, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<T> {
-		self.check("[")?;
-		let v = f(self)?;
-		self.check("]")?;
-		Ok(v)
-	}
-
-	pub fn tuple<T>(&mut self, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<T> {
-		self.check("(")?;
-		let v = f(self)?;
-		self.check(")")?;
-		Ok(v)
-	}
-
 	pub fn eof(&self) -> Result<()> {
 		if self.rest().is_empty() {
 			Ok(())

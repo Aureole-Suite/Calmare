@@ -17,12 +17,13 @@ impl Print for scena::FuncId {
 
 impl Parse for scena::FuncId {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		f.check_word("fn")?.term(|f| {
-			let a = f.val()?;
-			f.check(",")?;
-			let b = f.val()?;
-			Ok(scena::FuncId(a, b))
-		})
+		f.check_word("fn")?;
+		f.check("[")?;
+		let a = f.val()?;
+		f.check(",")?;
+		let b = f.val()?;
+		f.check("]")?;
+		Ok(scena::FuncId(a, b))
 	}
 }
 

@@ -14,7 +14,10 @@ pub macro newtype_term($type:ty, $term:literal) {
 	impl Parse for $type {
 		fn parse(f: &mut Parser) -> parse::Result<Self> {
 			f.check_word($term)?;
-			f.term(|f| f.val()).map(Self)
+			f.check("[")?;
+			let v = f.val()?;
+			f.check("]")?;
+			Ok(Self(v))
 		}
 	}
 }

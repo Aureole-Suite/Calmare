@@ -24,7 +24,10 @@ impl Print for types::FileId {
 impl Parse for types::FileId {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		f.check_word("file")?;
-		f.term(|f| f.val()).map(Self)
+		f.check("[")?;
+		let v = f.val()?;
+		f.check("]")?;
+		Ok(Self(v))
 	}
 }
 
@@ -60,14 +63,14 @@ impl Print for types::Pos2 {
 
 impl Parse for types::Pos2 {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		f.tuple(|f| {
-			let x = f.val()?;
-			f.check(",")?;
-			f.check_word("null")?;
-			f.check(",")?;
-			let z = f.val()?;
-			Ok(types::Pos2 { x, z })
-		})
+		f.check("(")?;
+		let x = f.val()?;
+		f.check(",")?;
+		f.check_word("null")?;
+		f.check(",")?;
+		let z = f.val()?;
+		f.check(")")?;
+		Ok(types::Pos2 { x, z })
 	}
 }
 
@@ -82,13 +85,13 @@ impl Print for types::Pos3 {
 
 impl Parse for types::Pos3 {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		f.tuple(|f| {
-			let x = f.val()?;
-			f.check(",")?;
-			let y = f.val()?;
-			f.check(",")?;
-			let z = f.val()?;
-			Ok(types::Pos3 { x, y, z })
-		})
+		f.check("(")?;
+		let x = f.val()?;
+		f.check(",")?;
+		let y = f.val()?;
+		f.check(",")?;
+		let z = f.val()?;
+		f.check(")")?;
+		Ok(types::Pos3 { x, y, z })
 	}
 }
