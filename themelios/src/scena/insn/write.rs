@@ -6,7 +6,8 @@ use strict_result::Strict as _;
 
 use super::{Arg, Expr, Insn};
 use crate::scena::code::Code;
-use crate::scena::{insn_set as iset, CharId, EventId, FuncId, LookPointId};
+use crate::scena::insn_set as iset;
+use crate::scena::*;
 use crate::types::*;
 use crate::util::{cast, ValueError, WriterExt};
 
@@ -472,15 +473,15 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				self.f.u8(0x1E);
 				self.f.u16(v);
 			}
-			Expr::Arg(Arg::Var(v)) => {
+			Expr::Arg(Arg::Var(Var(v))) => {
 				self.f.u8(0x1F);
 				self.f.u16(v);
 			}
-			Expr::Arg(Arg::Attr(v)) => {
+			Expr::Arg(Arg::Attr(Attr(v))) => {
 				self.f.u8(0x20);
 				self.f.u8(v);
 			}
-			Expr::Arg(Arg::CharAttr(id, v)) => {
+			Expr::Arg(Arg::CharAttr(CharAttr(id, v))) => {
 				self.f.u8(0x21);
 				self.f.u16(id.to_u16(self.iset.game)?);
 				self.f.u8(v);
@@ -488,7 +489,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 			Expr::Rand => {
 				self.f.u8(0x22);
 			}
-			Expr::Arg(Arg::Global(v)) => {
+			Expr::Arg(Arg::Global(Global(v))) => {
 				self.f.u8(0x23);
 				self.f.u8(v);
 			}
@@ -522,20 +523,20 @@ fn int_arg(iset: &iset::InsnSet, arg: &Arg) -> Result<i64, WriteError> {
 		Arg::FuncId(FuncId(a, b)) => (a as i64) | (b as i64) << 8,
 		Arg::LookPointId(LookPointId(v)) => v as i64,
 		Arg::EventId(EventId(v)) => v as i64,
-		Arg::EntranceId(v) => v as i64,
-		Arg::ObjectId(v) => v as i64,
-		Arg::ForkId(v) => v as i64,
-		Arg::MenuId(v) => v as i64,
-		Arg::EffId(v) => v as i64,
-		Arg::EffInstanceId(v) => v as i64,
-		Arg::ChipId(v) => v as i64,
-		Arg::VisId(v) => v as i64,
+		Arg::EntranceId(EntranceId(v)) => v as i64,
+		Arg::ObjectId(ObjectId(v)) => v as i64,
+		Arg::ForkId(ForkId(v)) => v as i64,
+		Arg::MenuId(MenuId(v)) => v as i64,
+		Arg::EffId(EffId(v)) => v as i64,
+		Arg::EffInstanceId(EffInstanceId(v)) => v as i64,
+		Arg::ChipId(ChipId(v)) => v as i64,
+		Arg::VisId(VisId(v)) => v as i64,
 		Arg::CharId(v) => v.to_u16(iset.game)? as i64,
 		Arg::Flag(Flag(v)) => v as i64,
-		Arg::Var(v) => v as i64,
-		Arg::Global(v) => v as i64,
-		Arg::Attr(v) => v as i64,
-		Arg::CharAttr(char, attr) => char.to_u16(iset.game)? as i64 | (attr as i64) << 16,
+		Arg::Var(Var(v)) => v as i64,
+		Arg::Global(Global(v)) => v as i64,
+		Arg::Attr(Attr(v)) => v as i64,
+		Arg::CharAttr(CharAttr(char, attr)) => char.to_u16(iset.game)? as i64 | (attr as i64) << 16,
 		Arg::QuestTask(v) => v as i64,
 		Arg::QuestFlags(v) => v as i64,
 		Arg::SystemFlags(v) => v as i64,

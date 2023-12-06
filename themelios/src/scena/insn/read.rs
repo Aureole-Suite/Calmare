@@ -6,7 +6,8 @@ use super::{Arg, Insn};
 use crate::scena::code::visit::visit_args;
 use crate::scena::code::Code;
 use crate::scena::insn::Expr;
-use crate::scena::{insn_set as iset, CharId, EventId, FuncId, LookPointId};
+use crate::scena::insn_set as iset;
+use crate::scena::*;
 use crate::types::*;
 use crate::util::{ReaderExt, ValueError};
 
@@ -354,14 +355,14 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 					0x01 => break,
 					0x1C => Expr::Insn(self.insn()?),
 					0x1E => Expr::Arg(Arg::Flag(Flag(f.u16()?))),
-					0x1F => Expr::Arg(Arg::Var(f.u16()?)),
-					0x20 => Expr::Arg(Arg::Attr(f.u8()?)),
-					0x21 => Expr::Arg(Arg::CharAttr(
+					0x1F => Expr::Arg(Arg::Var(Var(f.u16()?))),
+					0x20 => Expr::Arg(Arg::Attr(Attr(f.u8()?))),
+					0x21 => Expr::Arg(Arg::CharAttr(CharAttr(
 						CharId::from_u16(self.iset.game, f.u16()?)?,
 						f.u8()?,
-					)),
+					))),
 					0x22 => Expr::Rand,
-					0x23 => Expr::Arg(Arg::Global(f.u8()?)),
+					0x23 => Expr::Arg(Arg::Global(Global(f.u8()?))),
 					op => Err(ValueError::new("Expr", format!("0x{op:02X}")))?,
 				})
 			};
@@ -411,26 +412,26 @@ fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Option<Arg>
 		T::FuncId => Arg::FuncId(FuncId(cast(v & 0xFF)?, cast(v >> 8)?)),
 		T::LookPointId => Arg::LookPointId(LookPointId(cast(v)?)),
 		T::EventId => Arg::EventId(EventId(cast(v)?)),
-		T::EntranceId => Arg::EntranceId(cast(v)?),
-		T::ObjectId => Arg::ObjectId(cast(v)?),
+		T::EntranceId => Arg::EntranceId(EntranceId(cast(v)?)),
+		T::ObjectId => Arg::ObjectId(ObjectId(cast(v)?)),
 
-		T::ForkId => Arg::ForkId(cast(v)?),
-		T::MenuId => Arg::MenuId(cast(v)?),
-		T::EffId => Arg::EffId(cast(v)?),
-		T::EffInstanceId => Arg::EffInstanceId(cast(v)?),
-		T::ChipId => Arg::ChipId(cast(v)?),
-		T::VisId => Arg::VisId(cast(v)?),
+		T::ForkId => Arg::ForkId(ForkId(cast(v)?)),
+		T::MenuId => Arg::MenuId(MenuId(cast(v)?)),
+		T::EffId => Arg::EffId(EffId(cast(v)?)),
+		T::EffInstanceId => Arg::EffInstanceId(EffInstanceId(cast(v)?)),
+		T::ChipId => Arg::ChipId(ChipId(cast(v)?)),
+		T::VisId => Arg::VisId(VisId(cast(v)?)),
 
 		T::CharId => Arg::CharId(CharId::from_u16(iset.game, cast(v)?)?),
 
 		T::Flag => Arg::Flag(Flag(cast(v)?)),
-		T::Var => Arg::Var(cast(v)?),
-		T::Global => Arg::Global(cast(v)?),
-		T::Attr => Arg::Attr(cast(v)?),
+		T::Var => Arg::Var(Var(cast(v)?)),
+		T::Global => Arg::Global(Global(cast(v)?)),
+		T::Attr => Arg::Attr(Attr(cast(v)?)),
 		T::CharAttr => {
 			let char = CharId::from_u16(iset.game, cast(v & 0xFFFF)?)?;
 			let attr: u8 = cast(v >> 16)?;
-			Arg::CharAttr(char, attr)
+			Arg::CharAttr(CharAttr(char, attr))
 		}
 
 		T::QuestTask => Arg::QuestTask(cast(v)?),

@@ -1,4 +1,5 @@
-use crate::scena::{code::Code, CharId, EventId, FuncId, LookPointId};
+use super::code::Code;
+use super::*;
 use crate::types::*;
 
 mod read;
@@ -77,23 +78,23 @@ pub enum Arg {
 	FuncId(FuncId),
 	LookPointId(LookPointId),
 	EventId(EventId),
-	EntranceId(u16), // defined in ._en file
-	ObjectId(u16),   // defined in ._op file
+	EntranceId(EntranceId),
+	ObjectId(ObjectId),
 
-	ForkId(u16),
-	MenuId(u16),
-	EffId(u8),
-	EffInstanceId(u8),
-	ChipId(u16),
-	VisId(u8),
+	ForkId(ForkId),
+	MenuId(MenuId),
+	EffId(EffId),
+	EffInstanceId(EffInstanceId),
+	ChipId(ChipId),
+	VisId(VisId),
 
 	CharId(CharId),
 
 	Flag(Flag),
-	Var(u16),
-	Global(u8),
-	Attr(u8),
-	CharAttr(CharId, u8),
+	Var(Var),
+	Global(Global),
+	Attr(Attr),
+	CharAttr(CharAttr),
 
 	Code(Code),
 	Expr(Box<Expr>),

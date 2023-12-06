@@ -2,7 +2,7 @@ use themelios::scena::code::Code;
 use themelios::scena::insn::{Arg, Expr, Insn};
 use themelios::scena::insn_set as iset;
 
-use crate::parse::{self, Diagnostic, Span};
+use crate::parse::{self, Diagnostic};
 use crate::{Parse, ParseBlock, Parser};
 use crate::{Print, PrintBlock, Printer};
 
@@ -135,22 +135,22 @@ impl Print for Arg {
 			Arg::LookPointId(v) => f.val(v),
 			Arg::EventId(v) => f.val(v),
 
-			Arg::EntranceId(v) => f.term("entrance").field().val(v),
-			Arg::ObjectId(v) => f.term("object").field().val(v),
-			Arg::ForkId(v) => f.term("fork").field().val(v),
-			Arg::MenuId(v) => f.term("menu").field().val(v),
-			Arg::EffId(v) => f.term("eff").field().val(v),
-			Arg::EffInstanceId(v) => f.term("eff_instance").field().val(v),
-			Arg::ChipId(v) => f.term("chip").field().val(v),
-			Arg::VisId(v) => f.term("vis").field().val(v),
+			Arg::EntranceId(v) => f.val(v),
+			Arg::ObjectId(v) => f.val(v),
+			Arg::ForkId(v) => f.val(v),
+			Arg::MenuId(v) => f.val(v),
+			Arg::EffId(v) => f.val(v),
+			Arg::EffInstanceId(v) => f.val(v),
+			Arg::ChipId(v) => f.val(v),
+			Arg::VisId(v) => f.val(v),
 
 			Arg::CharId(v) => f.val(v),
 
 			Arg::Flag(v) => f.val(v),
-			Arg::Var(v) => f.term("var").field().val(v),
-			Arg::Global(v) => f.term("global").field().val(v),
-			Arg::Attr(v) => f.term("system").field().val(v),
-			Arg::CharAttr(v, w) => f.val(v).no_space().word(".").no_space().val(w),
+			Arg::Var(v) => f.val(v),
+			Arg::Global(v) => f.val(v),
+			Arg::Attr(v) => f.val(v),
+			Arg::CharAttr(v) => f.val(v),
 			Arg::Code(v) => f.val_block(v),
 			Arg::Expr(v) => f.val(v),
 
@@ -202,10 +202,6 @@ fn parse_arg(out: &mut Vec<Arg>, f: &mut Parser<'_>, iarg: &iset::Arg) -> Result
 fn parse_int_arg(f: &mut Parser, iarg: iset::IntArg) -> parse::Result<Arg> {
 	use iset::IntArg as IA;
 
-	fn term<T: Parse>(f: &mut Parser, word: &str) -> parse::Result<T> {
-		f.check_word(word)?.term(|f| f.val())
-	}
-
 	Ok(match iarg {
 		IA::Const(_) => unreachable!(),
 		IA::Int => Arg::Int(f.val()?),
@@ -234,27 +230,22 @@ fn parse_int_arg(f: &mut Parser, iarg: iset::IntArg) -> parse::Result<Arg> {
 		IA::LookPointId => Arg::LookPointId(f.val()?),
 		IA::EventId => Arg::EventId(f.val()?),
 
-		IA::EntranceId => Arg::EntranceId(term(f, "entrance")?),
-		IA::ObjectId => Arg::ObjectId(term(f, "object")?),
-		IA::ForkId => Arg::ForkId(term(f, "fork")?),
-		IA::MenuId => Arg::MenuId(term(f, "menu")?),
-		IA::EffId => Arg::EffId(term(f, "eff")?),
-		IA::EffInstanceId => Arg::EffInstanceId(term(f, "eff_instance")?),
-		IA::ChipId => Arg::ChipId(term(f, "chip")?),
-		IA::VisId => Arg::VisId(term(f, "vis")?),
+		IA::EntranceId => Arg::EntranceId(f.val()?),
+		IA::ObjectId => Arg::ObjectId(f.val()?),
+		IA::ForkId => Arg::ForkId(f.val()?),
+		IA::MenuId => Arg::MenuId(f.val()?),
+		IA::EffId => Arg::EffId(f.val()?),
+		IA::EffInstanceId => Arg::EffInstanceId(f.val()?),
+		IA::ChipId => Arg::ChipId(f.val()?),
+		IA::VisId => Arg::VisId(f.val()?),
 
 		IA::CharId => Arg::CharId(f.val()?),
 
 		IA::Flag => Arg::Flag(f.val()?),
-		IA::Var => Arg::Var(term(f, "var")?),
-		IA::Global => Arg::Global(term(f, "global")?),
-		IA::Attr => Arg::Attr(term(f, "system")?),
-		IA::CharAttr => {
-			let char = f.val()?;
-			f.no_space().check(".")?;
-			let attr = f.no_space().val()?;
-			Arg::CharAttr(char, attr)
-		}
+		IA::Var => Arg::Var(f.val()?),
+		IA::Global => Arg::Global(f.val()?),
+		IA::Attr => Arg::Attr(f.val()?),
+		IA::CharAttr => Arg::CharAttr(f.val()?),
 
 		IA::QuestTask => Arg::QuestTask(f.val()?),
 		IA::QuestFlags => Arg::SystemFlags(f.val()?),

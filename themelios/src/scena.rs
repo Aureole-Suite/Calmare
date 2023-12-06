@@ -97,3 +97,17 @@ impl CharId {
 		})
 	}
 }
+
+newtype!(EntranceId(u16)); // defined in ._en file
+newtype!(ObjectId(u16)); // defined in ._op file
+newtype!(ForkId(u16));
+newtype!(MenuId(u16));
+newtype!(EffId(u8));
+newtype!(EffInstanceId(u8));
+newtype!(VisId(u8));
+
+newtype!(Var(u16));
+newtype!(Global(u8));
+newtype!(Attr(u8));
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CharAttr(pub CharId, pub u8);

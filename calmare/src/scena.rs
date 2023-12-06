@@ -57,3 +57,30 @@ impl Parse for scena::CharId {
 		Err(parse::Diagnostic::DUMMY)
 	}
 }
+
+newtype_term!(scena::EntranceId, "entrance"); // defined in ._en file
+newtype_term!(scena::ObjectId, "object"); // defined in ._op file
+newtype_term!(scena::ForkId, "fork");
+newtype_term!(scena::MenuId, "menu");
+newtype_term!(scena::EffId, "eff");
+newtype_term!(scena::EffInstanceId, "eff_instance");
+newtype_term!(scena::VisId, "vis");
+
+newtype_term!(scena::Var, "var");
+newtype_term!(scena::Global, "global");
+newtype_term!(scena::Attr, "system");
+
+impl Print for scena::CharAttr {
+	fn print(&self, f: &mut Printer) {
+		f.val(self.0).no_space().word(".").no_space().val(self.1);
+	}
+}
+
+impl Parse for scena::CharAttr {
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
+		let char = f.val()?;
+		f.no_space().check(".")?;
+		let attr = f.no_space().val()?;
+		Ok(scena::CharAttr(char, attr))
+	}
+}
