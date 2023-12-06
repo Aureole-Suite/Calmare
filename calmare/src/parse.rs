@@ -13,6 +13,7 @@ pub struct Parser<'src> {
 	source: &'src str,
 	pos: usize,
 	indent: Indent<'src>,
+	allow_unindented: bool,
 	last_space: Option<(Span, Space<'src>)>,
 	diagnostics: Vec<Diagnostic>,
 	iset: &'src InsnSet<'src>,
@@ -33,6 +34,7 @@ impl<'src> Parser<'src> {
 			source,
 			pos: 0,
 			indent: Indent(&source[..0]),
+			allow_unindented: false,
 			last_space: None,
 			diagnostics: Vec::new(),
 			iset,
@@ -45,9 +47,7 @@ impl<'src> Parser<'src> {
 
 	pub fn pos(&mut self) -> Result<SourcePos> {
 		let space = self.space();
-		let is_at_indent =
-			matches!(space.1, Space::Indent(indent) if std::ptr::eq(indent.0, self.indent.0));
-		if space.1 > self.indent || is_at_indent {
+		if space.1 > self.indent || space.1 == self.indent && self.allow_unindented {
 			Ok(SourcePos(self.pos))
 		} else {
 			Err(Diagnostic::error(space.0, "unexpected end of line"))
@@ -96,6 +96,7 @@ impl<'src> Parser<'src> {
 		let s = &self.rest()[..len];
 		self.pos += len;
 		self.last_space = None;
+		self.allow_unindented = false;
 		s
 	}
 
@@ -193,6 +194,7 @@ impl<'src> Parser<'src> {
 				break;
 			}
 
+			self.allow_unindented = true;
 			self.one_line(&mut f);
 		}
 
