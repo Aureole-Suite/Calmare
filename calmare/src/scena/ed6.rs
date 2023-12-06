@@ -88,39 +88,40 @@ impl ParseBlock for ed6::Scena {
 				"chip" => {
 					// TODO handle null
 					let (span, id) = parse_id(f, pos, ChipId)?;
-					chcps.insert(f, span, id.0 as usize, |f| {
+					let val = (|| {
 						let ch = f.val::<FileId>()?;
 						let cp = f.val::<FileId>()?;
 						Ok((ch, cp))
-					});
+					})();
+					chcps.insert(f, span, id.0 as usize, val);
 				}
 				"npc" => {
 					let pos = f.pos();
 					let id = f.val::<LocalCharId>()?;
 					let span = pos | f.pos();
-					npcs_monsters.insert(f, span, id.0 as usize, |f| {
-						f.val_block().map(NpcOrMonster::Npc)
-					});
+					let val = f.val_block().map(NpcOrMonster::Npc);
+					npcs_monsters.insert(f, span, id.0 as usize, val);
 				}
 				"monster" => {
 					let pos = f.pos();
 					let id = f.val::<LocalCharId>()?;
 					let span = pos | f.pos();
-					npcs_monsters.insert(f, span, id.0 as usize, |f| {
-						f.val_block().map(NpcOrMonster::Monster)
-					});
+					let val = f.val_block().map(NpcOrMonster::Monster);
+					npcs_monsters.insert(f, span, id.0 as usize, val);
 				}
 				"event" => {
 					let (span, id) = parse_id(f, pos, EventId)?;
-					events.insert(f, span, id.0 as usize, |f| f.val_block());
+					let val = f.val_block();
+					events.insert(f, span, id.0 as usize, val);
 				}
 				"look_point" => {
 					let (span, id) = parse_id(f, pos, LookPointId)?;
-					look_points.insert(f, span, id.0 as usize, |f| f.val_block());
+					let val = f.val_block();
+					look_points.insert(f, span, id.0 as usize, val);
 				}
 				"fn" => {
 					let (span, id) = parse_id(f, pos, LocalFuncId)?;
-					functions.insert(f, span, id.0 as usize, |f| Err(Diagnostic::DUMMY));
+					functions.insert(f, span, id.0 as usize, Err(Diagnostic::DUMMY));
 				}
 				e => return Err(Diagnostic::error(f.span_of(e), "invalid declaration")),
 			}
@@ -220,18 +221,11 @@ impl<V> PackedIndices<V> {
 		Self::default()
 	}
 
-	pub fn insert(
-		&mut self,
-		f: &mut Parser,
-		s: Span,
-		n: usize,
-		func: impl FnOnce(&mut Parser) -> parse::Result<V>,
-	) {
-		let val = func(f);
+	pub fn insert(&mut self, diag: &mut Parser, s: Span, n: usize, val: parse::Result<V>) {
 		self.items
 			.entry(n)
 			.or_insert_with(|| Slot::new())
-			.insert(f, s, val);
+			.insert(diag, s, val);
 	}
 
 	pub fn finish(self, diag: &mut Parser, word: &str) -> Vec<V> {
