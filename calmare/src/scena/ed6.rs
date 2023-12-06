@@ -228,6 +228,10 @@ impl<V> PackedIndices<V> {
 			.insert(diag, s, val);
 	}
 
+	pub fn items(&self) -> &BTreeMap<usize, Slot<V>> {
+		&self.items
+	}
+
 	pub fn finish(self, diag: &mut Parser, word: &str) -> Vec<V> {
 		let mut vs = Vec::with_capacity(self.items.len());
 		let mut expect = 0;
@@ -249,16 +253,15 @@ enum NpcOrMonster<A, B> {
 }
 
 fn chars<A, B>(diag: &mut Parser, items: PackedIndices<NpcOrMonster<A, B>>) -> (Vec<A>, Vec<B>) {
-	let misorder = items
-		.items
-		.iter()
-		.skip_while(|a| !matches!(&a.1.get_ref(), Some(NpcOrMonster::Monster(_))))
-		.find(|a| matches!(&a.1.get_ref(), Some(NpcOrMonster::Npc(_))));
-	if let Some((k, slot)) = misorder {
-		let (_, prev) = items.items.range(..k).last().unwrap();
-		Diagnostic::error(prev.span(), "monsters must come after npcs")
-			.with_note(slot.span(), "is before this npc")
-			.emit(diag);
+	let mut iter = items.items().iter().peekable();
+	while let (Some(a), Some(b)) = (iter.next(), iter.peek()) {
+		if matches!(&a.1.get_ref(), Some(NpcOrMonster::Monster(_)))
+			&& matches!(&b.1.get_ref(), Some(NpcOrMonster::Npc(_)))
+		{
+			Diagnostic::error(b.1.span(), "npcs mut come before monsters")
+				.with_note(a.1.span(), "is after this monster")
+				.emit(diag);
+		}
 	}
 
 	let mut npcs = Vec::new();
