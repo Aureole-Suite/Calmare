@@ -117,7 +117,7 @@ where
 	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()> {
 		let value = (self.func)(f);
 		self.value
-			.get_or_insert_with(|| Slot::new())
+			.get_or_insert_with(Slot::new)
 			.insert(f, f.span_of(word), value);
 		Ok(())
 	}

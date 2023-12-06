@@ -82,7 +82,7 @@ impl ParseBlock for ed6::Scena {
 			match f.word()? {
 				"scena" => {
 					let val = f.val_block();
-					head.get_or_insert_with(|| Slot::new())
+					head.get_or_insert_with(Slot::new)
 						.insert(f, f.span(pos), val);
 				}
 				"entry" => {
@@ -228,7 +228,7 @@ impl<V> PackedIndices<V> {
 	pub fn insert(&mut self, diag: &mut Parser, s: Span, n: usize, val: parse::Result<V>) {
 		self.items
 			.entry(n)
-			.or_insert_with(|| Slot::new())
+			.or_insert_with(Slot::new)
 			.insert(diag, s, val);
 	}
 
