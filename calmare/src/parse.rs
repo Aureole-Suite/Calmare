@@ -63,8 +63,8 @@ impl<'src> Parser<'src> {
 		self.diagnostics.as_ref()
 	}
 
-	pub fn span_text(&self, s: Span) -> &'src str {
-		&self.source[s.as_range()]
+	fn text_since(&self, pos: SourcePos) -> &'src str {
+		&self.source[pos.0..self.pos]
 	}
 
 	pub fn span_of(&self, text: &'src str) -> Span {
@@ -152,7 +152,7 @@ impl<'src> Parser<'src> {
 		if self.pat("//").is_some() {
 			self.pat_mul(|c| c != '\n');
 		}
-		self.span_text(start.as_span() | self.raw_pos().as_span())
+		self.text_since(start)
 	}
 
 	pub fn lines(&mut self, mut f: impl FnMut(&mut Self) -> Result<()>) {
@@ -238,7 +238,7 @@ impl<'src> Parser<'src> {
 			return Err(Diagnostic::error(pos.as_span(), "expected word"));
 		}
 		self.pat_mul(unicode_ident::is_xid_continue);
-		Ok(self.span_text(self.span(pos)))
+		Ok(self.text_since(pos))
 	}
 
 	pub fn check_word(&mut self, word: &str) -> Result<&mut Self> {
@@ -292,7 +292,7 @@ impl<'src> Parser<'src> {
 				digits(self, char::is_ascii_digit, "digits")?;
 			}
 		}
-		Ok(self.span_text(pos.as_span() | self.raw_pos().as_span()))
+		Ok(self.text_since(pos))
 	}
 
 	pub fn string(&mut self) -> Result<String> {
