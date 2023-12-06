@@ -12,6 +12,8 @@ mod scena;
 mod types;
 
 mod macros;
+mod number;
+mod string;
 
 impl Printer {
 	fn val(&mut self, val: impl Print) -> &mut Self {
@@ -60,9 +62,6 @@ pub trait Parse: Sized {
 pub trait ParseBlock: Sized {
 	fn parse_block(f: &mut Parser) -> parse::Result<Self>;
 }
-
-macros::int!(u8, u16, u32, u64, i8, i16, i32, i64);
-macros::float!(f32, f64);
 
 impl<T: Print + ?Sized> Print for &T {
 	fn print(&self, f: &mut Printer) {
@@ -165,24 +164,6 @@ impl<A: Parse> Parse for Option<A> {
 				Err(v)
 			}
 		}
-	}
-}
-
-impl Print for str {
-	fn print(&self, f: &mut Printer) {
-		write!(f, "{self:?}"); // TODO
-	}
-}
-
-impl Print for String {
-	fn print(&self, f: &mut Printer) {
-		self.as_str().print(f)
-	}
-}
-
-impl Parse for String {
-	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		f.string()
 	}
 }
 
