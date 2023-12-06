@@ -12,7 +12,7 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 
 	$(impl ParseBlock for $type {
 		fn parse_block(f: &mut Parser) -> parse::Result<Self> {
-			let start = f.pos();
+			let span = f.raw_pos().as_span();
 			$(let mut $field = PlainField::new(|f| f.val());)*
 
 			let mut first_error = true;
@@ -49,8 +49,8 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 				Ok(Self { $($field,)* })
 			} else {
 				Err(
-					parse::Diagnostic::error(start, "missing fields")
-						.with_note(start, missing.join(", "))
+					parse::Diagnostic::error(span, "missing fields")
+						.with_note(span, missing.join(", "))
 				)
 			}
 		}

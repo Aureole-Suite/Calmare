@@ -16,6 +16,15 @@ pub struct Parser<'a> {
 	diagnostics: Vec<Diagnostic>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SourcePos(usize);
+
+impl SourcePos {
+	pub fn as_span(self) -> Span {
+		Span::new(self.0)
+	}
+}
+
 impl<'src> Parser<'src> {
 	pub fn new(source: &'src str) -> Self {
 		Parser {
@@ -27,8 +36,27 @@ impl<'src> Parser<'src> {
 		}
 	}
 
-	pub fn pos(&self) -> Span {
-		Span::new(self.pos)
+	pub fn raw_pos(&self) -> SourcePos {
+		SourcePos(self.pos)
+	}
+
+	pub fn pos(&mut self) -> Result<SourcePos> {
+		let space = self.space();
+		let is_at_indent =
+			matches!(space.1, Space::Indent(indent) if std::ptr::eq(indent.0, self.indent.0));
+		if space.1 > self.indent || is_at_indent {
+			Ok(SourcePos(self.pos))
+		} else {
+			Err(Diagnostic::error(space.0, "unexpected end of line"))
+		}
+	}
+
+	pub fn span(&self, pos: SourcePos) -> Span {
+		let end = match self.last_space {
+			Some(t) => t.0.at_start(),
+			None => self.raw_pos().as_span(),
+		};
+		pos.as_span() | end
 	}
 
 	pub fn diagnostics(&self) -> &[Diagnostic] {
@@ -81,16 +109,16 @@ impl<'src> Parser<'src> {
 	}
 
 	pub fn check(&mut self, c: &str) -> Result<&mut Self> {
-		self.check_space()?;
+		let pos = self.pos()?;
 		match self.pat(c) {
 			Some(_) => Ok(self),
-			None => Err(Diagnostic::error(self.pos(), format!("expected `{c}`"))),
+			None => Err(Diagnostic::error(pos.as_span(), format!("expected `{c}`"))),
 		}
 	}
 
 	pub fn no_space(&mut self) -> &mut Self {
 		assert!(self.last_space.is_none());
-		self.last_space = Some((self.pos(), Space::Inline));
+		self.last_space = Some((self.raw_pos().as_span(), Space::Inline));
 		self
 	}
 
@@ -118,13 +146,13 @@ impl<'src> Parser<'src> {
 	}
 
 	fn inline_space(&mut self) -> &'src str {
-		let start = self.pos();
+		let start = self.raw_pos();
 		self.pat_mul([' ', '\t']);
 		// TODO don't include comments in return value
 		if self.pat("//").is_some() {
 			self.pat_mul(|c| c != '\n');
 		}
-		self.span_text(start | self.pos())
+		self.span_text(start.as_span() | self.raw_pos().as_span())
 	}
 
 	pub fn lines(&mut self, mut f: impl FnMut(&mut Self) -> Result<()>) {
@@ -165,10 +193,10 @@ impl<'src> Parser<'src> {
 	}
 
 	fn one_line(&mut self, f: &mut impl FnMut(&mut Self) -> Result<()>) {
-		let pos1 = self.pos();
+		let pos1 = self.raw_pos();
 		let ok = f(self).emit(self).is_some();
-		if self.pos() == pos1 {
-			Diagnostic::error(pos1, "line parsed as empty — this is a bug")
+		if self.raw_pos() == pos1 {
+			Diagnostic::error(pos1.as_span(), "line parsed as empty — this is a bug")
 				.filter(ok)
 				.emit(self);
 			self.pat(|_| true);
@@ -192,46 +220,33 @@ impl<'src> Parser<'src> {
 
 	pub fn try_parse<T>(&mut self, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<Option<T>> {
 		self.space();
-		let pos = self.pos();
+		let pos = self.raw_pos();
 		let diag = self.diagnostics().len();
 		match f(self) {
 			Ok(v) => Ok(Some(v)),
-			Err(_) if self.pos() == pos && self.diagnostics().len() == diag => Ok(None),
+			Err(_) if self.raw_pos() == pos && self.diagnostics().len() == diag => Ok(None),
 			Err(e) => Err(e),
 		}
 	}
 
-	fn check_space(&mut self) -> Result<()> {
-		let space = self.space();
-		let is_at_indent =
-			matches!(space.1, Space::Indent(indent) if std::ptr::eq(indent.0, self.indent.0));
-		if space.1 > self.indent || is_at_indent {
-			Ok(())
-		} else {
-			Err(Diagnostic::error(space.0, "unexpected end of line"))
-		}
-	}
-
 	pub fn word(&mut self) -> Result<&'src str> {
-		self.check_space()?;
-		let start = self.pos();
+		let pos = self.pos()?;
 		if self
 			.pat(|c| unicode_ident::is_xid_start(c) || c == '_')
 			.is_none()
 		{
-			return Err(Diagnostic::error(self.pos(), "expected word"));
+			return Err(Diagnostic::error(pos.as_span(), "expected word"));
 		}
 		self.pat_mul(unicode_ident::is_xid_continue);
-		Ok(self.span_text(start | self.pos()))
+		Ok(self.span_text(self.span(pos)))
 	}
 
 	pub fn check_word(&mut self, word: &str) -> Result<&mut Self> {
-		self.check_space()?;
-		let pos = self.pos();
+		let pos = self.pos()?;
 		let aword = self.word();
 		if aword != Ok(word) {
 			return Err(Diagnostic::error(
-				pos | self.pos(),
+				self.span(pos),
 				format!("expected `{word}`"),
 			));
 		}
@@ -253,15 +268,21 @@ impl<'src> Parser<'src> {
 	}
 
 	pub fn number(&mut self) -> Result<&'src str> {
-		fn digits<'src>(f: &mut Parser<'src>, pred: fn(&char) -> bool, what: &str) -> Result<&'src str> {
+		fn digits<'src>(
+			f: &mut Parser<'src>,
+			pred: fn(&char) -> bool,
+			what: &str,
+		) -> Result<&'src str> {
 			match f.pat_mul(|c| pred(&c)) {
-				"" => Err(Diagnostic::error(f.pos(), format!("expected {what}"))),
+				"" => Err(Diagnostic::error(
+					f.raw_pos().as_span(),
+					format!("expected {what}"),
+				)),
 				v => Ok(v),
 			}
 		}
 
-		self.check_space()?;
-		let pos = self.pos();
+		let pos = self.pos()?;
 		if self.pat("0x").is_some() {
 			digits(self, char::is_ascii_hexdigit, "hex digits")?;
 		} else {
@@ -271,18 +292,20 @@ impl<'src> Parser<'src> {
 				digits(self, char::is_ascii_digit, "digits")?;
 			}
 		}
-		Ok(self.span_text(pos | self.pos()))
+		Ok(self.span_text(pos.as_span() | self.raw_pos().as_span()))
 	}
 
 	pub fn string(&mut self) -> Result<String> {
-		self.check_space()?;
-		let pos = self.pos();
+		let pos = self.pos()?;
 		self.pat('"')
-			.ok_or_else(|| Diagnostic::error(pos, "expected string"))?;
+			.ok_or_else(|| Diagnostic::error(pos.as_span(), "expected string"))?;
 		let mut out = String::new();
 		loop {
 			if self.rest().starts_with('\n') || self.rest().is_empty() {
-				return Err(Diagnostic::error(pos | self.pos(), "unterminated string"));
+				return Err(Diagnostic::error(
+					pos.as_span() | self.raw_pos().as_span(),
+					"unterminated string",
+				));
 			}
 			match self.any_char().unwrap() {
 				'"' => break,
@@ -297,7 +320,10 @@ impl<'src> Parser<'src> {
 		if self.rest().is_empty() {
 			Ok(())
 		} else {
-			Err(Diagnostic::error(self.pos(), "expected end of file"))
+			Err(Diagnostic::error(
+				self.raw_pos().as_span(),
+				"expected end of file",
+			))
 		}
 	}
 }
