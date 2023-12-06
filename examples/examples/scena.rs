@@ -19,7 +19,7 @@ fn main() -> anyhow::Result<()> {
 		scena.print_block(&mut printer);
 		let output = printer.finish();
 		print!("{}", output);
-		let mut parser = calmare::Parser::new(&output);
+		let mut parser = calmare::Parser::new(&output, &iset);
 		let v: Option<themelios::scena::ed6::Scena> =
 			calmare::ParseBlock::parse_block(&mut parser).emit(&mut parser);
 		print_diags(&file, &output, parser.diagnostics());

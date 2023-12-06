@@ -7,13 +7,15 @@ use std::str::pattern::Pattern;
 pub use diagnostic::{Diagnostic, Emit, Level, Result};
 use indent::{Indent, Space};
 pub use span::Span;
+use themelios::scena::insn_set::InsnSet;
 
-pub struct Parser<'a> {
-	source: &'a str,
+pub struct Parser<'src> {
+	source: &'src str,
 	pos: usize,
-	indent: Indent<'a>,
-	last_space: Option<(Span, Space<'a>)>,
+	indent: Indent<'src>,
+	last_space: Option<(Span, Space<'src>)>,
 	diagnostics: Vec<Diagnostic>,
+	iset: &'src InsnSet<'src>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -26,13 +28,14 @@ impl SourcePos {
 }
 
 impl<'src> Parser<'src> {
-	pub fn new(source: &'src str) -> Self {
+	pub fn new(source: &'src str, iset: &'src InsnSet<'src>) -> Self {
 		Parser {
 			source,
 			pos: 0,
 			indent: Indent(&source[..0]),
 			last_space: None,
 			diagnostics: Vec::new(),
+			iset,
 		}
 	}
 
@@ -61,6 +64,10 @@ impl<'src> Parser<'src> {
 
 	pub fn diagnostics(&self) -> &[Diagnostic] {
 		self.diagnostics.as_ref()
+	}
+
+	pub fn insn_set(&self) -> &InsnSet {
+		self.iset
 	}
 
 	fn text_since(&self, pos: SourcePos) -> &'src str {
@@ -343,7 +350,9 @@ word
    word
   \tword // error: mixed
 ";
-	let mut parser = Parser::new(text);
+	use themelios::scena::insn_set;
+	let iset = insn_set::get(insn_set::Game::Fc, insn_set::Variant::Base);
+	let mut parser = Parser::new(text, &iset);
 	let mut n = 0;
 	parser.lines(|f| {
 		n += 1;
