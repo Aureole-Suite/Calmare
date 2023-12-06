@@ -139,6 +139,35 @@ impl<A: Parse, B: Parse, C: Parse> Parse for (A, B, C) {
 	}
 }
 
+impl<A: Print> Print for Option<A> {
+	fn print(&self, f: &mut Printer) {
+		match self {
+			Some(v) => f.val(v),
+			None => f.word("null"),
+		};
+	}
+}
+
+impl<A: Parse> Parse for Option<A> {
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
+		// This makes Option<Option<T>> priorize the outer None.
+		// Priorizing the inner null would give worse "expected" messages.
+		if f.check_word("null").is_ok() {
+			return Ok(None);
+		}
+
+		match f.val() {
+			Ok(v) => Ok(Some(v)),
+			Err(mut v) => {
+				if v.text.starts_with("expected ") {
+					v.text.push_str(" or null");
+				}
+				Err(v)
+			}
+		}
+	}
+}
+
 impl Print for str {
 	fn print(&self, f: &mut Printer) {
 		write!(f, "{self:?}"); // TODO

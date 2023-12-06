@@ -176,18 +176,7 @@ fn print_chcp(ch: &[FileId], cp: &[FileId], f: &mut Printer) {
 		if ch.is_none() && cp.is_none() {
 			break;
 		}
-		f.val(ChipId(i));
-		if let Some(ch) = ch {
-			f.val(ch);
-		} else {
-			f.word("null");
-		}
-		if let Some(cp) = cp {
-			f.val(cp);
-		} else {
-			f.word("null");
-		}
-		f.line();
+		f.val(ChipId(i)).val(ch).val(cp).line();
 		i += 1;
 	}
 }
