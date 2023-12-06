@@ -79,6 +79,6 @@ impl Print for Text {
 
 impl Parse for Text {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		Err(Diagnostic::DUMMY)
+		Err(Diagnostic::info(f.pos()?.as_span(), "TODO"))
 	}
 }

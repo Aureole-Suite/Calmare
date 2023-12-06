@@ -11,7 +11,7 @@ impl Print for types::Label {
 
 impl Parse for types::Label {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		Err(parse::Diagnostic::DUMMY)
+		Err(parse::Diagnostic::info(f.pos()?.as_span(), "TODO"))
 	}
 }
 
