@@ -17,7 +17,24 @@ impl Print for String {
 
 impl Parse for String {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		f.string()
+		let pos = f.pos()?;
+		f.pat('"')
+			.ok_or_else(|| Diagnostic::error(pos.as_span(), "expected string"))?;
+		let mut out = String::new();
+		loop {
+			if f.rest().starts_with('\n') || f.rest().is_empty() {
+				return Err(Diagnostic::error(
+					pos.as_span() | f.raw_pos().as_span(),
+					"unterminated string",
+				));
+			}
+			match f.any_char().unwrap() {
+				'"' => break,
+				'\\' => unimplemented!(), // will be ♯ later
+				char => out.push(char),
+			}
+		}
+		Ok(out)
 	}
 }
 

@@ -83,7 +83,7 @@ impl<'src> Parser<'src> {
 		}
 	}
 
-	fn rest(&self) -> &'src str {
+	pub fn rest(&self) -> &'src str {
 		&self.source[self.pos..]
 	}
 
@@ -272,27 +272,6 @@ impl<'src> Parser<'src> {
 		let v = f(self)?;
 		self.check(")")?;
 		Ok(v)
-	}
-
-	pub fn string(&mut self) -> Result<String> {
-		let pos = self.pos()?;
-		self.pat('"')
-			.ok_or_else(|| Diagnostic::error(pos.as_span(), "expected string"))?;
-		let mut out = String::new();
-		loop {
-			if self.rest().starts_with('\n') || self.rest().is_empty() {
-				return Err(Diagnostic::error(
-					pos.as_span() | self.raw_pos().as_span(),
-					"unterminated string",
-				));
-			}
-			match self.any_char().unwrap() {
-				'"' => break,
-				'\\' => unimplemented!(), // will be ♯ later
-				char => out.push(char),
-			}
-		}
-		Ok(out)
 	}
 
 	pub fn eof(&self) -> Result<()> {
