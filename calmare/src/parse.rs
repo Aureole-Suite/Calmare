@@ -80,13 +80,6 @@ impl<'src> Parser<'src> {
 		self.eat(self.rest().trim_start_matches(pat))
 	}
 
-	fn pat_mul_nonempty(&mut self, pat: impl Pattern<'src>, what: &str) -> Result<&'src str> {
-		match self.pat_mul(pat) {
-			"" => Err(Diagnostic::error(self.pos(), format!("expected {what}"))),
-			v => Ok(v),
-		}
-	}
-
 	pub fn check(&mut self, c: &str) -> Result<&mut Self> {
 		self.check_space()?;
 		match self.pat(c) {
@@ -260,15 +253,22 @@ impl<'src> Parser<'src> {
 	}
 
 	pub fn number(&mut self) -> Result<&'src str> {
+		fn digits<'src>(f: &mut Parser<'src>, pred: fn(&char) -> bool, what: &str) -> Result<&'src str> {
+			match f.pat_mul(|c| pred(&c)) {
+				"" => Err(Diagnostic::error(f.pos(), format!("expected {what}"))),
+				v => Ok(v),
+			}
+		}
+
 		self.check_space()?;
 		let pos = self.pos();
 		if self.pat("0x").is_some() {
-			self.pat_mul_nonempty(|c: char| c.is_ascii_hexdigit(), "hex digits")?;
+			digits(self, char::is_ascii_hexdigit, "hex digits")?;
 		} else {
 			let _ = self.pat('-');
-			self.pat_mul_nonempty(|c: char| c.is_ascii_digit(), "digits")?;
+			digits(self, char::is_ascii_digit, "digits")?;
 			if self.pat('.').is_some() {
-				self.pat_mul_nonempty(|c: char| c.is_ascii_digit(), "digits")?;
+				digits(self, char::is_ascii_digit, "digits")?;
 			}
 		}
 		Ok(self.span_text(pos | self.pos()))
