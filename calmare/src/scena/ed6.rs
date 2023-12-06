@@ -1,7 +1,8 @@
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 
-use themelios::scena::{ed6, ChipId, EventId, LocalCharId, LookPointId};
-use themelios::types::FileId;
+use themelios::scena::{ed6, ChipId, EventId, FuncId, LocalCharId, LookPointId};
+use themelios::types::{BgmId, FileId, TownId};
 
 use crate::macros::strukt::Slot;
 use crate::parse::{self, Diagnostic, Span};
@@ -15,16 +16,11 @@ crate::macros::newtype_term!(LocalFuncId, "fn");
 
 impl PrintBlock for ed6::Scena {
 	fn print_block(&self, f: &mut Printer) {
-		f.word("scena").block(|f| {
-			f.word("name").val(&self.path).val(&self.map).line();
-			f.word("town").val(self.town).line();
-			f.word("bgm").val(self.bgm).line();
-			f.word("item_use").val(self.item_use).line();
-			for (i, a) in self.includes.iter().enumerate() {
-				if *a != FileId::NONE {
-					f.word("scp").val(i as u16).val(a).line();
-				}
-			}
+		f.word("scena").val_block(Head {
+			name: (Cow::Borrowed(&self.path), Cow::Borrowed(&self.map)),
+			town: self.town,
+			bgm: self.bgm,
+			item_use: self.item_use,
 		});
 
 		for entry in &self.entries {
@@ -71,6 +67,9 @@ impl PrintBlock for ed6::Scena {
 #[allow(unused_variables)]
 impl ParseBlock for ed6::Scena {
 	fn parse_block(f: &mut Parser) -> parse::Result<Self> {
+		let start = f.raw_pos();
+
+		let mut head = None::<Slot<Head>>;
 		let mut chcps = PackedIndices::new();
 		let mut npcs_monsters = PackedIndices::new();
 		let mut events = PackedIndices::new();
@@ -81,7 +80,11 @@ impl ParseBlock for ed6::Scena {
 		f.lines(|f| {
 			let pos = f.pos()?;
 			match f.word()? {
-				"scena" => {}
+				"scena" => {
+					let val = f.val_block();
+					head.get_or_insert_with(|| Slot::new())
+						.insert(f, f.span(pos), val);
+				}
 				"entry" => {
 					entries.push(f.val_block()?);
 				}
@@ -136,13 +139,20 @@ impl ParseBlock for ed6::Scena {
 		let look_points = look_points.finish(f, "look_point");
 		let functions = functions.finish(f, "fn");
 
-		use themelios::types::*;
+		let Some(head) = head else {
+			return Err(Diagnostic::error(start.as_span(), "missing `scena` block"));
+		};
+
+		let Some(head) = head.get() else {
+			return Err(Diagnostic::DUMMY);
+		};
+
 		Ok(ed6::Scena {
-			path: String::from(""),
-			map: String::from(""),
-			town: TownId(0),
-			bgm: BgmId(0),
-			item_use: themelios::scena::FuncId(0, 0),
+			path: head.name.0.into_owned(),
+			map: head.name.1.into_owned(),
+			town: head.town,
+			bgm: head.bgm,
+			item_use: head.item_use,
 			includes: [FileId::NONE; 8],
 			ch,
 			cp,
@@ -154,6 +164,13 @@ impl ParseBlock for ed6::Scena {
 			functions,
 		})
 	}
+}
+
+struct Head<'a> {
+	name: (Cow<'a, str>, Cow<'a, str>),
+	town: TownId,
+	bgm: BgmId,
+	item_use: FuncId,
 }
 
 fn parse_id<U: Parse, T: Parse>(f: &mut Parser<'_>, func: impl FnOnce(U) -> T) -> parse::Result<T> {
@@ -182,6 +199,7 @@ fn print_chcp(ch: &[FileId], cp: &[FileId], f: &mut Printer) {
 }
 
 crate::macros::strukt::strukt! {
+	struct Head<'_> { name, town, bgm, item_use }
 	struct ed6::Entry { pos, chr, angle, cam_from, cam_at, cam_zoom, cam_pers, cam_deg, cam_limit, north, flags, town, init, reinit, }
 	struct ed6::Npc { name, pos, angle, x, cp, frame, ch, flags, init, talk, }
 	struct ed6::Monster { name, pos, angle, chip, flags, unk2, battle, flag, unk3, }
