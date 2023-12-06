@@ -24,10 +24,7 @@ impl Print for types::FileId {
 impl Parse for types::FileId {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		f.check_word("file")?;
-		f.check("[")?;
-		let v = f.val()?;
-		f.check("]")?;
-		Ok(Self(v))
+		Ok(Self(f.sqbrack_val()?))
 	}
 }
 

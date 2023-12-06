@@ -174,16 +174,10 @@ struct Head<'a> {
 }
 
 fn parse_id<U: Parse, T: Parse>(f: &mut Parser<'_>, func: impl FnOnce(U) -> T) -> parse::Result<T> {
-	let result = f.try_parse(|f| {
-		f.check("[")?;
-		let v = f.val()?;
-		f.check("]")?;
-		Ok(v)
-	})?;
-	Ok(match result {
-		Some(v) => func(v),
-		None => f.val()?,
-	})
+	match f.try_parse(|f| f.sqbrack_val())? {
+		Some(v) => Ok(func(v)),
+		None => Ok(f.val()?),
+	}
 }
 
 fn print_chcp(ch: &[FileId], cp: &[FileId], f: &mut Printer) {

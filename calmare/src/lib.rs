@@ -37,6 +37,13 @@ impl Parser<'_> {
 		T::parse(self)
 	}
 
+	fn sqbrack_val<T: Parse>(&mut self) -> parse::Result<T> {
+		self.check("[")?;
+		let v = self.val()?;
+		self.check("]")?;
+		Ok(v)
+	}
+
 	fn try_val<T: Parse>(&mut self) -> parse::Result<Option<T>> {
 		self.try_parse(T::parse)
 	}
