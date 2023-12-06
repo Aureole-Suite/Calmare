@@ -1,3 +1,4 @@
+use crate::parse::{Diagnostic, Emit as _, Span};
 use crate::{parse, ParseBlock, Parser};
 use crate::{PrintBlock, Printer};
 
@@ -34,15 +35,14 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 			let mut missing: Vec<&str> = Vec::new();
 
 			$(
-				let $field = $field.get();
-				if $field.is_none() {
+				if !$field.is_present() {
 					missing.push(concat!("`", stringify!($field), "`"));
 				}
 			)*
 
 			if missing.is_empty() {
 				$(
-					let Some(Some($field)) = $field else {
+					let Some($field) = $field.get() else {
 						return Err(parse::Diagnostic::DUMMY);
 					};
 				)*
@@ -57,17 +57,46 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 	})+
 }
 
+#[derive(Debug, Clone)]
+pub struct Slot<T>(Option<(Span, Option<T>)>);
+
+impl<T> Slot<T> {
+	pub fn new() -> Slot<T> {
+		Slot(None)
+	}
+
+	pub fn insert(&mut self, f: &mut Parser, span: Span, value: parse::Result<T>) {
+		if let Some((prev, _)) = self.0.replace((span, value.emit(f))) {
+			Diagnostic::error(span, "duplicate item")
+				.with_note(prev, "previous here")
+				.emit(f);
+		}
+	}
+
+	pub fn span(&self) -> Span {
+		self.0.as_ref().expect("initialized").0
+	}
+
+	pub fn get(self) -> Option<T> {
+		self.0.expect("initialized").1
+	}
+
+	pub fn get_ref(&self) -> Option<&T> {
+		self.0.as_ref().expect("initialized").1.as_ref()
+	}
+}
+
 pub trait ParseField {
 	type Output;
 	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()>;
-	fn get(self) -> Option<Option<Self::Output>>;
+	fn is_present(&self) -> bool;
+	fn get(self) -> Option<Self::Output>;
 }
 
 #[derive(Debug, Clone)]
 pub struct PlainField<T, F> {
 	func: F,
-	head_span: Option<parse::Span>,
-	value: Option<T>,
+	value: Option<Slot<T>>,
 }
 
 impl<T, F> PlainField<T, F>
@@ -75,11 +104,7 @@ where
 	F: FnMut(&mut Parser) -> parse::Result<T>,
 {
 	pub fn new(func: F) -> Self {
-		Self {
-			func,
-			head_span: None,
-			value: None,
-		}
+		Self { func, value: None }
 	}
 }
 
@@ -90,16 +115,18 @@ where
 	type Output = T;
 
 	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()> {
-		if let Some(prev_span) = self.head_span.replace(f.span_of(word)) {
-			parse::Diagnostic::error(f.span_of(word), "duplicate item")
-				.with_note(prev_span, "previous here")
-				.emit(f);
-		}
-		self.value = Some((self.func)(f)?);
+		let value = (self.func)(f);
+		self.value
+			.get_or_insert_with(|| Slot::new())
+			.insert(f, f.span_of(word), value);
 		Ok(())
 	}
 
-	fn get(self) -> Option<Option<Self::Output>> {
-		self.head_span.map(|_| self.value)
+	fn is_present(&self) -> bool {
+		self.value.is_some()
+	}
+
+	fn get(self) -> Option<Self::Output> {
+		self.value.and_then(|v| v.get())
 	}
 }

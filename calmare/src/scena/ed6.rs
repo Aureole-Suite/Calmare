@@ -3,7 +3,8 @@ use std::collections::BTreeMap;
 use themelios::scena::{ed6, ChipId, EventId, LocalCharId, LookPointId};
 use themelios::types::FileId;
 
-use crate::parse::{self, Diagnostic, Emit as _, Span};
+use crate::macros::strukt::Slot;
+use crate::parse::{self, Diagnostic, Span};
 use crate::{Parse, ParseBlock, Parser};
 use crate::{PrintBlock, Printer};
 
@@ -203,13 +204,13 @@ crate::macros::strukt::strukt! {
 
 #[derive(Debug, Clone)]
 struct PackedIndices<V> {
-	items: BTreeMap<usize, (Span, Option<V>)>,
+	items: BTreeMap<usize, Slot<V>>,
 }
 
 impl<V> Default for PackedIndices<V> {
 	fn default() -> Self {
 		Self {
-			items: Default::default(),
+			items: BTreeMap::new(),
 		}
 	}
 }
@@ -226,23 +227,22 @@ impl<V> PackedIndices<V> {
 		n: usize,
 		func: impl FnOnce(&mut Parser) -> parse::Result<V>,
 	) {
-		let val = func(f).emit(f);
-		if let Some((prev, _)) = self.items.insert(n, (s, val)) {
-			Diagnostic::error(s, "duplicate item")
-				.with_note(prev, "previous here")
-				.emit(f);
-		}
+		let val = func(f);
+		self.items
+			.entry(n)
+			.or_insert_with(|| Slot::new())
+			.insert(f, s, val);
 	}
 
 	pub fn finish(self, diag: &mut Parser, word: &str) -> Vec<V> {
 		let mut vs = Vec::with_capacity(self.items.len());
 		let mut expect = 0;
-		for (k, (s, v)) in self.items {
+		for (k, slot) in self.items {
 			if k != expect {
-				Diagnostic::error(s, format!("missing {word}[{expect}]")).emit(diag);
+				Diagnostic::error(slot.span(), format!("missing {word}[{expect}]")).emit(diag);
 			}
 			expect = k + 1;
-			vs.extend(v)
+			vs.extend(slot.get())
 		}
 		vs
 	}
@@ -258,12 +258,12 @@ fn chars<A, B>(diag: &mut Parser, items: PackedIndices<NpcOrMonster<A, B>>) -> (
 	let misorder = items
 		.items
 		.iter()
-		.skip_while(|a| !matches!(&a.1 .1, Some(NpcOrMonster::Monster(_))))
-		.find(|a| matches!(&a.1 .1, Some(NpcOrMonster::Npc(_))));
-	if let Some((k, (s, _))) = misorder {
-		let (_, (prev, _)) = items.items.range(..k).last().unwrap();
-		Diagnostic::error(*prev, "monsters must come after npcs")
-			.with_note(*s, "is before this npc")
+		.skip_while(|a| !matches!(&a.1.get_ref(), Some(NpcOrMonster::Monster(_))))
+		.find(|a| matches!(&a.1.get_ref(), Some(NpcOrMonster::Npc(_))));
+	if let Some((k, slot)) = misorder {
+		let (_, prev) = items.items.range(..k).last().unwrap();
+		Diagnostic::error(prev.span(), "monsters must come after npcs")
+			.with_note(slot.span(), "is before this npc")
 			.emit(diag);
 	}
 
