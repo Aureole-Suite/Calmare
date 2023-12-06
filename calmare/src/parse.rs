@@ -112,7 +112,7 @@ impl<'src> Parser<'src> {
 		self.advance(self.rest().len() - suffix.len())
 	}
 
-	fn peek_word(&mut self) -> Result<&'src str> {
+	pub fn peek_word(&mut self) -> Result<&'src str> {
 		self.pos()?;
 		let s = self.rest();
 		let suffix = s
@@ -259,12 +259,13 @@ impl<'src> Parser<'src> {
 	}
 
 	pub fn check_word(&mut self, word: &str) -> Result<&mut Self> {
-		if self.peek_word()? == word {
+		let aword = self.peek_word()?;
+		if aword == word {
 			self.advance(word.len());
 			Ok(self)
 		} else {
 			Err(Diagnostic::error(
-				self.span_of(word),
+				self.span_of(aword),
 				format!("expected `{word}`"),
 			))
 		}

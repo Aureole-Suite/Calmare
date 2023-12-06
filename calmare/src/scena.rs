@@ -55,7 +55,28 @@ impl Print for scena::CharId {
 
 impl Parse for scena::CharId {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		Err(parse::Diagnostic::info(f.pos()?.as_span(), "TODO"))
+		use scena::CharId as C;
+		let v = if f.check_word("field_party").is_ok() {
+			C::Party(f.sqbrack_val()?)
+		} else if let Some(v) = f.try_val()? {
+			C::Local(v)
+		} else if f.check_word("custom").is_ok() {
+			C::Custom(f.sqbrack_val()?)
+		} else if f.check_word("party").is_ok() {
+			C::Party2(f.sqbrack_val()?)
+		} else if f.check_word("self").is_ok() {
+			C::Self_
+		} else if f.check_word("null").is_ok() {
+			C::Null
+		} else if let Some(v) = f.try_val()? {
+			C::Name(v)
+		} else if f.check_word("chest").is_ok() {
+			C::Chest
+		} else {
+			let word = f.peek_word()?;
+			return Err(parse::Diagnostic::info(f.span_of(word), "expected charid"));
+		};
+		Ok(v)
 	}
 }
 
