@@ -64,7 +64,6 @@ impl PrintBlock for ed6::Scena {
 	}
 }
 
-#[allow(unused_variables)]
 impl ParseBlock for ed6::Scena {
 	fn parse_block(f: &mut Parser) -> parse::Result<Self> {
 		let start = f.raw_pos();
@@ -126,7 +125,8 @@ impl ParseBlock for ed6::Scena {
 				"fn" => {
 					let id = parse_id(f, LocalFuncId)?;
 					let span = f.span(pos);
-					functions.insert(f, span, id.0 as usize, Err(Diagnostic::DUMMY));
+					let val = f.val_block();
+					functions.insert(f, span, id.0 as usize, val);
 				}
 				_ => return Err(Diagnostic::error(f.span(pos), "invalid declaration")),
 			}

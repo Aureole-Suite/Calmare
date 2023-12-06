@@ -1,8 +1,9 @@
-use themelios::scena::{
-	code::Code,
-	insn::{Arg, Expr, Insn},
-};
+use themelios::scena::code::Code;
+use themelios::scena::insn::{Arg, Expr, Insn};
+use themelios::scena::insn_set as iset;
 
+use crate::parse::{self, Diagnostic, Span};
+use crate::{Parse, ParseBlock, Parser};
 use crate::{Print, PrintBlock, Printer};
 
 mod expr;
@@ -16,6 +17,21 @@ impl PrintBlock for Code {
 			}
 		}
 	}
+}
+
+impl ParseBlock for Code {
+	fn parse_block(f: &mut Parser) -> parse::Result<Self> {
+		parse_code(f, false, false)
+	}
+}
+
+fn parse_code(f: &mut Parser, cont: bool, brk: bool) -> Result<Code, Diagnostic> {
+	let mut insns = Vec::new();
+	f.lines(|f| {
+		insns.push(f.val()?);
+		Ok(())
+	});
+	Ok(Code(insns))
 }
 
 impl Print for Insn {
@@ -61,6 +77,17 @@ impl Print for Insn {
 				}
 			}
 		}
+	}
+}
+
+impl Parse for Insn {
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
+		let pos = f.pos()?;
+		let word = f.word()?;
+		let Some(args) = f.insn_set().insns_rev.get(word) else {
+			return Err(Diagnostic::error(f.span(pos), "unknown instruction"));
+		};
+		Ok(Insn::new(word, parse_args(&args)?))
 	}
 }
 
@@ -137,6 +164,10 @@ impl Print for Arg {
 			Arg::CharFlags2(v) => f.hex(v),
 		};
 	}
+}
+
+fn parse_args(iargs: &[iset::Arg]) -> parse::Result<Vec<Arg>> {
+	Ok(vec![])
 }
 
 impl Print for Expr {
