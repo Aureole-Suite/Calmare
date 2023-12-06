@@ -230,7 +230,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 			T::QuestList => loop {
 				match f.u16()? {
 					0xFFFF => break,
-					q => out.push(Arg::Quest(QuestId(q))),
+					q => out.push(Arg::QuestId(QuestId(q))),
 				}
 			},
 
@@ -244,8 +244,8 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 				let mut v = Vec::with_capacity(4);
 				for _ in 0..4 {
 					match f.u16()? {
-						0xFF => v.push(Arg::Char(CharId::Null)),
-						n => v.push(Arg::Name(NameId(n))),
+						0xFF => v.push(Arg::CharId(CharId::Null)),
+						n => v.push(Arg::NameId(NameId(n))),
 					}
 				}
 				out.push(Arg::Tuple(v));
@@ -254,7 +254,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 			T::PartySelectOptional => loop {
 				match f.u16()? {
 					0xFFFF => break,
-					q => out.push(Arg::Name(NameId(q))),
+					q => out.push(Arg::NameId(NameId(q))),
 				}
 			},
 
@@ -264,7 +264,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 				let n = f.u32()?;
 				for i in 0..32 {
 					if n & (1 << i) != 0 {
-						v.push(Arg::Name(NameId(i)));
+						v.push(Arg::NameId(NameId(i)));
 					}
 				}
 				out.push(Arg::Tuple(v));
@@ -298,12 +298,12 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 			}
 
 			T::ED7BattlePos => {
-				out.push(Arg::Battle(BattleId(f.u32()?)));
+				out.push(Arg::BattleId(BattleId(f.u32()?)));
 				// This is remapped later
 			}
 
 			T::FcPartyEquip => {
-				let int = if matches!(out[1], Arg::Item(ItemId(600..=799))) {
+				let int = if matches!(out[1], Arg::ItemId(ItemId(600..=799))) {
 					iset::IntType::u8
 				} else {
 					iset::IntType::Const(0)
@@ -322,7 +322,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 
 			T::EffPlayPos => {
 				let pos = f.pos3()?;
-				if matches!(out[0], Arg::Char(CharId::Null)) {
+				if matches!(out[0], Arg::CharId(CharId::Null)) {
 					out.push(Arg::Pos3(pos))
 				} else {
 					out.push(Arg::RPos3(pos))
@@ -395,24 +395,24 @@ fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Option<Arg>
 		T::AngularSpeed => Arg::AngularSpeed(AngularSpeed(cast(v)?)),
 		T::Color => Arg::Color(Color(cast(v)?)),
 
-		T::FileId => Arg::File(FileId(cast(v)?)),
+		T::FileId => Arg::FileId(FileId(cast(v)?)),
 
-		T::BattleId => Arg::Battle(BattleId(cast(v)?)),
-		T::BgmId => Arg::Bgm(BgmId(cast(v)?)),
-		T::ItemId => Arg::Item(ItemId(cast(v)?)),
-		T::MagicId => Arg::Magic(MagicId(cast(v)?)),
-		T::NameId => Arg::Name(NameId(cast(v)?)),
-		T::QuestId => Arg::Quest(QuestId(cast(v)?)),
-		T::RecipeId => Arg::Recipe(RecipeId(cast(v)?)),
-		T::ShopId => Arg::Shop(ShopId(cast(v)?)),
-		T::SoundId => Arg::Sound(SoundId(cast(v)?)),
-		T::TownId => Arg::Town(TownId(cast(v)?)),
+		T::BattleId => Arg::BattleId(BattleId(cast(v)?)),
+		T::BgmId => Arg::BgmId(BgmId(cast(v)?)),
+		T::ItemId => Arg::ItemId(ItemId(cast(v)?)),
+		T::MagicId => Arg::MagicId(MagicId(cast(v)?)),
+		T::NameId => Arg::NameId(NameId(cast(v)?)),
+		T::QuestId => Arg::QuestId(QuestId(cast(v)?)),
+		T::RecipeId => Arg::RecipeId(RecipeId(cast(v)?)),
+		T::ShopId => Arg::ShopId(ShopId(cast(v)?)),
+		T::SoundId => Arg::SoundId(SoundId(cast(v)?)),
+		T::TownId => Arg::TownId(TownId(cast(v)?)),
 
-		T::FuncId => Arg::Func(FuncId(cast(v & 0xFF)?, cast(v >> 8)?)),
-		T::LookPointId => Arg::LookPoint(LookPointId(cast(v)?)),
-		T::EventId => Arg::Event(EventId(cast(v)?)),
-		T::EntranceId => Arg::Entrance(cast(v)?),
-		T::ObjectId => Arg::Object(cast(v)?),
+		T::FuncId => Arg::FuncId(FuncId(cast(v & 0xFF)?, cast(v >> 8)?)),
+		T::LookPointId => Arg::LookPointId(LookPointId(cast(v)?)),
+		T::EventId => Arg::EventId(EventId(cast(v)?)),
+		T::EntranceId => Arg::EntranceId(cast(v)?),
+		T::ObjectId => Arg::ObjectId(cast(v)?),
 
 		T::ForkId => Arg::ForkId(cast(v)?),
 		T::MenuId => Arg::MenuId(cast(v)?),
@@ -421,7 +421,7 @@ fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Option<Arg>
 		T::ChipId => Arg::ChipId(cast(v)?),
 		T::VisId => Arg::VisId(cast(v)?),
 
-		T::CharId => Arg::Char(CharId::from_u16(iset.game, cast(v)?)?),
+		T::CharId => Arg::CharId(CharId::from_u16(iset.game, cast(v)?)?),
 
 		T::Flag => Arg::Flag(Flag(cast(v)?)),
 		T::Var => Arg::Var(cast(v)?),

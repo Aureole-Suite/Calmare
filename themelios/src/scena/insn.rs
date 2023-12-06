@@ -61,24 +61,24 @@ pub enum Arg {
 	Text(Text),
 
 	Tuple(Vec<Arg>),
-	File(FileId),
+	FileId(FileId),
 
-	Battle(BattleId), // This one's weird since it's global in Sky but local in CB
-	Bgm(BgmId),
-	Item(ItemId),
-	Magic(MagicId),
-	Name(NameId),
-	Quest(QuestId),
-	Recipe(RecipeId),
-	Shop(ShopId),
-	Sound(SoundId),
-	Town(TownId),
+	BattleId(BattleId), // This one's weird since it's global in Sky but local in CB
+	BgmId(BgmId),
+	ItemId(ItemId),
+	MagicId(MagicId),
+	NameId(NameId),
+	QuestId(QuestId),
+	RecipeId(RecipeId),
+	ShopId(ShopId),
+	SoundId(SoundId),
+	TownId(TownId),
 
-	Func(FuncId),
-	LookPoint(LookPointId),
-	Event(EventId),
-	Entrance(u16), // defined in ._en file
-	Object(u16),   // defined in ._op file
+	FuncId(FuncId),
+	LookPointId(LookPointId),
+	EventId(EventId),
+	EntranceId(u16), // defined in ._en file
+	ObjectId(u16),   // defined in ._op file
 
 	ForkId(u16),
 	MenuId(u16),
@@ -87,7 +87,7 @@ pub enum Arg {
 	ChipId(u16),
 	VisId(u8),
 
-	Char(CharId),
+	CharId(CharId),
 
 	Flag(Flag),
 	Var(u16),

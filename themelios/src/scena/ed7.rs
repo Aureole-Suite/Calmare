@@ -314,7 +314,7 @@ fn load_battles(
 	// If I had an iterator this would be way easier, but unfortunately all I have is internal iteration
 	let mut battle_pos = Vec::new();
 	visit_args(functions, |arg| {
-		if let Arg::Battle(battle) = arg {
+		if let Arg::BattleId(battle) = arg {
 			battle_pos.push(*battle)
 		}
 	});
@@ -325,7 +325,7 @@ fn load_battles(
 		.collect::<Result<BTreeMap<_, _>, _>>()
 		.strict()?;
 	visit_args_mut(functions, |arg| {
-		if let Arg::Battle(battle) = arg {
+		if let Arg::BattleId(battle) = arg {
 			*battle = battle_pos[&battle.0];
 		}
 	});
