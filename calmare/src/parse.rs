@@ -70,10 +70,6 @@ impl<'src> Parser<'src> {
 		self.iset
 	}
 
-	fn text_since(&self, pos: SourcePos) -> &'src str {
-		&self.source[pos.0..self.pos]
-	}
-
 	pub fn span_of(&self, text: &'src str) -> Span {
 		// from https://github.com/rust-lang/rfcs/pull/2796
 		let range = self.source.as_bytes().as_ptr_range();
@@ -103,16 +99,20 @@ impl<'src> Parser<'src> {
 		s
 	}
 
-	fn pat(&mut self, pat: impl Pattern<'src>) -> Option<&'src str> {
+	pub fn pat(&mut self, pat: impl Pattern<'src>) -> Option<&'src str> {
 		self.rest().strip_prefix(pat).map(|suf| self.eat(suf))
 	}
 
-	fn any_char(&mut self) -> Option<char> {
+	pub fn any_char(&mut self) -> Option<char> {
 		self.pat(|_| true).map(|a| a.chars().next().unwrap())
 	}
 
-	fn pat_mul(&mut self, pat: impl Pattern<'src>) -> &'src str {
+	pub fn pat_mul(&mut self, pat: impl Pattern<'src>) -> &'src str {
 		self.eat(self.rest().trim_start_matches(pat))
+	}
+
+	pub fn text_since(&self, pos: SourcePos) -> &'src str {
+		&self.source[pos.0..self.pos]
 	}
 
 	pub fn check(&mut self, c: &str) -> Result<&mut Self> {
@@ -272,34 +272,6 @@ impl<'src> Parser<'src> {
 		let v = f(self)?;
 		self.check(")")?;
 		Ok(v)
-	}
-
-	pub fn number(&mut self) -> Result<&'src str> {
-		fn digits<'src>(
-			f: &mut Parser<'src>,
-			pred: fn(&char) -> bool,
-			what: &str,
-		) -> Result<&'src str> {
-			match f.pat_mul(|c| pred(&c)) {
-				"" => Err(Diagnostic::error(
-					f.raw_pos().as_span(),
-					format!("expected {what}"),
-				)),
-				v => Ok(v),
-			}
-		}
-
-		let pos = self.pos()?;
-		if self.pat("0x").is_some() {
-			digits(self, char::is_ascii_hexdigit, "hex digits")?;
-		} else {
-			let _ = self.pat('-');
-			digits(self, char::is_ascii_digit, "digits")?;
-			if self.pat('.').is_some() {
-				digits(self, char::is_ascii_digit, "digits")?;
-			}
-		}
-		Ok(self.text_since(pos))
 	}
 
 	pub fn string(&mut self) -> Result<String> {
