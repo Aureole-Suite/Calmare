@@ -33,7 +33,8 @@ fn parse_code(f: &mut Parser, cont: bool, brk: bool) -> Code {
 		if f.pos().is_ok() {
 			// Didn't parse whole line. Check if there's any colon,
 			// and if so try to parse the inner block.
-			let mut error = Diagnostic::error(f.raw_pos().as_span(), "expected end of line");
+			let mut error = Diagnostic::error(f.raw_pos().as_span(), "expected end of line")
+				.filter(result.is_ok());
 			match find_tail_on_error(f) {
 				Ok(v) => {
 					error.note(f.last_nonspace(), "skipping to here");
