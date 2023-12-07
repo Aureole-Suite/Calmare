@@ -188,17 +188,17 @@ impl<'src> Parser<'src> {
 		let prev_indent = std::mem::replace(&mut self.indent, target_indent);
 
 		loop {
-			let space = self.space();
+			let this_indent = self.space().1;
 
-			if space.1 == self.indent {
-				self.indent = space.1.indent().unwrap();
-			} else if space.1 <= prev_indent {
+			if this_indent == self.indent {
+				self.indent = this_indent.indent().unwrap();
+			} else if this_indent <= prev_indent {
 				break;
 			} else {
-				let span = self.span_of(space.1.indent().unwrap().0);
+				let span = self.span_of(this_indent.indent().unwrap().0);
 				let mut error = Diagnostic::error(span, "unexpected indent");
 				error.note(self.span_of(prev_indent.0), "it's more than here...");
-				if space.1 < self.indent {
+				if this_indent < self.indent {
 					error.note(self.span_of(self.indent.0), "...but less than here");
 				} else {
 					error.note(self.span_of(self.indent.0), "...but uncomparable to here");
