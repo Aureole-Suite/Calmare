@@ -112,6 +112,10 @@ impl<'src> Parser<'src> {
 		self.advance(self.rest().len() - suffix.len())
 	}
 
+	pub fn is_newline(&self) -> bool {
+		self.rest().starts_with('\n') || self.rest().is_empty()
+	}
+
 	pub fn peek_word(&mut self) -> Result<&'src str> {
 		self.pos()?;
 		let s = self.rest();
@@ -235,6 +239,13 @@ impl<'src> Parser<'src> {
 		error
 			.with_note(self.space().0.at_end(), "skipping to here")
 			.emit(self);
+	}
+
+	pub fn allow_unindented<T: 'src>(&mut self, func: impl FnOnce(&mut Self) -> T) -> T {
+		let prev = std::mem::replace(&mut self.allow_unindented, true);
+		let val = func(self);
+		self.allow_unindented = prev;
+		val
 	}
 
 	pub fn try_parse<T>(&mut self, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<Option<T>> {

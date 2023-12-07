@@ -22,7 +22,7 @@ impl Parse for String {
 			.ok_or_else(|| Diagnostic::error(pos.as_span(), "expected string"))?;
 		let mut out = String::new();
 		loop {
-			if f.rest().starts_with('\n') || f.rest().is_empty() {
+			if f.is_newline() {
 				return Err(Diagnostic::error(
 					pos.as_span() | f.raw_pos().as_span(),
 					"unterminated string",
@@ -79,6 +79,29 @@ impl Print for Text {
 
 impl Parse for Text {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		Err(Diagnostic::info(f.pos()?.as_span(), "TODO"))
+		// Hack because .lines() uses .space(), which skips consecutive newlines
+		fn newlines(text_since: &str, skip: usize, string: &mut String) {
+			for _ in text_since.chars().filter(|c| *c == '\n').skip(skip) {
+				string.push('\n');
+			}
+		}
+
+		f.check("{")?;
+
+		let mut string = String::new();
+		let mut pos = f.raw_pos();
+		f.lines(|f| {
+			newlines(f.text_since(pos), string.is_empty().into(), &mut string);
+			while !f.is_newline() {
+				string.push(f.any_char().unwrap());
+			}
+			pos = f.raw_pos();
+			Ok(())
+		});
+		newlines(f.text_since(pos), 1, &mut string);
+
+		f.allow_unindented(|f| f.check("}").map(|_| ()))?;
+
+		Ok(Text(TString(string)))
 	}
 }
