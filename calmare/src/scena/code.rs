@@ -1,6 +1,7 @@
 use themelios::scena::code::Code;
 use themelios::scena::insn::{Arg, Expr, Insn};
 use themelios::scena::insn_set as iset;
+use themelios::types::Text;
 
 use crate::parse::{self, Diagnostic};
 use crate::{Parse, ParseBlock, Parser};
@@ -21,17 +22,75 @@ impl PrintBlock for Code {
 
 impl ParseBlock for Code {
 	fn parse_block(f: &mut Parser) -> parse::Result<Self> {
-		parse_code(f, false, false)
+		Ok(parse_code(f, false, false))
 	}
 }
 
-fn parse_code(f: &mut Parser, cont: bool, brk: bool) -> Result<Code, Diagnostic> {
+fn parse_code(f: &mut Parser, cont: bool, brk: bool) -> Code {
 	let mut insns = Vec::new();
 	f.lines(|f| {
-		insns.push(f.val()?);
-		Ok(())
+		let mut result = parse_code_line(f, cont, brk, &mut insns);
+		if f.pos().is_ok() {
+			// Didn't parse whole line. Check if there's any colon,
+			// and if so try to parse the inner block.
+			let mut error = Diagnostic::error(f.raw_pos().as_span(), "expected end of line");
+			match find_tail_on_error(f) {
+				Ok(v) => {
+					error.note(f.last_nonspace(), "skipping to here");
+					error.emit(f);
+					if v {
+						parse_code(f, true, true);
+					}
+				}
+				Err(e) => result = result.and(Err(e)),
+			}
+		}
+		result
 	});
-	Ok(Code(insns))
+	Code(insns)
+}
+
+fn parse_code_line(
+	f: &mut Parser<'_>,
+	cont: bool,
+	brk: bool,
+	insns: &mut Vec<Insn>,
+) -> Result<(), Diagnostic> {
+	if f.check_word("if").is_ok() {
+		let expr = f.val()?;
+		let yes = parse_code(f, cont, brk);
+		if f.allow_unindented(|f| f.check_word("else").map(|_| ()))
+			.is_ok()
+		{
+			if f.peek_word() != Ok("if") {
+				f.check(":")?;
+			}
+			let no = parse_code(f, cont, brk);
+			insns.push(Insn::new(
+				"if",
+				vec![Arg::Expr(expr), Arg::Code(yes), Arg::Code(no)],
+			))
+		} else {
+			insns.push(Insn::new("if", vec![Arg::Expr(expr), Arg::Code(yes)]))
+		}
+	} else {
+		insns.push(f.val()?);
+	}
+	Ok(())
+}
+
+fn find_tail_on_error(f: &mut Parser) -> parse::Result<bool> {
+	while f.pos().is_ok() {
+		if f.check(":").is_ok() {
+			return Ok(true);
+		}
+		if f.try_parse(String::parse)?.is_none() // these can contain colons
+			&& f.try_parse(Text::parse)?.is_none()
+		{
+			f.any_char();
+		}
+	}
+	Ok(false)
 }
 
 impl Print for Insn {
@@ -274,7 +333,7 @@ fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> p
 	{
 		f.check("(")?;
 		let mut vals = Vec::new();
-		while !f.check(")").is_ok() {
+		while f.check(")").is_err() {
 			if vals.is_empty() {
 				f.check(",").map_err(|mut e| {
 					e.text = "expected `,` or `)`".into();
@@ -296,8 +355,7 @@ fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> p
 		MA::Pos3 => out.push(Arg::Pos3(f.val()?)),
 		MA::RPos3 => out.push(Arg::RPos3(f.val()?)),
 		MA::Expr => out.push(Arg::Expr(f.val()?)),
-		MA::Fork => out.push(Arg::Code(f.val_block()?)),
-		MA::ForkLoop(_) => out.push(Arg::Code(f.val_block()?)),
+		MA::Fork | MA::ForkLoop(_) => out.push(Arg::Code(f.val_block()?)),
 		MA::SwitchTable(_, _) => {
 			return Err(Diagnostic::error(
 				f.pos()?.as_span(),
