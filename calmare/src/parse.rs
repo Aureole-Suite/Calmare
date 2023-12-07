@@ -130,10 +130,10 @@ impl<'src> Parser<'src> {
 		&self.source[pos.0..self.pos]
 	}
 
-	pub fn check(&mut self, c: &str) -> Result<&mut Self> {
+	pub fn check(&mut self, c: &str) -> Result<()> {
 		let pos = self.pos()?;
 		match self.pat(c) {
-			Some(_) => Ok(self),
+			Some(_) => Ok(()),
 			None => Err(Diagnostic::error(pos.as_span(), format!("expected `{c}`"))),
 		}
 	}
@@ -273,11 +273,11 @@ impl<'src> Parser<'src> {
 		}
 	}
 
-	pub fn check_word(&mut self, word: &str) -> Result<&mut Self> {
+	pub fn check_word(&mut self, word: &str) -> Result<()> {
 		let aword = self.peek_word()?;
 		if aword == word {
 			self.advance(word.len());
-			Ok(self)
+			Ok(())
 		} else {
 			Err(Diagnostic::error(
 				self.span_of(aword),
@@ -319,9 +319,11 @@ word
 	let mut n = 0;
 	parser.lines(|f| {
 		n += 1;
-		f.check_word("word").unwrap().lines(|f| {
+		f.check_word("word").unwrap();
+		f.lines(|f| {
 			n += 1;
-			f.check_word("word").unwrap().lines(|f| {
+			f.check_word("word").unwrap();
+			f.lines(|f| {
 				n += 1;
 				f.check_word("word").unwrap();
 				Ok(())

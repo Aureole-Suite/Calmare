@@ -100,7 +100,7 @@ impl Parse for Text {
 		});
 		newlines(f.text_since(pos), 1, &mut string);
 
-		f.allow_unindented(|f| f.check("}").map(|_| ()))?;
+		f.allow_unindented(|f| f.check("}"))?;
 
 		Ok(Text(TString(string)))
 	}

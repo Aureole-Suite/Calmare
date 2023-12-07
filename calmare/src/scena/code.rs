@@ -59,9 +59,7 @@ fn parse_code_line(
 	if f.check_word("if").is_ok() {
 		let expr = f.val()?;
 		let yes = parse_code(f, cont, brk);
-		if f.allow_unindented(|f| f.check_word("else").map(|_| ()))
-			.is_ok()
-		{
+		if f.allow_unindented(|f| f.check_word("else")).is_ok() {
 			if f.peek_word() != Ok("if") {
 				f.check(":")?;
 			}
