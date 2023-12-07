@@ -59,18 +59,15 @@ fn parse_code_line(
 	if f.check_word("if").is_ok() {
 		let expr = f.val()?;
 		let yes = parse_code(f, cont, brk);
+		let mut args = vec![Arg::Expr(expr), Arg::Code(yes)];
 		if f.allow_unindented(|f| f.check_word("else")).is_ok() {
 			if f.peek_word() != Ok("if") {
 				f.check(":")?;
 			}
 			let no = parse_code(f, cont, brk);
-			insns.push(Insn::new(
-				"if",
-				vec![Arg::Expr(expr), Arg::Code(yes), Arg::Code(no)],
-			))
-		} else {
-			insns.push(Insn::new("if", vec![Arg::Expr(expr), Arg::Code(yes)]))
+			args.push(Arg::Code(no));
 		}
+		insns.push(Insn::new("if", args))
 	} else {
 		insns.push(f.val()?);
 	}
