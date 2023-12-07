@@ -204,7 +204,8 @@ impl<'src> Parser<'src> {
 					error.note(self.span_of(self.indent.0), "...but uncomparable to here");
 					error.note(self.span_of(self.indent.0), "did you mix tabs and spaces?");
 				}
-				self.skip_until_indent(prev_indent, error);
+				self.indent = prev_indent;
+				self.skip_until_indent(error);
 				break;
 			}
 
@@ -225,20 +226,23 @@ impl<'src> Parser<'src> {
 			self.pat(|_| true);
 		}
 
-		let space = self.space();
-		if space.1 > self.indent {
-			let error = Diagnostic::error(space.0.at_end(), "expected end of line").filter(ok);
-			self.skip_until_indent(self.indent, error);
+		if self.pos().is_ok() {
+			let error = Diagnostic::error(self.last_nonspace(), "expected end of line").filter(ok);
+			self.skip_until_indent(error);
 		}
 	}
 
-	fn skip_until_indent(&mut self, indent: Indent<'src>, error: Diagnostic) {
-		while self.space().1 > indent {
+	fn skip_until_indent(&mut self, error: Diagnostic) {
+		while self.pos().is_ok() {
 			self.pat(|_| true);
 		}
 		error
-			.with_note(self.space().0.at_end(), "skipping to here")
+			.with_note(self.last_nonspace(), "skipping to here")
 			.emit(self);
+	}
+
+	pub fn last_nonspace(&mut self) -> Span {
+		self.space().0.at_end()
 	}
 
 	pub fn allow_unindented<T: 'src>(&mut self, func: impl FnOnce(&mut Self) -> T) -> T {
