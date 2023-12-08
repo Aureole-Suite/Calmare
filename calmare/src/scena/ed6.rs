@@ -1,18 +1,14 @@
 use std::borrow::Cow;
-use std::collections::BTreeMap;
 
 use themelios::scena::{ed6, ChipId, EventId, FuncId, LocalCharId, LookPointId};
 use themelios::types::{BgmId, FileId, TownId};
 
 use crate::macros::strukt::{Field, Slot};
-use crate::parse::{self, Diagnostic, Span};
-use crate::{Parse, ParseBlock, Parser, Print};
+use crate::parse::{self, Diagnostic};
+use crate::{ParseBlock, Parser};
 use crate::{PrintBlock, Printer};
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-struct LocalFuncId(u16);
-
-crate::macros::newtype_term!(LocalFuncId, "fn");
+use super::{parse_id, LocalFuncId, NpcOrMonster, PackedIndices};
 
 impl PrintBlock for ed6::Scena {
 	fn print_block(&self, f: &mut Printer) {
@@ -135,7 +131,7 @@ impl ParseBlock for ed6::Scena {
 		});
 
 		let (ch, cp) = chcps.finish(f, "chip").into_iter().unzip();
-		let (npcs, monsters) = chars(f, npcs_monsters);
+		let (npcs, monsters) = super::chars(f, npcs_monsters);
 		let events = events.finish(f, "event");
 		let look_points = look_points.finish(f, "look_point");
 		let functions = functions.finish(f, "fn");
@@ -175,13 +171,6 @@ struct Head<'a> {
 	include: [Option<FileId>; 8],
 }
 
-fn parse_id<U: Parse, T: Parse>(f: &mut Parser<'_>, func: impl FnOnce(U) -> T) -> parse::Result<T> {
-	match f.try_parse(|f| f.sqbrack_val())? {
-		Some(v) => Ok(func(v)),
-		None => Ok(f.val()?),
-	}
-}
-
 fn print_chcp(ch: &[FileId], cp: &[FileId], f: &mut Printer) {
 	let mut ch = ch.iter();
 	let mut cp = cp.iter();
@@ -200,124 +189,11 @@ fn print_chcp(ch: &[FileId], cp: &[FileId], f: &mut Printer) {
 crate::macros::strukt::strukt! {
 	struct Head<'_> {
 		name, town, bgm, item_use,
-		include: Array<8, _>,
+		include: super::Array<8, _>,
 	}
 	struct ed6::Entry { pos, chr, angle, cam_from, cam_at, cam_zoom, cam_pers, cam_deg, cam_limit, north, flags, town, init, reinit, }
 	struct ed6::Npc { name, pos, angle, x, cp, frame, ch, flags, init, talk, }
 	struct ed6::Monster { name, pos, angle, chip, flags, unk2, battle, flag, unk3, }
 	struct ed6::Event { pos1, pos2, flags, func, unk1, }
 	struct ed6::LookPoint { pos, radius, bubble_pos, flags, func, unk1, }
-}
-
-#[derive(Debug, Clone)]
-struct PackedIndices<V> {
-	items: BTreeMap<usize, Slot<V>>,
-}
-
-impl<V> Default for PackedIndices<V> {
-	fn default() -> Self {
-		Self {
-			items: BTreeMap::new(),
-		}
-	}
-}
-
-impl<V> PackedIndices<V> {
-	pub fn new() -> Self {
-		Self::default()
-	}
-
-	pub fn insert(&mut self, diag: &mut Parser, s: Span, n: usize, val: parse::Result<V>) {
-		self.items.entry(n).or_default().insert(diag, s, val);
-	}
-
-	pub fn items(&self) -> &BTreeMap<usize, Slot<V>> {
-		&self.items
-	}
-
-	pub fn finish(self, diag: &mut Parser, word: &str) -> Vec<V> {
-		let mut vs = Vec::with_capacity(self.items.len());
-		let mut expect = 0;
-		for (k, slot) in self.items {
-			if k != expect {
-				Diagnostic::error(slot.span().unwrap(), format!("missing {word}[{expect}]"))
-					.emit(diag);
-			}
-			expect = k + 1;
-			vs.extend(slot.get())
-		}
-		vs
-	}
-}
-
-#[derive(Debug, Clone)]
-enum NpcOrMonster<A, B> {
-	Npc(A),
-	Monster(B),
-}
-
-fn chars<A, B>(diag: &mut Parser, items: PackedIndices<NpcOrMonster<A, B>>) -> (Vec<A>, Vec<B>) {
-	let mut iter = items.items().iter().peekable();
-	while let (Some(a), Some(b)) = (iter.next(), iter.peek()) {
-		if matches!(&a.1.get_ref(), Some(NpcOrMonster::Monster(_)))
-			&& matches!(&b.1.get_ref(), Some(NpcOrMonster::Npc(_)))
-		{
-			Diagnostic::error(b.1.span().unwrap(), "npcs mut come before monsters")
-				.with_note(a.1.span().unwrap(), "is after this monster")
-				.emit(diag);
-		}
-	}
-
-	let mut npcs = Vec::new();
-	let mut monsters = Vec::new();
-	for m in items.finish(diag, "char") {
-		match m {
-			NpcOrMonster::Npc(n) => npcs.push(n),
-			NpcOrMonster::Monster(m) => monsters.push(m),
-		}
-	}
-
-	(npcs, monsters)
-}
-
-#[derive(Debug, Clone)]
-pub struct Array<const N: usize, T> {
-	value: [Slot<T>; N],
-}
-
-impl<const N: usize, T> Default for Array<N, T> {
-	fn default() -> Self {
-		Self {
-			value: std::array::from_fn(|_| Slot::new()),
-		}
-	}
-}
-
-impl<const N: usize, T: Print + Parse> Field for Array<N, T> {
-	type Value = [Option<T>; N];
-
-	fn print_field(key: &str, f: &mut Printer, value: &Self::Value) {
-		for (i, value) in value.iter().enumerate() {
-			if let Some(value) = value {
-				f.term(key).field().val(i);
-				f.val(value).line();
-			}
-		}
-	}
-
-	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()> {
-		let pos = f.pos()?;
-		let n = f.sqbrack_val::<usize>()?;
-		let value = f.val();
-		self.value[n].insert(f, f.span_of(word) | f.span(pos), value);
-		Ok(())
-	}
-
-	fn is_present(&self) -> bool {
-		true
-	}
-
-	fn get(self) -> Option<Self::Value> {
-		Some(self.value.map(|v| v.get()))
-	}
 }

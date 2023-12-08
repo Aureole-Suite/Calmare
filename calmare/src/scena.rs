@@ -1,11 +1,20 @@
+use std::collections::BTreeMap;
+
 use themelios::scena;
 
 mod code;
 mod ed6;
 
+use crate::macros::strukt::{Field, Slot};
 use crate::macros::{newtype_hex, newtype_term};
+use crate::parse::{Diagnostic, Span};
 use crate::{parse, Parse, Parser};
 use crate::{Print, Printer};
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct LocalFuncId(u16);
+
+newtype_term!(LocalFuncId, "fn");
 
 impl Print for scena::FuncId {
 	fn print(&self, f: &mut Printer) {
@@ -104,5 +113,125 @@ impl Parse for scena::CharAttr {
 		f.no_space().check(".")?;
 		let attr = f.no_space().val()?;
 		Ok(scena::CharAttr(char, attr))
+	}
+}
+
+fn parse_id<U: Parse, T: Parse>(f: &mut Parser<'_>, func: impl FnOnce(U) -> T) -> parse::Result<T> {
+	match f.try_parse(|f| f.sqbrack_val())? {
+		Some(v) => Ok(func(v)),
+		None => Ok(f.val()?),
+	}
+}
+
+#[derive(Debug, Clone)]
+struct PackedIndices<V> {
+	items: BTreeMap<usize, Slot<V>>,
+}
+
+impl<V> Default for PackedIndices<V> {
+	fn default() -> Self {
+		Self {
+			items: BTreeMap::new(),
+		}
+	}
+}
+
+impl<V> PackedIndices<V> {
+	pub fn new() -> Self {
+		Self::default()
+	}
+
+	pub fn insert(&mut self, diag: &mut Parser, s: Span, n: usize, val: parse::Result<V>) {
+		self.items.entry(n).or_default().insert(diag, s, val);
+	}
+
+	pub fn items(&self) -> &BTreeMap<usize, Slot<V>> {
+		&self.items
+	}
+
+	pub fn finish(self, diag: &mut Parser, word: &str) -> Vec<V> {
+		let mut vs = Vec::with_capacity(self.items.len());
+		let mut expect = 0;
+		for (k, slot) in self.items {
+			if k != expect {
+				Diagnostic::error(slot.span().unwrap(), format!("missing {word}[{expect}]"))
+					.emit(diag);
+			}
+			expect = k + 1;
+			vs.extend(slot.get())
+		}
+		vs
+	}
+}
+
+#[derive(Debug, Clone)]
+enum NpcOrMonster<A, B> {
+	Npc(A),
+	Monster(B),
+}
+
+fn chars<A, B>(diag: &mut Parser, items: PackedIndices<NpcOrMonster<A, B>>) -> (Vec<A>, Vec<B>) {
+	let mut iter = items.items().iter().peekable();
+	while let (Some(a), Some(b)) = (iter.next(), iter.peek()) {
+		if matches!(&a.1.get_ref(), Some(NpcOrMonster::Monster(_)))
+			&& matches!(&b.1.get_ref(), Some(NpcOrMonster::Npc(_)))
+		{
+			Diagnostic::error(b.1.span().unwrap(), "npcs mut come before monsters")
+				.with_note(a.1.span().unwrap(), "is after this monster")
+				.emit(diag);
+		}
+	}
+
+	let mut npcs = Vec::new();
+	let mut monsters = Vec::new();
+	for m in items.finish(diag, "char") {
+		match m {
+			NpcOrMonster::Npc(n) => npcs.push(n),
+			NpcOrMonster::Monster(m) => monsters.push(m),
+		}
+	}
+
+	(npcs, monsters)
+}
+
+#[derive(Debug, Clone)]
+struct Array<const N: usize, T> {
+	value: [Slot<T>; N],
+}
+
+impl<const N: usize, T> Default for Array<N, T> {
+	fn default() -> Self {
+		Self {
+			value: std::array::from_fn(|_| Slot::new()),
+		}
+	}
+}
+
+impl<const N: usize, T: Print + Parse> Field for Array<N, T> {
+	type Value = [Option<T>; N];
+
+	fn print_field(key: &str, f: &mut Printer, value: &Self::Value) {
+		for (i, value) in value.iter().enumerate() {
+			if let Some(value) = value {
+				f.term(key).field().val(i);
+				f.val(value).line();
+			}
+		}
+	}
+
+	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()> {
+		let pos = f.pos()?;
+		let n = f.sqbrack_val::<usize>()?;
+		let value = f.val();
+		self.value[n].insert(f, f.span_of(word) | f.span(pos), value);
+		Ok(())
+	}
+
+	fn is_present(&self) -> bool {
+		true
+	}
+
+	fn get(self) -> Option<Self::Value> {
+		Some(self.value.map(|v| v.get()))
 	}
 }
