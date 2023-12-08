@@ -14,11 +14,7 @@ pub macro strukt($(struct $type:ty {
 	$(impl PrintBlock for $type {
 		fn print_block(&self, f: &mut Printer) {
 			let Self { $($field),* } = &self;
-			$(
-				f.word(stringify!($field));
-				<select!($($ty)?)>::print_field(f, $field);
-				f.line();
-			)*
+			$(<select!($($ty)?)>::print_field(stringify!($field), f, $field);)*
 		}
 	})+
 
@@ -106,7 +102,7 @@ impl<T> Default for Slot<T> {
 
 pub trait Field: Default {
 	type Value;
-	fn print_field(f: &mut Printer, value: &Self::Value);
+	fn print_field(key: &str, f: &mut Printer, value: &Self::Value);
 	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()>;
 	fn is_present(&self) -> bool;
 	fn get(self) -> Option<Self::Value>;
@@ -126,8 +122,8 @@ impl<T> Default for PlainField<T> {
 impl<T: Print + Parse> Field for PlainField<T> {
 	type Value = T;
 
-	fn print_field(f: &mut Printer, value: &T) {
-		f.val(value);
+	fn print_field(key: &str, f: &mut Printer, value: &T) {
+		f.word(key).val(value).line();
 	}
 
 	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()> {
