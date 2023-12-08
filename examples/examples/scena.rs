@@ -1,5 +1,4 @@
-use calmare::parse::{self, Emit as _};
-use calmare::PrintBlock as _;
+use calmare::parse;
 use themelios::scena::ed6::Scena;
 use themelios::scena::insn_set::{self, Game, Variant};
 fn main() -> anyhow::Result<()> {
@@ -11,26 +10,20 @@ fn main() -> anyhow::Result<()> {
 		println!("running {file}");
 		let bytes = std::fs::read(&file)?;
 		let mut scena = Scena::read(&iset, &bytes)?;
-		// themelios::scena::code::decompile::decompile(&mut scena.functions);
+		themelios::scena::code::decompile::decompile(&mut scena.functions);
 		themelios::scena::code::normalize::normalize(&mut scena.functions).unwrap();
 
-		let mut printer = calmare::Printer::new();
-		scena.print_block(&mut printer);
-		let output = printer.finish();
+		let output = calmare::print(&scena);
 		print!("{}", output);
-		let mut parser = calmare::Parser::new(&output, &iset);
-		let v: Option<themelios::scena::ed6::Scena> =
-			calmare::ParseBlock::parse_block(&mut parser).emit(&mut parser);
-		print_diags(&file, &output, parser.diagnostics());
-		let mut v = v.unwrap();
-		themelios::scena::code::normalize::normalize(&mut v.functions).unwrap();
+		let (v, diags) = calmare::parse::<Scena>(&output, &iset);
+		let v = v.unwrap();
 
 		if v != scena {
 			println!("{:#?}", scena);
 			println!("{:#?}", v);
 		}
 
-		print_diags(&file, &output, parser.diagnostics());
+		print_diags(&file, &output, &diags);
 
 		// println!("{:#?}", scena.functions[0]);
 		let bytes2 = Scena::write(&iset, &scena)?;

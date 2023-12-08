@@ -77,6 +77,10 @@ impl<'src> Parser<'src> {
 		self.diagnostics.as_ref()
 	}
 
+	pub(crate) fn take_diagnostics(&mut self) -> Vec<Diagnostic> {
+		std::mem::take(&mut self.diagnostics)
+	}
+
 	pub fn insn_set(&self) -> &'src InsnSet<'src> {
 		self.iset
 	}
@@ -327,7 +331,7 @@ impl<'src> Parser<'src> {
 		}
 	}
 
-	fn check_labels(&mut self) {
+	pub(crate) fn check_labels(&mut self) {
 		for (span, label) in &self.labels {
 			if !self.defined_labels.contains(label) {
 				self.diagnostics

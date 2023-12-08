@@ -4,8 +4,11 @@
 pub mod print;
 use std::borrow::Cow;
 
+use themelios::scena::insn_set as iset;
+
 pub use print::Printer;
 pub mod parse;
+use parse::Emit as _;
 pub use parse::Parser;
 
 mod scena;
@@ -200,4 +203,20 @@ impl Hex for u32 {
 	fn print_hex(&self, f: &mut Printer) {
 		write!(f, "0x{self:08X}");
 	}
+}
+
+pub fn print<T: PrintBlock>(value: &T) -> String {
+	let mut printer = Printer::new();
+	value.print_block(&mut printer);
+	printer.finish()
+}
+
+pub fn parse<T: ParseBlock>(
+	source: &str,
+	iset: &iset::InsnSet,
+) -> (Option<T>, Vec<parse::Diagnostic>) {
+	let mut parser = Parser::new(source, iset);
+	let v = T::parse_block(&mut parser).emit(&mut parser);
+	parser.check_labels();
+	(v, parser.take_diagnostics())
 }
