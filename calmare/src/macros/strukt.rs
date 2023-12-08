@@ -73,16 +73,22 @@ impl<T> Slot<T> {
 		}
 	}
 
-	pub fn span(&self) -> Span {
-		self.0.as_ref().expect("initialized").0
+	pub fn span(&self) -> Option<Span> {
+		self.0.as_ref().map(|v| v.0)
 	}
 
 	pub fn get(self) -> Option<T> {
-		self.0.expect("initialized").1
+		self.0.and_then(|v| v.1)
 	}
 
 	pub fn get_ref(&self) -> Option<&T> {
-		self.0.as_ref().expect("initialized").1.as_ref()
+		self.0.as_ref().and_then(|v| v.1.as_ref())
+	}
+}
+
+impl<T> Default for Slot<T> {
+	fn default() -> Self {
+		Self::new()
 	}
 }
 
@@ -96,7 +102,7 @@ pub trait ParseField {
 #[derive(Debug, Clone)]
 pub struct PlainField<T, F> {
 	func: F,
-	value: Option<Slot<T>>,
+	value: Slot<T>,
 }
 
 impl<T, F> PlainField<T, F>
@@ -104,7 +110,10 @@ where
 	F: FnMut(&mut Parser) -> parse::Result<T>,
 {
 	pub fn new(func: F) -> Self {
-		Self { func, value: None }
+		Self {
+			func,
+			value: Slot::new(),
+		}
 	}
 }
 
@@ -116,17 +125,15 @@ where
 
 	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()> {
 		let value = (self.func)(f);
-		self.value
-			.get_or_insert_with(Slot::new)
-			.insert(f, f.span_of(word), value);
+		self.value.insert(f, f.span_of(word), value);
 		Ok(())
 	}
 
 	fn is_present(&self) -> bool {
-		self.value.is_some()
+		self.value.span().is_some()
 	}
 
 	fn get(self) -> Option<Self::Output> {
-		self.value.and_then(|v| v.get())
+		self.value.get()
 	}
 }

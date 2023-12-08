@@ -223,10 +223,7 @@ impl<V> PackedIndices<V> {
 	}
 
 	pub fn insert(&mut self, diag: &mut Parser, s: Span, n: usize, val: parse::Result<V>) {
-		self.items
-			.entry(n)
-			.or_insert_with(Slot::new)
-			.insert(diag, s, val);
+		self.items.entry(n).or_default().insert(diag, s, val);
 	}
 
 	pub fn items(&self) -> &BTreeMap<usize, Slot<V>> {
@@ -238,7 +235,8 @@ impl<V> PackedIndices<V> {
 		let mut expect = 0;
 		for (k, slot) in self.items {
 			if k != expect {
-				Diagnostic::error(slot.span(), format!("missing {word}[{expect}]")).emit(diag);
+				Diagnostic::error(slot.span().unwrap(), format!("missing {word}[{expect}]"))
+					.emit(diag);
 			}
 			expect = k + 1;
 			vs.extend(slot.get())
@@ -259,8 +257,8 @@ fn chars<A, B>(diag: &mut Parser, items: PackedIndices<NpcOrMonster<A, B>>) -> (
 		if matches!(&a.1.get_ref(), Some(NpcOrMonster::Monster(_)))
 			&& matches!(&b.1.get_ref(), Some(NpcOrMonster::Npc(_)))
 		{
-			Diagnostic::error(b.1.span(), "npcs mut come before monsters")
-				.with_note(a.1.span(), "is after this monster")
+			Diagnostic::error(b.1.span().unwrap(), "npcs mut come before monsters")
+				.with_note(a.1.span().unwrap(), "is after this monster")
 				.emit(diag);
 		}
 	}
