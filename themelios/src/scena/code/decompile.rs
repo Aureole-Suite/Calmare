@@ -39,7 +39,8 @@ impl Context {
 	fn lookup(&self, label: Label) -> Option<usize> {
 		self.labels
 			.get(&label)
-			.map(|&i| self.iter.len() - (self.initial_len - i))
+			.and_then(|&i| self.initial_len.checked_sub(i))
+			.and_then(|i| self.iter.len().checked_sub(i))
 	}
 
 	fn iter(&mut self) -> ContextIter<'_> {
@@ -111,8 +112,9 @@ fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>) -> Code 
 				};
 				insn.args.pop();
 
-				let is_loop = ctx
-					.peek(target - 1)
+				let is_loop = target
+					.checked_sub(1)
+					.and_then(|p| ctx.peek(p))
 					.and_then(as_goto)
 					.is_some_and(|l| Some(l) == label);
 
@@ -151,7 +153,8 @@ fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>) -> Code 
 				for case_end in cases.iter().map(|a| &a.1).skip(1) {
 					if let Some(end) = ctx
 						.lookup(*case_end)
-						.and_then(|p| ctx.peek(p - 1))
+						.and_then(|p| p.checked_sub(1))
+						.and_then(|p| ctx.peek(p))
 						.and_then(as_goto)
 					{
 						if ctx.lookup(end).is_some() {
