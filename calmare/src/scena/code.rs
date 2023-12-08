@@ -3,7 +3,7 @@ use themelios::scena::insn::{Arg, Expr, Insn};
 use themelios::scena::insn_set as iset;
 use themelios::types::Text;
 
-use crate::parse::{self, Diagnostic};
+use crate::parse::{self, Diagnostic, Emit as _};
 use crate::{Parse, ParseBlock, Parser};
 use crate::{Print, PrintBlock, Printer};
 
@@ -57,8 +57,10 @@ fn parse_code_line(
 	brk: bool,
 	insns: &mut Vec<Insn>,
 ) -> Result<(), Diagnostic> {
+	let pos = f.pos()?;
 	if f.check_word("if").is_ok() {
 		let expr = f.val()?;
+		f.check(":")?;
 		let yes = parse_code(f, cont, brk);
 		let mut args = vec![Arg::Expr(expr), Arg::Code(yes)];
 		if f.allow_unindented(|f| f.check_word("else")).is_ok() {
@@ -69,9 +71,27 @@ fn parse_code_line(
 			args.push(Arg::Code(no));
 		}
 		insns.push(Insn::new("if", args))
+	} else if let Some(lhs) = f.try_parse(expr::parse_lvalue)? {
+		let name = match &lhs {
+			Arg::Var(_) => Some("Var"),
+			Arg::Global(_) => Some("Global"),
+			Arg::Attr(_) => Some("Attr"),
+			Arg::CharAttr(_) => Some("CharAttr"),
+			_ => None,
+		};
+		let name = name
+			.filter(|name| f.insn_set().insns_rev.contains_key(*name))
+			.ok_or_else(|| Diagnostic::error(f.span(pos), "invalid lvalue"))
+			.emit(f);
+
+		let expr = expr::parse_assignment(f)?;
+		if let Some(name) = name {
+			insns.push(Insn::new(name, vec![lhs, Arg::Expr(Box::new(expr))]));
+		}
 	} else {
 		insns.push(f.val()?);
 	}
+
 	Ok(())
 }
 
@@ -386,6 +406,6 @@ impl Print for Expr {
 
 impl Parse for Expr {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		Err(Diagnostic::info(f.pos()?.as_span(), "TODO"))
+		expr::parse(f)
 	}
 }
