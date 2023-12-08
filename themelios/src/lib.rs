@@ -2,6 +2,8 @@
 #![feature(lazy_cell)]
 #![feature(is_sorted)]
 
+pub use glam;
+
 #[macro_use]
 pub mod types;
 pub mod scena;
