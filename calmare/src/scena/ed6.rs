@@ -21,7 +21,7 @@ impl PrintBlock for ed6::Scena {
 			town: self.town,
 			bgm: self.bgm,
 			item_use: self.item_use,
-			include: self.includes,
+			include: self.includes.map(|v| (v != FileId::NONE).then_some(v)),
 		});
 
 		for entry in &self.entries {
@@ -154,7 +154,7 @@ impl ParseBlock for ed6::Scena {
 			town: head.town,
 			bgm: head.bgm,
 			item_use: head.item_use,
-			includes: head.include,
+			includes: head.include.map(|v| v.unwrap_or(FileId::NONE)),
 			ch,
 			cp,
 			npcs,
@@ -172,7 +172,7 @@ struct Head<'a> {
 	town: TownId,
 	bgm: BgmId,
 	item_use: FuncId,
-	include: [FileId; 8],
+	include: [Option<FileId>; 8],
 }
 
 fn parse_id<U: Parse, T: Parse>(f: &mut Parser<'_>, func: impl FnOnce(U) -> T) -> parse::Result<T> {
@@ -295,11 +295,11 @@ impl<const N: usize> Default for Includes<N> {
 }
 
 impl<const N: usize> Field for Includes<N> {
-	type Value = [FileId; N];
+	type Value = [Option<FileId>; N];
 
 	fn print_field(key: &str, f: &mut Printer, value: &Self::Value) {
 		for (i, value) in value.iter().enumerate() {
-			if *value != FileId::NONE {
+			if let Some(value) = value {
 				f.term(key).field().val(i);
 				f.val(value).line();
 			}
@@ -320,6 +320,6 @@ impl<const N: usize> Field for Includes<N> {
 	}
 
 	fn get(self) -> Option<Self::Value> {
-		Some(self.value.map(|v| v.get().unwrap_or(FileId::NONE)))
+		Some(self.value.map(|v| v.get()))
 	}
 }
