@@ -29,7 +29,7 @@ impl ParseBlock for Code {
 fn parse_code(f: &mut Parser, cont: bool, brk: bool) -> Code {
 	let mut insns = Vec::new();
 	f.lines(|f| {
-		let mut result = parse_code_line(f, cont, brk, &mut insns);
+		let mut result = parse_code_line(f, cont, brk).map(|insn| insns.push(insn));
 		if f.pos().is_ok() {
 			// Didn't parse whole line. Check if there's any colon,
 			// and if so try to parse the inner block.
@@ -51,13 +51,9 @@ fn parse_code(f: &mut Parser, cont: bool, brk: bool) -> Code {
 	Code(insns)
 }
 
-fn parse_code_line(
-	f: &mut Parser<'_>,
-	cont: bool,
-	brk: bool,
-	insns: &mut Vec<Insn>,
-) -> Result<(), Diagnostic> {
+fn parse_code_line(f: &mut Parser<'_>, cont: bool, brk: bool) -> Result<Insn, Diagnostic> {
 	let pos = f.pos()?;
+
 	if f.check_word("if").is_ok() {
 		let expr = f.val()?;
 		f.check(":")?;
@@ -70,8 +66,10 @@ fn parse_code_line(
 			let no = parse_code(f, cont, brk);
 			args.push(Arg::Code(no));
 		}
-		insns.push(Insn::new("if", args))
-	} else if let Some(lhs) = f.try_parse(expr::parse_lvalue)? {
+		return Ok(Insn::new("if", args));
+	}
+
+	if let Some(lhs) = f.try_parse(expr::parse_lvalue)? {
 		let name = match &lhs {
 			Arg::Var(_) => Some("Var"),
 			Arg::Global(_) => Some("Global"),
@@ -86,13 +84,16 @@ fn parse_code_line(
 
 		let expr = expr::parse_assignment(f)?;
 		if let Some(name) = name {
-			insns.push(Insn::new(name, vec![lhs, Arg::Expr(Box::new(expr))]));
+			return Ok(Insn::new(name, vec![lhs, Arg::Expr(Box::new(expr))]));
+		} else {
+			return Ok(Insn::new(
+				"_invalid_assign",
+				vec![lhs, Arg::Expr(Box::new(expr))],
+			));
 		}
-	} else {
-		insns.push(f.val()?);
 	}
 
-	Ok(())
+	f.val()
 }
 
 fn find_tail_on_error(f: &mut Parser) -> parse::Result<bool> {
