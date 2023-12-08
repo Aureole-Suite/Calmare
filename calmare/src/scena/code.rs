@@ -160,10 +160,7 @@ fn parse_code_line(f: &mut Parser<'_>, cont: bool, brk: bool) -> Result<Insn, Di
 		if let Some(name) = name {
 			return Ok(Insn::new(name, vec![lhs, Arg::Expr(Box::new(expr))]));
 		} else {
-			return Ok(Insn::new(
-				"_invalid_assign",
-				vec![lhs, Arg::Expr(Box::new(expr))],
-			));
+			return Err(Diagnostic::DUMMY);
 		}
 	}
 
