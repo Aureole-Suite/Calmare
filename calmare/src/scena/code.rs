@@ -260,9 +260,11 @@ impl Print for Arg {
 			Arg::TString(v) => f.val(v),
 			Arg::Text(v) => f.val(v),
 			Arg::Tuple(v) => {
+				let mut term = f.term("");
 				for v in v {
-					f.val(v);
+					term.field().val(v);
 				}
+				drop(term);
 				f
 			}
 
