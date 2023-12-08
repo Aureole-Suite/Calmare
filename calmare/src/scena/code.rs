@@ -322,7 +322,7 @@ fn parse_int_arg(f: &mut Parser, iarg: iset::IntArg) -> parse::Result<Arg> {
 		IA::CharAttr => Arg::CharAttr(f.val()?),
 
 		IA::QuestTask => Arg::QuestTask(f.val()?),
-		IA::QuestFlags => Arg::SystemFlags(f.val()?),
+		IA::QuestFlags => Arg::QuestFlags(f.val()?),
 		IA::SystemFlags => Arg::SystemFlags(f.val()?),
 		IA::LookPointFlags => Arg::LookPointFlags(f.val()?),
 		IA::ObjectFlags => Arg::ObjectFlags(f.val()?),
