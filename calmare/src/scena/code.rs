@@ -343,6 +343,7 @@ fn parse_arg(out: &mut Vec<Arg>, f: &mut Parser<'_>, iarg: &iset::Arg) -> Result
 				parse_arg(&mut tup, f, iarg)?;
 			}
 			f.check(")")?;
+			out.push(Arg::Tuple(tup));
 		}
 	}
 	Ok(())
