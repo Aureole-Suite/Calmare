@@ -1,5 +1,5 @@
 use crate::parse::{Diagnostic, Emit as _, Span};
-use crate::{parse, ParseBlock, Parser};
+use crate::{parse, Parse, ParseBlock, Parser};
 use crate::{PrintBlock, Printer};
 
 pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
@@ -13,7 +13,7 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 	$(impl ParseBlock for $type {
 		fn parse_block(f: &mut Parser) -> parse::Result<Self> {
 			let span = f.raw_pos().as_span();
-			$(let mut $field = PlainField::new(|f| f.val());)*
+			$(let mut $field = PlainField::default();)*
 
 			let mut first_error = true;
 			f.lines(|f| match f.word()? {
@@ -92,7 +92,7 @@ impl<T> Default for Slot<T> {
 	}
 }
 
-pub trait ParseField {
+pub trait Field: Default {
 	type Output;
 	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()>;
 	fn is_present(&self) -> bool;
@@ -100,31 +100,21 @@ pub trait ParseField {
 }
 
 #[derive(Debug, Clone)]
-pub struct PlainField<T, F> {
-	func: F,
+pub struct PlainField<T> {
 	value: Slot<T>,
 }
 
-impl<T, F> PlainField<T, F>
-where
-	F: FnMut(&mut Parser) -> parse::Result<T>,
-{
-	pub fn new(func: F) -> Self {
-		Self {
-			func,
-			value: Slot::new(),
-		}
+impl<T> Default for PlainField<T> {
+	fn default() -> Self {
+		Self { value: Slot::new() }
 	}
 }
 
-impl<T, F> ParseField for PlainField<T, F>
-where
-	F: FnMut(&mut Parser) -> parse::Result<T>,
-{
+impl<T: Parse> Field for PlainField<T> {
 	type Output = T;
 
 	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()> {
-		let value = (self.func)(f);
+		let value = f.val();
 		self.value.insert(f, f.span_of(word), value);
 		Ok(())
 	}
