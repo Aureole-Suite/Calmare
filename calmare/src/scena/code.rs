@@ -236,12 +236,11 @@ impl Print for Insn {
 
 impl Parse for Insn {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		let pos = f.pos()?;
-		let word = f.word()?;
+		let word = f.peek_word()?;
 		let Some(args) = f.insn_set().insns_rev.get(word) else {
-			return Err(Diagnostic::error(f.span(pos), "unknown instruction"));
+			return Err(Diagnostic::error(f.span_of(word), "unknown instruction"));
 		};
-		Ok(Insn::new(word, parse_args(f, args)?))
+		Ok(Insn::new(f.word()?, parse_args(f, args)?))
 	}
 }
 
