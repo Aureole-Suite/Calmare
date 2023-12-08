@@ -4,6 +4,7 @@ use themelios::scena;
 
 mod code;
 mod ed6;
+mod ed7;
 
 use crate::macros::strukt::{Field, Slot};
 use crate::macros::{newtype_hex, newtype_term};

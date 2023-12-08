@@ -1,10 +1,10 @@
 use calmare::parse;
-use themelios::scena::ed6::Scena;
+use themelios::scena::ed7::Scena;
 use themelios::scena::insn_set::{self, Game, Variant};
 fn main() -> anyhow::Result<()> {
 	unsafe { compact_debug::enable(true) }
 
-	let iset = insn_set::get(Game::Sc, Variant::Base);
+	let iset = insn_set::get(Game::Azure, Variant::Kai);
 
 	for file in std::env::args().skip(1) {
 		println!("running {file}");
@@ -15,15 +15,15 @@ fn main() -> anyhow::Result<()> {
 
 		let output = calmare::print(&scena);
 		print!("{}", output);
-		let (v, diags) = calmare::parse::<Scena>(&output, &iset);
-		let v = v.unwrap();
-
-		if v != scena {
-			println!("{:#?}", scena);
-			println!("{:#?}", v);
-		}
-
-		print_diags(&file, &output, &diags);
+		// let (v, diags) = calmare::parse::<Scena>(&output, &iset);
+		// let v = v.unwrap();
+		//
+		// if v != scena {
+		// 	println!("{:#?}", scena);
+		// 	println!("{:#?}", v);
+		// }
+		//
+		// print_diags(&file, &output, &diags);
 
 		// println!("{:#?}", scena.functions[0]);
 		let bytes2 = Scena::write(&iset, &scena)?;
@@ -32,10 +32,14 @@ fn main() -> anyhow::Result<()> {
 				format!("/tmp/scena/{}", file.rsplit_once('/').unwrap().1),
 				&bytes2,
 			)?;
-			let scena2 = Scena::read(&iset, &bytes2)?;
+			let mut scena2 = Scena::read(&iset, &bytes2)?;
+			themelios::scena::code::decompile::decompile(&mut scena2.functions);
+			themelios::scena::code::normalize::normalize(&mut scena2.functions).unwrap();
 			if scena == scena2 {
 				println!("  {file} differs");
 			} else {
+				println!("{:#?}", scena);
+				println!("{:#?}", scena2);
 				println!("  {file} differs significantly!!!!");
 			}
 		}

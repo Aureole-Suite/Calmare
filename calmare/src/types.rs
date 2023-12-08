@@ -95,3 +95,25 @@ impl Parse for types::Pos3 {
 		Ok(types::Pos3 { x, y, z })
 	}
 }
+
+impl Print for themelios::glam::Vec3 {
+	fn print(&self, f: &mut Printer) {
+		let mut term = f.term("");
+		term.field().val(self.x);
+		term.field().val(self.y);
+		term.field().val(self.z);
+	}
+}
+
+impl Parse for themelios::glam::Vec3 {
+	fn parse(f: &mut Parser) -> parse::Result<Self> {
+		f.check("(")?;
+		let x = f.val()?;
+		f.check(",")?;
+		let y = f.val()?;
+		f.check(",")?;
+		let z = f.val()?;
+		f.check(")")?;
+		Ok(themelios::glam::Vec3 { x, y, z })
+	}
+}
