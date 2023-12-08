@@ -2,12 +2,15 @@ mod diagnostic;
 mod indent;
 mod span;
 
+use bimap::BiBTreeMap;
+use std::collections::BTreeSet;
 use std::str::pattern::Pattern;
 
 pub use diagnostic::{Diagnostic, Emit, Level, Result};
 use indent::{Indent, Space};
 pub use span::Span;
 use themelios::scena::insn_set::InsnSet;
+use themelios::types::Label;
 
 pub struct Parser<'src> {
 	source: &'src str,
@@ -17,6 +20,8 @@ pub struct Parser<'src> {
 	last_space: Option<(Span, Space<'src>)>,
 	diagnostics: Vec<Diagnostic>,
 	iset: &'src InsnSet<'src>,
+	labels: BiBTreeMap<&'src str, Label>,
+	defined_labels: BTreeSet<Label>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -38,6 +43,8 @@ impl<'src> Parser<'src> {
 			last_space: None,
 			diagnostics: Vec::new(),
 			iset,
+			labels: BiBTreeMap::new(),
+			defined_labels: BTreeSet::new(),
 		}
 	}
 
@@ -298,6 +305,34 @@ impl<'src> Parser<'src> {
 				self.raw_pos().as_span(),
 				"expected end of file",
 			))
+		}
+	}
+
+	pub fn label(&mut self, label: &'src str) -> Label {
+		if let Some(s) = self.labels.get_by_left(label) {
+			*s
+		} else {
+			let l = Label(self.labels.len());
+			self.labels.insert(label, l);
+			l
+		}
+	}
+
+	pub fn define_label(&mut self, label: Label, span: Span) {
+		if !self.defined_labels.insert(label) {
+			let prev = self.labels.get_by_right(&label).unwrap();
+			Diagnostic::error(span, "duplicate label definition")
+				.with_note(self.span_of(prev), "previous defined here")
+				.emit(self)
+		}
+	}
+
+	fn check_labels(&mut self) {
+		for (span, label) in &self.labels {
+			if !self.defined_labels.contains(label) {
+				self.diagnostics
+					.push(Diagnostic::error(self.span_of(span), "undefined label"))
+			}
 		}
 	}
 }

@@ -5,13 +5,16 @@ use themelios::types;
 
 impl Print for types::Label {
 	fn print(&self, f: &mut Printer) {
-		write!(f, "{:?}", self);
+		write!(f, "@L{}", self.0);
 	}
 }
 
 impl Parse for types::Label {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		Err(parse::Diagnostic::info(f.pos()?.as_span(), "TODO"))
+		let pos = f.pos()?;
+		f.check("@")?;
+		f.no_space().word()?;
+		Ok(f.label(f.text_since(pos)))
 	}
 }
 

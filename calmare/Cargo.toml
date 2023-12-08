@@ -7,3 +7,4 @@ edition = "2021"
 themelios.workspace = true
 extend = "1.2.0"
 unicode-ident = "1.0.12"
+bimap = "0.6.3"

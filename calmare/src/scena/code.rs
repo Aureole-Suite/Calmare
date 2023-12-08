@@ -143,6 +143,13 @@ fn parse_code_line(f: &mut Parser<'_>, cont: bool, brk: bool) -> Result<Insn, Di
 		));
 	}
 
+	if f.check_word("_label").is_ok() {
+		let pos = f.pos()?;
+		let label = f.val()?;
+		f.define_label(label, f.raw_span(pos));
+		return Ok(Insn::new("_label", vec![Arg::Label(label)]));
+	}
+
 	if let Some(lhs) = f.try_parse(expr::parse_lvalue)? {
 		let name = match &lhs {
 			Arg::Var(_) => Some("Var"),
@@ -425,7 +432,7 @@ fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> p
 		f.check("(")?;
 		let mut vals = Vec::new();
 		while f.check(")").is_err() {
-			if vals.is_empty() {
+			if !vals.is_empty() {
 				f.check(",").map_err(|mut e| {
 					e.text = "expected `,` or `)`".into();
 					e
@@ -447,12 +454,14 @@ fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> p
 		MA::RPos3 => out.push(Arg::RPos3(f.val()?)),
 		MA::Expr => out.push(Arg::Expr(f.val()?)),
 		MA::Fork | MA::ForkLoop(_) => out.push(Arg::Code(f.val_block()?)),
-		MA::SwitchTable(_, _) => {
-			return Err(Diagnostic::error(
-				f.pos()?.as_span(),
-				"_switch is not yet implemented",
-			))
-		}
+		MA::SwitchTable(_, _) => out.push(Arg::Tuple(tuple(f, |f| {
+			f.check("(")?;
+			let a = f.val()?;
+			f.check(",")?;
+			let b = f.val()?;
+			f.check(")")?;
+			Ok(Arg::Tuple(vec![Arg::Int(a), Arg::Label(b)]))
+		})?)),
 		MA::QuestList => list(out, f, |f| f.val().map(Arg::QuestId))?,
 		MA::Menu => list(out, f, |f| f.val().map(Arg::TString))?,
 		MA::PartySelectMandatory => todo!(),

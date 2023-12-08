@@ -11,8 +11,7 @@ fn main() -> anyhow::Result<()> {
 		println!("running {file}");
 		let bytes = std::fs::read(&file)?;
 		let mut scena = Scena::read(&iset, &bytes)?;
-		// dbg!(&scena);
-		themelios::scena::code::decompile::decompile(&mut scena.functions);
+		// themelios::scena::code::decompile::decompile(&mut scena.functions);
 		themelios::scena::code::normalize::normalize(&mut scena.functions).unwrap();
 
 		let mut printer = calmare::Printer::new();
@@ -23,7 +22,8 @@ fn main() -> anyhow::Result<()> {
 		let v: Option<themelios::scena::ed6::Scena> =
 			calmare::ParseBlock::parse_block(&mut parser).emit(&mut parser);
 		print_diags(&file, &output, parser.diagnostics());
-		let v = v.unwrap();
+		let mut v = v.unwrap();
+		themelios::scena::code::normalize::normalize(&mut v.functions).unwrap();
 
 		if v != scena {
 			println!("{:#?}", scena);
