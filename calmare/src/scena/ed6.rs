@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use themelios::scena::{ed6, ChipId, EventId, FuncId, LocalCharId, LookPointId};
 use themelios::types::{BgmId, FileId, TownId};
 
-use crate::macros::strukt::Slot;
+use crate::macros::strukt::{Slot, Field};
 use crate::parse::{self, Diagnostic, Span};
 use crate::{Parse, ParseBlock, Parser};
 use crate::{PrintBlock, Printer};
@@ -21,6 +21,7 @@ impl PrintBlock for ed6::Scena {
 			town: self.town,
 			bgm: self.bgm,
 			item_use: self.item_use,
+			include: self.includes,
 		});
 
 		for entry in &self.entries {
@@ -153,7 +154,7 @@ impl ParseBlock for ed6::Scena {
 			town: head.town,
 			bgm: head.bgm,
 			item_use: head.item_use,
-			includes: [FileId::NONE; 8],
+			includes: head.include,
 			ch,
 			cp,
 			npcs,
@@ -171,6 +172,7 @@ struct Head<'a> {
 	town: TownId,
 	bgm: BgmId,
 	item_use: FuncId,
+	include: [FileId; 8],
 }
 
 fn parse_id<U: Parse, T: Parse>(f: &mut Parser<'_>, func: impl FnOnce(U) -> T) -> parse::Result<T> {
@@ -196,7 +198,10 @@ fn print_chcp(ch: &[FileId], cp: &[FileId], f: &mut Printer) {
 }
 
 crate::macros::strukt::strukt! {
-	struct Head<'_> { name, town, bgm, item_use }
+	struct Head<'_> {
+		name, town, bgm, item_use,
+		include: Includes<8>,
+	}
 	struct ed6::Entry { pos, chr, angle, cam_from, cam_at, cam_zoom, cam_pers, cam_deg, cam_limit, north, flags, town, init, reinit, }
 	struct ed6::Npc { name, pos, angle, x, cp, frame, ch, flags, init, talk, }
 	struct ed6::Monster { name, pos, angle, chip, flags, unk2, battle, flag, unk3, }
@@ -273,4 +278,48 @@ fn chars<A, B>(diag: &mut Parser, items: PackedIndices<NpcOrMonster<A, B>>) -> (
 	}
 
 	(npcs, monsters)
+}
+
+
+#[derive(Debug, Clone)]
+pub struct Includes<const N: usize> {
+	value: [Slot<FileId>; N],
+}
+
+impl<const N: usize> Default for Includes<N> {
+	fn default() -> Self {
+		Self {
+			value: std::array::from_fn(|_| Slot::new()),
+		}
+	}
+}
+
+impl<const N: usize> Field for Includes<N> {
+	type Value = [FileId; N];
+
+	fn print_field(key: &str, f: &mut Printer, value: &Self::Value) {
+		for (i, value) in value.iter().enumerate() {
+			if *value != FileId::NONE {
+				f.term(key).field().val(i);
+				f.val(value).line();
+			}
+		}
+	}
+
+	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()> {
+		let pos = f.pos()?;
+		let n = f.sqbrack_val::<usize>()?;
+		let value = f.val();
+		self.value[n]
+			.insert(f, f.span_of(word) | f.span(pos), value);
+		Ok(())
+	}
+
+	fn is_present(&self) -> bool {
+		true
+	}
+
+	fn get(self) -> Option<Self::Value> {
+		Some(self.value.map(|v| v.get().unwrap_or(FileId::NONE)))
+	}
 }
