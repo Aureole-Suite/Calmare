@@ -90,15 +90,44 @@ impl Parse for Text {
 
 		let mut string = String::new();
 		let mut pos = f.raw_pos();
+		let mut auto = None;
 		f.lines(|f| {
 			newlines(f.text_since(pos), string.is_empty().into(), &mut string);
 			while !f.is_newline() {
-				string.push(f.any_char().unwrap());
+				let pos = f.raw_pos();
+				match f.any_char().unwrap() {
+					'♯' => {
+						let n = f.pat_mul(|c: char| char::is_ascii_digit(&c));
+						if n.is_empty() {
+							match f.any_char() {
+								Some('A') => auto = Some((string.len(), f.raw_span(pos))),
+								Some('W') => string.push('\t'),
+								Some('r') => string.push('\r'),
+								Some(ch @ (' ' | '　' | '{' | '}')) => string.push(ch),
+								_ => Diagnostic::error(f.raw_span(pos), "invalid escape sequence")
+									.emit(f),
+							}
+						} else {
+							match f.any_char() {
+								Some('C' | 'i' | 'x') => string.push_str(f.text_since(pos)),
+								_ => Diagnostic::error(f.raw_span(pos), "invalid escape sequence")
+									.emit(f),
+							}
+						}
+					}
+					ch => string.push(ch),
+				}
 			}
 			pos = f.raw_pos();
 			Ok(())
 		});
 		newlines(f.text_since(pos), 1, &mut string);
+
+		match auto {
+			Some((len, _)) if len == string.len() => {}
+			Some((_, span)) => Diagnostic::error(span, "`♯A` can only be at end").emit(f),
+			None => string.push('\t'),
+		}
 
 		f.allow_unindented(|f| f.check("}"))?;
 

@@ -45,6 +45,10 @@ impl<'src> Parser<'src> {
 		SourcePos(self.pos)
 	}
 
+	pub fn raw_span(&self, pos: SourcePos) -> Span {
+		pos.as_span() | self.raw_pos().as_span()
+	}
+
 	pub fn pos(&mut self) -> Result<SourcePos> {
 		let space = self.space();
 		if space.1 > self.indent || space.1 == self.indent && self.allow_unindented {
