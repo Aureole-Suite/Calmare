@@ -1,9 +1,11 @@
+use std::collections::BTreeMap;
+
 use themelios::scena::code::Code;
 use themelios::scena::insn::{Arg, Expr, Insn};
 use themelios::scena::insn_set as iset;
 use themelios::types::Text;
 
-use crate::parse::{self, Diagnostic, Emit as _};
+use crate::parse::{self, Diagnostic, Emit as _, Span};
 use crate::{Parse, ParseBlock, Parser};
 use crate::{Print, PrintBlock, Printer};
 
@@ -78,6 +80,67 @@ fn parse_code_line(f: &mut Parser<'_>, cont: bool, brk: bool) -> Result<Insn, Di
 			args.push(Arg::Code(no));
 		}
 		return Ok(Insn::new("if", args));
+	}
+
+	if f.check_word("while").is_ok() {
+		let expr = f.val()?;
+		f.check(":")?;
+		let body = parse_code(f, true, true);
+		return Ok(Insn::new("while", vec![Arg::Expr(expr), Arg::Code(body)]));
+	}
+
+	if f.check_word("break").is_ok() {
+		if !brk {
+			Diagnostic::error(f.span(pos), "cannot break here").emit(f);
+		}
+		return Ok(Insn::new("break", vec![]));
+	}
+
+	if f.check_word("continue").is_ok() {
+		if !cont {
+			Diagnostic::error(f.span(pos), "cannot break here").emit(f);
+		}
+		return Ok(Insn::new("continue", vec![]));
+	}
+
+	if f.check_word("switch").is_ok() {
+		let expr = f.val()?;
+		f.check(":")?;
+		let mut cases = Vec::new();
+		let mut seen = BTreeMap::<Option<u16>, Span>::default();
+		f.lines(|f| {
+			parse_remainder(f, |f| {
+				let pos = f.pos()?;
+				let case = match f.word()? {
+					"case" => Some(f.val()?),
+					"default" => None,
+					_ => {
+						return Err(Diagnostic::error(
+							f.span(pos),
+							"expected `case` or `default`",
+						))
+					}
+				};
+				if let Some(prev) = seen.insert(case, f.span(pos)) {
+					// I'd have this as an error, but the vanilla scripts do it, so...
+					Diagnostic::warn(f.span(pos), "duplicate case")
+						.with_note(prev, "previous here")
+						.emit(f);
+				}
+
+				f.check(":")?;
+				let body = parse_code(f, cont, true);
+				cases.push(match case {
+					Some(v) => Insn::new("case", vec![Arg::Int(v as _), Arg::Code(body)]),
+					None => Insn::new("default", vec![Arg::Code(body)]),
+				});
+				Ok(())
+			})
+		});
+		return Ok(Insn::new(
+			"switch",
+			vec![Arg::Expr(expr), Arg::Code(Code(cases))],
+		));
 	}
 
 	if let Some(lhs) = f.try_parse(expr::parse_lvalue)? {
