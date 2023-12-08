@@ -2,13 +2,21 @@ use crate::parse::{Diagnostic, Emit as _, Span};
 use crate::{parse, Parse, ParseBlock, Parser, Print};
 use crate::{PrintBlock, Printer};
 
-pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
+macro select {
+	($ty:ty) => { $ty },
+	() => { PlainField<_> },
+}
+
+pub macro strukt($(struct $type:ty {
+	$($field:ident $(: $ty:ty)?),*
+	$(,)?
+})+) {
 	$(impl PrintBlock for $type {
 		fn print_block(&self, f: &mut Printer) {
 			let Self { $($field),* } = &self;
 			$(
 				f.word(stringify!($field));
-				PlainField::print_field(f, $field);
+				<select!($($ty)?)>::print_field(f, $field);
 				f.line();
 			)*
 		}
@@ -17,7 +25,7 @@ pub macro strukt($(struct $type:ty { $($field:ident),* $(,)? })+) {
 	$(impl ParseBlock for $type {
 		fn parse_block(f: &mut Parser) -> parse::Result<Self> {
 			let span = f.raw_pos().as_span();
-			$(let mut $field = PlainField::default();)*
+			$(let mut $field = <select!($($ty)?)>::default();)*
 
 			let mut first_error = true;
 			f.lines(|f| match f.word()? {
