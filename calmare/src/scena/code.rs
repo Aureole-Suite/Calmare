@@ -29,13 +29,20 @@ impl ParseBlock for Code {
 fn parse_code(f: &mut Parser, cont: bool, brk: bool) -> Code {
 	let mut insns = Vec::new();
 	f.lines(|f| {
-		let result = parse_code_line(f, cont, brk).map(|insn| insns.push(insn));
-		parse_remainder(f, result)
+		parse_remainder(f, |f| {
+			let insn = parse_code_line(f, cont, brk)?;
+			insns.push(insn);
+			Ok(())
+		})
 	});
 	Code(insns)
 }
 
-fn parse_remainder(f: &mut Parser, mut result: Result<(), Diagnostic>) -> Result<(), Diagnostic> {
+fn parse_remainder(
+	f: &mut Parser,
+	func: impl FnOnce(&mut Parser) -> Result<(), Diagnostic>,
+) -> Result<(), Diagnostic> {
+	let mut result = func(f);
 	if f.pos().is_ok() {
 		// Didn't parse whole line. Check if there's any colon,
 		// and if so try to parse the inner block.
