@@ -29,26 +29,30 @@ impl ParseBlock for Code {
 fn parse_code(f: &mut Parser, cont: bool, brk: bool) -> Code {
 	let mut insns = Vec::new();
 	f.lines(|f| {
-		let mut result = parse_code_line(f, cont, brk).map(|insn| insns.push(insn));
-		if f.pos().is_ok() {
-			// Didn't parse whole line. Check if there's any colon,
-			// and if so try to parse the inner block.
-			let mut error = Diagnostic::error(f.raw_pos().as_span(), "expected end of line")
-				.filter(result.is_ok());
-			match find_tail_on_error(f) {
-				Ok(v) => {
-					error.note(f.last_nonspace(), "skipping to here");
-					error.emit(f);
-					if v {
-						parse_code(f, true, true);
-					}
-				}
-				Err(e) => result = result.and(Err(e)),
-			}
-		}
-		result
+		let result = parse_code_line(f, cont, brk).map(|insn| insns.push(insn));
+		parse_remainder(f, result)
 	});
 	Code(insns)
+}
+
+fn parse_remainder(f: &mut Parser, mut result: Result<(), Diagnostic>) -> Result<(), Diagnostic> {
+	if f.pos().is_ok() {
+		// Didn't parse whole line. Check if there's any colon,
+		// and if so try to parse the inner block.
+		let mut error =
+			Diagnostic::error(f.raw_pos().as_span(), "expected end of line").filter(result.is_ok());
+		match find_tail_on_error(f) {
+			Ok(v) => {
+				error.note(f.last_nonspace(), "skipping to here");
+				error.emit(f);
+				if v {
+					parse_code(f, true, true);
+				}
+			}
+			Err(e) => result = result.and(Err(e)),
+		}
+	}
+	result
 }
 
 fn parse_code_line(f: &mut Parser<'_>, cont: bool, brk: bool) -> Result<Insn, Diagnostic> {
