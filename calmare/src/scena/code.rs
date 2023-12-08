@@ -463,7 +463,20 @@ fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> p
 		})?)),
 		MA::QuestList => list(out, f, |f| f.val().map(Arg::QuestId))?,
 		MA::Menu => list(out, f, |f| f.val().map(Arg::TString))?,
-		MA::PartySelectMandatory => todo!(),
+		MA::PartySelectMandatory => {
+			let pos = f.pos()?;
+			let items = tuple(f, |f| {
+				if f.check_word("null").is_ok() {
+					Ok(Arg::CharId(themelios::scena::CharId::Null))
+				} else {
+					f.val().map(Arg::NameId)
+				}
+			})?;
+			if items.len() != 4 {
+				Diagnostic::error(f.span(pos), "must be 4 items").emit(f);
+			}
+			out.push(Arg::Tuple(items));
+		}
 		MA::PartySelectOptional => list(out, f, |f| f.val().map(Arg::NameId))?,
 		MA::TcMembers => out.push(Arg::Tuple(tuple(f, |f| f.val().map(Arg::NameId))?)),
 		MA::ED7CharAnimation => out.push(Arg::Tuple(tuple(f, |f| f.val().map(Arg::Int))?)),
