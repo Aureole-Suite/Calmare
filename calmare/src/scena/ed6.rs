@@ -4,9 +4,9 @@ use std::collections::BTreeMap;
 use themelios::scena::{ed6, ChipId, EventId, FuncId, LocalCharId, LookPointId};
 use themelios::types::{BgmId, FileId, TownId};
 
-use crate::macros::strukt::{Slot, Field};
+use crate::macros::strukt::{Field, Slot};
 use crate::parse::{self, Diagnostic, Span};
-use crate::{Parse, ParseBlock, Parser};
+use crate::{Parse, ParseBlock, Parser, Print};
 use crate::{PrintBlock, Printer};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -200,7 +200,7 @@ fn print_chcp(ch: &[FileId], cp: &[FileId], f: &mut Printer) {
 crate::macros::strukt::strukt! {
 	struct Head<'_> {
 		name, town, bgm, item_use,
-		include: Includes<8>,
+		include: Array<8, _>,
 	}
 	struct ed6::Entry { pos, chr, angle, cam_from, cam_at, cam_zoom, cam_pers, cam_deg, cam_limit, north, flags, town, init, reinit, }
 	struct ed6::Npc { name, pos, angle, x, cp, frame, ch, flags, init, talk, }
@@ -280,13 +280,12 @@ fn chars<A, B>(diag: &mut Parser, items: PackedIndices<NpcOrMonster<A, B>>) -> (
 	(npcs, monsters)
 }
 
-
 #[derive(Debug, Clone)]
-pub struct Includes<const N: usize> {
-	value: [Slot<FileId>; N],
+pub struct Array<const N: usize, T> {
+	value: [Slot<T>; N],
 }
 
-impl<const N: usize> Default for Includes<N> {
+impl<const N: usize, T> Default for Array<N, T> {
 	fn default() -> Self {
 		Self {
 			value: std::array::from_fn(|_| Slot::new()),
@@ -294,8 +293,8 @@ impl<const N: usize> Default for Includes<N> {
 	}
 }
 
-impl<const N: usize> Field for Includes<N> {
-	type Value = [Option<FileId>; N];
+impl<const N: usize, T: Print + Parse> Field for Array<N, T> {
+	type Value = [Option<T>; N];
 
 	fn print_field(key: &str, f: &mut Printer, value: &Self::Value) {
 		for (i, value) in value.iter().enumerate() {
@@ -310,8 +309,7 @@ impl<const N: usize> Field for Includes<N> {
 		let pos = f.pos()?;
 		let n = f.sqbrack_val::<usize>()?;
 		let value = f.val();
-		self.value[n]
-			.insert(f, f.span_of(word) | f.span(pos), value);
+		self.value[n].insert(f, f.span_of(word) | f.span(pos), value);
 		Ok(())
 	}
 
