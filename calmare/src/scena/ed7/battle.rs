@@ -1,18 +1,19 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
-use themelios::scena::ed7::battle;
+use themelios::scena::ed7::battle::{AtRollId, Battle, BattleSet, BattleSetup, PlacementId, SepithId};
+use themelios::types::{BattleId, BgmId, FileId};
 
 use crate::macros::strukt::{Field, Slot};
 use crate::parse::{self, Diagnostic, Span};
 use crate::{Parse, ParseBlock, Parser, Print};
 use crate::{PrintBlock, Printer};
 
-crate::macros::newtype_term!(battle::SepithId, "sepith");
-crate::macros::newtype_term!(battle::AtRollId, "at_roll");
-crate::macros::newtype_term!(battle::PlacementId, "placement");
+crate::macros::newtype_term!(SepithId, "sepith");
+crate::macros::newtype_term!(AtRollId, "at_roll");
+crate::macros::newtype_term!(PlacementId, "placement");
 
-impl PrintBlock for battle::BattleSet {
+impl PrintBlock for BattleSet {
 	fn print_block(&self, f: &mut Printer) {
 		let junk_sepith = self.sepith.starts_with(&[
 			[100, 1, 2, 3, 70, 89, 99, 0],
@@ -32,7 +33,7 @@ impl PrintBlock for battle::BattleSet {
 			if junk_sepith && i == 5 {
 				f.line();
 			}
-			f.val(battle::SepithId(i as u16));
+			f.val(SepithId(i as u16));
 			let mut tup = f.term("");
 			for val in sep {
 				tup.field().val(val);
@@ -45,7 +46,7 @@ impl PrintBlock for battle::BattleSet {
 			f.line();
 		}
 		for (i, roll) in self.at_rolls.iter().enumerate() {
-			f.val(battle::AtRollId(i as u16)).no_space().word(":");
+			f.val(AtRollId(i as u16)).no_space().word(":");
 			let mut first = true;
 			for (name, val) in f.insn_set().at_roll.iter().zip(roll) {
 				if *val != 0 {
@@ -63,7 +64,7 @@ impl PrintBlock for battle::BattleSet {
 			f.line();
 		}
 		for (i, sep) in self.placements.iter().enumerate() {
-			f.val(battle::PlacementId(i as u16));
+			f.val(PlacementId(i as u16));
 			let mut tup = f.term("");
 			for val in sep {
 				tup.field().val(val);
@@ -72,6 +73,66 @@ impl PrintBlock for battle::BattleSet {
 			f.line();
 		}
 
-		// battles
+		for (i, bat) in self.battles.iter().enumerate() {
+			f.line();
+			f.val(BattleId(i as u32)).val_block(bat);
+		}
+	}
+}
+
+pub struct Setup {
+	pub enemies: (
+		FileId,
+		FileId,
+		FileId,
+		FileId,
+		FileId,
+		FileId,
+		FileId,
+		FileId,
+	),
+	pub placement: (PlacementId, PlacementId),
+	pub bgm: (BgmId, BgmId),
+	pub at_roll: AtRollId,
+}
+
+crate::macros::strukt::strukt! {
+	struct Battle {
+		flags, level, unk1, vision_range, move_range, can_move, move_speed,
+		unk2, battlefield, sepith,
+		setups as setup: Setups,
+	}
+	struct Setup { enemies, placement, bgm, at_roll }
+}
+
+#[derive(Debug, Clone, Default)]
+struct Setups {
+	value: Vec<(u8, BattleSetup)>,
+}
+
+impl Field for Setups {
+	type Value = Vec<(u8, BattleSetup)>;
+
+	fn print_field(key: &str, f: &mut Printer, value: &Self::Value) {
+		for (weight, setup) in value {
+			f.word(key).val(weight).val_block(Setup {
+				enemies: setup.enemies.into(),
+				placement: (setup.placement, setup.placement_ambush),
+				bgm: (setup.bgm, setup.bgm_ambush),
+				at_roll: setup.at_roll,
+			});
+		}
+	}
+
+	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()> {
+		Ok(())
+	}
+
+	fn is_present(&self) -> bool {
+		!self.value.is_empty()
+	}
+
+	fn get(self) -> Option<Self::Value> {
+		Some(self.value)
 	}
 }
