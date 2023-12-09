@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
+use themelios::scena::ed7::AnimId;
 use themelios::scena::{ed7, ChipId, EventId, FuncId, LocalCharId, LookPointId};
 use themelios::types::{BgmId, FileId, TownId};
 
@@ -14,6 +15,10 @@ crate::macros::newtype_term!(ed7::AnimId, "anim");
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct LabelId(u16);
 crate::macros::newtype_term!(LabelId, "label");
+
+crate::macros::newtype_term!(ed7::battle::SepithId, "sepith");
+crate::macros::newtype_term!(ed7::battle::AtRollId, "at_roll");
+crate::macros::newtype_term!(ed7::battle::PlacementId, "placement");
 
 impl PrintBlock for ed7::Scena {
 	fn print_block(&self, f: &mut Printer) {
@@ -86,8 +91,49 @@ impl PrintBlock for ed7::Scena {
 			}
 		}
 
-		// animations
-		// sepith (incl. junk)
+		if !self.animations.is_empty() {
+			f.line();
+		}
+		for (i, anim) in self.animations.iter().enumerate() {
+			f.val(AnimId(i as u32)).val(anim.speed);
+			let mut tup = f.term("");
+			for val in &anim.frames {
+				tup.field().val(val);
+			}
+			drop(tup);
+			f.line();
+		}
+
+		if !self.btlset.sepith.is_empty() {
+			f.line();
+		}
+		let junk_sepith = self.btlset.sepith.starts_with(&[
+			[100, 1, 2, 3, 70, 89, 99, 0],
+			[100, 5, 1, 5, 1, 5, 1, 0],
+			[100, 5, 1, 5, 1, 5, 1, 0],
+			[100, 5, 0, 5, 0, 5, 0, 0],
+			[100, 5, 0, 5, 0, 5, 0, 0],
+		]);
+		if junk_sepith {
+			write!(
+				f,
+				"// NB: the first five sepith sets are seemingly junk data."
+			)
+			.line();
+		}
+		for (i, sep) in self.btlset.sepith.iter().enumerate() {
+			if junk_sepith && i == 5 {
+				f.line();
+			}
+			f.val(ed7::battle::SepithId(i as u16));
+			let mut tup = f.term("");
+			for val in sep {
+				tup.field().val(val);
+			}
+			drop(tup);
+			f.line();
+		}
+
 		// at rolls
 		// placements
 		// battles

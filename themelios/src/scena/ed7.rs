@@ -20,7 +20,7 @@ use super::insn::{Arg, InsnReader, InsnWriter};
 use super::{CharFlags, ChipId, EntryFlags};
 use super::{ReadError, WriteError};
 
-mod battle;
+pub mod battle;
 
 newtype!(AnimId(u32));
 
