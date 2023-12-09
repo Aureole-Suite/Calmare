@@ -1,14 +1,8 @@
-use std::borrow::Cow;
-use std::collections::BTreeMap;
-
-use themelios::scena::ed7::battle::{
-	AtRollId, Battle, BattleFlags, BattleSet, BattleSetup, PlacementId, SepithId,
-};
+use themelios::scena::ed7::battle::*;
 use themelios::types::{BattleId, BgmId, FileId};
 
-use crate::macros::strukt::{Field, Slot};
-use crate::parse::{self, Diagnostic, Span};
-use crate::{Parse, ParseBlock, Parser, Print};
+use crate::macros::strukt::Field;
+use crate::{parse, Parser};
 use crate::{PrintBlock, Printer};
 
 crate::macros::newtype_term!(SepithId, "sepith");
