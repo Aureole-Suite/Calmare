@@ -7,14 +7,19 @@ macro select {
 	() => { PlainField<_> },
 }
 
+macro name {
+	($name:ident $alias:ident) => { stringify!($alias) },
+	($name:ident) => { stringify!($name) },
+}
+
 pub macro strukt($(struct $type:ty {
-	$($field:ident $(: $ty:ty)?),*
+	$($field:ident $(as $alias:ident)? $(: $ty:ty)?),*
 	$(,)?
 })+) {
 	$(impl PrintBlock for $type {
 		fn print_block(&self, f: &mut Printer) {
 			let Self { $($field),* } = &self;
-			$(<select!($($ty)?)>::print_field(stringify!($field), f, $field);)*
+			$(<select!($($ty)?)>::print_field(name!($field $($alias)?), f, $field);)*
 		}
 	})+
 
@@ -25,14 +30,14 @@ pub macro strukt($(struct $type:ty {
 
 			let mut first_error = true;
 			f.lines(|f| match f.word()? {
-				$(word @ stringify!($field) => $field.parse_field(word, f),)*
+				$(word @ name!($field $($alias)?) => $field.parse_field(word, f),)*
 				word => {
 					let mut diag = parse::Diagnostic::error(f.span_of(word), "unknown field");
 					if first_error {
 						first_error = false;
 						diag.note(f.span_of(word), format!(
 							"allowed fields are {}",
-							[$(concat!("`", stringify!($field), "`")),*].join(", ")
+							[$(concat!("`", name!($field $($alias)?), "`")),*].join(", ")
 						));
 					}
 					Err(diag)
@@ -44,7 +49,7 @@ pub macro strukt($(struct $type:ty {
 
 			$(
 				if !$field.is_present() {
-					missing.push(concat!("`", stringify!($field), "`"));
+					missing.push(concat!("`", name!($field $($alias)?), "`"));
 				}
 			)*
 
