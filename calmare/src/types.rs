@@ -20,14 +20,22 @@ impl Parse for types::Label {
 
 impl Print for types::FileId {
 	fn print(&self, f: &mut Printer) {
-		write!(f.term("file").field(), "0x{:08X}", self.0);
+		if *self == Self::NONE {
+			f.word("null");
+		} else {
+			write!(f.term("file").field(), "0x{:08X}", self.0);
+		}
 	}
 }
 
 impl Parse for types::FileId {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		f.check_word("file")?;
-		Ok(Self(f.sqbrack_val()?))
+		if f.check_word("null").is_ok() {
+			Ok(Self::NONE)
+		} else {
+			f.check_word("file")?;
+			Ok(Self(f.sqbrack_val()?))
+		}
 	}
 }
 
