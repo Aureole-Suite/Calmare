@@ -11,6 +11,7 @@ use crate::{Parse, ParseBlock, Parser, Print};
 use crate::{PrintBlock, Printer};
 
 crate::macros::newtype_term!(ed7::AnimId, "anim");
+crate::macros::newtype_hex!(ed7::ScenaFlags);
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct LabelId(u16);
@@ -115,7 +116,7 @@ struct Head<'a> {
 	name: (Cow<'a, str>, Cow<'a, str>, Cow<'a, str>),
 	town: TownId,
 	bgm: BgmId,
-	flags: u32,
+	flags: ed7::ScenaFlags,
 	item_use: FuncId,
 	unknown_function: FuncId,
 	system30: u8,

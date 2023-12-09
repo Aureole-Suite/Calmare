@@ -23,6 +23,7 @@ use super::{ReadError, WriteError};
 pub mod battle;
 
 newtype!(AnimId(u32));
+newtype!(ScenaFlags(u32));
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Scena {
@@ -32,7 +33,7 @@ pub struct Scena {
 
 	pub town: TownId,
 	pub bgm: BgmId,
-	pub flags: u32,
+	pub flags: ScenaFlags,
 	pub item_use: FuncId,
 	pub unknown_function: FuncId,
 	pub system30: u8, // system[30], which is related to car/Merkabah position
@@ -60,7 +61,7 @@ impl Scena {
 		let map = f.sized_string::<10, _>()?;
 		let town = TownId(f.u16()?);
 		let bgm = BgmId(f.u16()?);
-		let flags = f.u32()?;
+		let flags = ScenaFlags(f.u32()?);
 		let includes = std::array::try_from_fn(|_| {
 			Ok(FileId(match f.u32()? {
 				0xFFFFFFFF => 0,
@@ -189,7 +190,7 @@ impl Scena {
 		f.sized_string::<10, _>(&scena.map)?;
 		f.u16(scena.town.0);
 		f.u16(scena.bgm.0);
-		f.u32(scena.flags);
+		f.u32(scena.flags.0);
 		for i in scena.includes {
 			f.u32(match i.0 {
 				0 => 0xFFFFFFFF,
