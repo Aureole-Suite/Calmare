@@ -44,12 +44,11 @@ pub struct Battle {
 	pub unk2: u16,
 	pub battlefield: String,
 	pub sepith: Option<SepithId>,
-	pub setups: Vec<BattleSetup>,
+	pub setups: Vec<(u8, BattleSetup)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BattleSetup {
-	pub weight: u8,
 	pub enemies: [FileId; 8],
 	pub placement: PlacementId,
 	pub placement_ambush: PlacementId,
@@ -129,8 +128,7 @@ impl BattleRead {
 							if weight == 0 {
 								continue;
 							}
-							setups.push(BattleSetup {
-								weight,
+							let setup = BattleSetup {
 								enemies: std::array::try_from_fn(|_| Ok(FileId(f.u32()?)))
 									.strict()?,
 								placement: self.get_placement(&mut f.ptr16()?)?,
@@ -138,7 +136,8 @@ impl BattleRead {
 								bgm: BgmId(f.u16()?),
 								bgm_ambush: BgmId(f.u16()?),
 								at_roll: self.get_at_roll(&mut f.ptr32()?)?,
-							});
+							};
+							setups.push((weight, setup));
 						}
 						setups
 					},
@@ -267,8 +266,8 @@ impl BattleWrite {
 			let mut weights = [0u8; 4];
 			let mut h = Writer::new();
 			ensure_whatever!(battle.setups.len() <= 4, "too many setups");
-			for (i, setup) in battle.setups.iter().enumerate() {
-				weights[i] = setup.weight;
+			for (i, (weight, setup)) in battle.setups.iter().enumerate() {
+				weights[i] = *weight;
 				for ms in &setup.enemies {
 					h.u32(ms.0);
 				}
