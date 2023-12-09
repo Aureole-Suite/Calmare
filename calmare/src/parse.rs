@@ -6,11 +6,12 @@ use bimap::BiBTreeMap;
 use std::collections::BTreeSet;
 use std::str::pattern::Pattern;
 
+use themelios::scena::insn_set::InsnSet;
+use themelios::types::Label;
+
 pub use diagnostic::{Diagnostic, Emit, Level, Result};
 use indent::{Indent, Space};
 pub use span::Span;
-use themelios::scena::insn_set::InsnSet;
-use themelios::types::Label;
 
 pub struct Parser<'src> {
 	source: &'src str,
@@ -338,6 +339,53 @@ impl<'src> Parser<'src> {
 					.push(Diagnostic::error(self.span_of(span), "undefined label"))
 			}
 		}
+	}
+
+	pub fn tuple(&mut self) -> Result<TupleParser<'_, 'src>> {
+		self.check("(")?;
+		Ok(TupleParser::new(self))
+	}
+}
+
+pub struct TupleParser<'a, 'src> {
+	parser: &'a mut Parser<'src>,
+	count: usize,
+}
+
+impl<'a, 'src> TupleParser<'a, 'src> {
+	pub fn new(parser: &'a mut Parser<'src>) -> Self {
+		Self { parser, count: 0 }
+	}
+
+	pub fn field(&mut self) -> Result<&mut Parser<'src>> {
+		let pos = self.parser.pos()?;
+		if self.parser.check(")").is_ok() {
+			return Err(Diagnostic::error(
+				self.parser.span(pos),
+				"unexpected end of tuple",
+			));
+		}
+		if self.count != 0 {
+			self.parser.check(",")?;
+		}
+		self.count += 1;
+		Ok(self.parser)
+	}
+
+	pub fn try_field(&mut self) -> Result<Option<&mut Parser<'src>>> {
+		self.parser.pos()?;
+		if self.parser.check(")").is_ok() {
+			return Ok(None);
+		}
+		if self.count != 0 {
+			self.parser.check(",")?;
+		}
+		self.count += 1;
+		Ok(Some(self.parser))
+	}
+
+	pub fn finish(self) -> Result<()> {
+		self.parser.check(")")
 	}
 }
 

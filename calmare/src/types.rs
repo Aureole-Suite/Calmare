@@ -71,13 +71,11 @@ impl Print for types::Pos2 {
 
 impl Parse for types::Pos2 {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		f.check("(")?;
-		let x = f.val()?;
-		f.check(",")?;
-		f.check_word("null")?;
-		f.check(",")?;
-		let z = f.val()?;
-		f.check(")")?;
+		let mut tup = f.tuple()?;
+		let x = tup.field()?.val()?;
+		tup.field()?.check_word("null")?;
+		let z = tup.field()?.val()?;
+		tup.finish()?;
 		Ok(types::Pos2 { x, z })
 	}
 }
@@ -93,13 +91,11 @@ impl Print for types::Pos3 {
 
 impl Parse for types::Pos3 {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		f.check("(")?;
-		let x = f.val()?;
-		f.check(",")?;
-		let y = f.val()?;
-		f.check(",")?;
-		let z = f.val()?;
-		f.check(")")?;
+		let mut tup = f.tuple()?;
+		let x = tup.field()?.val()?;
+		let y = tup.field()?.val()?;
+		let z = tup.field()?.val()?;
+		tup.finish()?;
 		Ok(types::Pos3 { x, y, z })
 	}
 }
@@ -115,13 +111,11 @@ impl Print for themelios::glam::Vec3 {
 
 impl Parse for themelios::glam::Vec3 {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		f.check("(")?;
-		let x = f.val()?;
-		f.check(",")?;
-		let y = f.val()?;
-		f.check(",")?;
-		let z = f.val()?;
-		f.check(")")?;
+		let mut tup = f.tuple()?;
+		let x = tup.field()?.val()?;
+		let y = tup.field()?.val()?;
+		let z = tup.field()?.val()?;
+		tup.finish()?;
 		Ok(themelios::glam::Vec3 { x, y, z })
 	}
 }
