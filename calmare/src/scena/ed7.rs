@@ -20,19 +20,16 @@ mod battle;
 
 impl PrintBlock for ed7::Scena {
 	fn print_block(&self, f: &mut Printer) {
-		// f.kw("scena").suf(":").line().indent(|f| {
-		// 	f.kw("name").val(name1).val(name2).val(filename).line();
-		// 	f.kw("town").val(town).line();
-		// 	f.kw("bgm").val(bgm).line();
-		// 	f.kw("flags").val(flags).line();
-		// 	f.kw("item_use").val(item_use).line();
-		// 	f.kw("unk").val(unk2).val(unk3).line();
-		// 	for (i, a) in includes.iter().enumerate() {
-		// 		if a.0 != 0 {
-		// 			f.kw("scp").val(&(i as u16)).val(a).line();
-		// 		}
-		// 	}
-		// });
+		f.word("scena").val_block(Head {
+			name: (Cow::Borrowed(&self.path), Cow::Borrowed(&self.map), Cow::Borrowed(&self.filename)),
+			town: self.town,
+			bgm: self.bgm,
+			flags: self.flags,
+			item_use: self.item_use,
+			unknown_function: self.unknown_function,
+			system30: self.system30,
+			include: self.includes.map(|v| (v != FileId::NONE).then_some(v)),
+		});
 
 		for entry in &self.entries {
 			f.line();
@@ -107,14 +104,29 @@ impl PrintBlock for ed7::Scena {
 			f.word("btlset").val_block(&self.btlset);
 		}
 
-		// for (i, func) in self.functions.iter().enumerate() {
-		// 	f.line();
-		// 	f.val(LocalFuncId(i as u16)).val_block(func);
-		// }
+		for (i, func) in self.functions.iter().enumerate() {
+			f.line();
+			f.val(super::LocalFuncId(i as u16)).val_block(func);
+		}
 	}
 }
 
+struct Head<'a> {
+	name: (Cow<'a, str>, Cow<'a, str>, Cow<'a, str>),
+	town: TownId,
+	bgm: BgmId,
+	flags: u32,
+	item_use: FuncId,
+	unknown_function: FuncId,
+	system30: u8,
+	include: [Option<FileId>; 6],
+}
+
 crate::macros::strukt::strukt! {
+	struct Head<'_> {
+		name, town, bgm, flags, item_use, unknown_function, system30,
+		include: super::Array<6, _>,
+	}
 	struct ed7::Entry { pos, unk1, cam_from, cam_pers, unk2, cam_deg, cam_limit, cam_at, unk3, unk4, flags, town, init, reinit, }
 	struct ed7::Label { name, pos, unk1, unk2, }
 	struct ed7::Npc { name, pos, angle, flags, unk2, chip, init, talk, unk4, }
