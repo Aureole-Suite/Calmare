@@ -23,6 +23,15 @@ pub struct BattleSet {
 	pub battles: Vec<Battle>,
 }
 
+impl BattleSet {
+	pub fn is_empty(&self) -> bool {
+		self.sepith.is_empty()
+			&& self.at_rolls.is_empty()
+			&& self.placements.is_empty()
+			&& self.battles.is_empty()
+	}
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Battle {
 	pub flags: u16,

@@ -16,9 +16,7 @@ crate::macros::newtype_term!(ed7::AnimId, "anim");
 struct LabelId(u16);
 crate::macros::newtype_term!(LabelId, "label");
 
-crate::macros::newtype_term!(ed7::battle::SepithId, "sepith");
-crate::macros::newtype_term!(ed7::battle::AtRollId, "at_roll");
-crate::macros::newtype_term!(ed7::battle::PlacementId, "placement");
+mod battle;
 
 impl PrintBlock for ed7::Scena {
 	fn print_block(&self, f: &mut Printer) {
@@ -104,68 +102,10 @@ impl PrintBlock for ed7::Scena {
 			f.line();
 		}
 
-		if !self.btlset.sepith.is_empty() {
+		if !self.btlset.is_empty() {
 			f.line();
+			f.word("btlset").val_block(&self.btlset);
 		}
-		let junk_sepith = self.btlset.sepith.starts_with(&[
-			[100, 1, 2, 3, 70, 89, 99, 0],
-			[100, 5, 1, 5, 1, 5, 1, 0],
-			[100, 5, 1, 5, 1, 5, 1, 0],
-			[100, 5, 0, 5, 0, 5, 0, 0],
-			[100, 5, 0, 5, 0, 5, 0, 0],
-		]);
-		if junk_sepith {
-			write!(
-				f,
-				"// NB: the first five sepith sets are seemingly junk data."
-			)
-			.line();
-		}
-		for (i, sep) in self.btlset.sepith.iter().enumerate() {
-			if junk_sepith && i == 5 {
-				f.line();
-			}
-			f.val(ed7::battle::SepithId(i as u16));
-			let mut tup = f.term("");
-			for val in sep {
-				tup.field().val(val);
-			}
-			drop(tup);
-			f.line();
-		}
-
-		if !self.btlset.at_rolls.is_empty() {
-			f.line();
-		}
-		for (i, roll) in self.btlset.at_rolls.iter().enumerate() {
-			f.val(ed7::battle::AtRollId(i as u16)).no_space().word(":");
-			let mut first = true;
-			for (name, val) in f.insn_set().at_roll.iter().zip(roll)  {
-				if *val != 0 {
-					if !first {
-						f.no_space().word(";");
-					}
-					first = false;
-					f.word(name).val(val);
-				}
-			}
-			f.line();
-		}
-
-		if !self.btlset.placements.is_empty() {
-			f.line();
-		}
-		for (i, sep) in self.btlset.placements.iter().enumerate() {
-			f.val(ed7::battle::PlacementId(i as u16));
-			let mut tup = f.term("");
-			for val in sep {
-				tup.field().val(val);
-			}
-			drop(tup);
-			f.line();
-		}
-
-		// battles
 
 		// for (i, func) in self.functions.iter().enumerate() {
 		// 	f.line();
