@@ -13,6 +13,7 @@ use crate::util::{ReaderExt as _, WriterExt as _};
 newtype!(SepithId(u16));
 newtype!(PlacementId(u16));
 newtype!(AtRollId(u16));
+newtype!(BattleFlags(u16));
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct BattleSet {
@@ -34,7 +35,7 @@ impl BattleSet {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Battle {
-	pub flags: u16,
+	pub flags: BattleFlags,
 	pub level: u16,
 	pub unk1: u8,
 	pub vision_range: u8,
@@ -109,7 +110,7 @@ impl BattleRead {
 			Entry::Vacant(e) => {
 				let v = *e.insert(BattleId(self.btlset.battles.len() as u32));
 				let battle = Battle {
-					flags: f.u16()?,
+					flags: BattleFlags(f.u16()?),
 					level: f.u16()?,
 					unk1: f.u8()?,
 					vision_range: f.u8()?,
@@ -243,7 +244,7 @@ impl BattleWrite {
 
 		for battle in btlset.battles.iter() {
 			battle_pos.push(battles.here());
-			battles.u16(battle.flags);
+			battles.u16(battle.flags.0);
 			battles.u16(battle.level);
 			battles.u8(battle.unk1);
 			battles.u8(battle.vision_range);

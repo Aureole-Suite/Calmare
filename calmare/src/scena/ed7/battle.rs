@@ -1,7 +1,9 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
-use themelios::scena::ed7::battle::{AtRollId, Battle, BattleSet, BattleSetup, PlacementId, SepithId};
+use themelios::scena::ed7::battle::{
+	AtRollId, Battle, BattleFlags, BattleSet, BattleSetup, PlacementId, SepithId,
+};
 use themelios::types::{BattleId, BgmId, FileId};
 
 use crate::macros::strukt::{Field, Slot};
@@ -12,6 +14,7 @@ use crate::{PrintBlock, Printer};
 crate::macros::newtype_term!(SepithId, "sepith");
 crate::macros::newtype_term!(AtRollId, "at_roll");
 crate::macros::newtype_term!(PlacementId, "placement");
+crate::macros::newtype_hex!(BattleFlags);
 
 impl PrintBlock for BattleSet {
 	fn print_block(&self, f: &mut Printer) {
