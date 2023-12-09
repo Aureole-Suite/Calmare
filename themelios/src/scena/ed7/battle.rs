@@ -58,7 +58,7 @@ pub struct BattleSetup {
 }
 
 #[derive(Default, Debug)]
-pub struct BattleRead {
+pub(crate) struct BattleRead {
 	btlset: BattleSet,
 	sepith_pos: HashMap<usize, SepithId>,
 	at_roll_pos: HashMap<usize, AtRollId>,
@@ -200,7 +200,7 @@ impl BattleRead {
 	}
 }
 
-pub struct BattleWrite {
+pub(crate) struct BattleWrite {
 	pub sepith: Writer,
 	pub at_rolls: Writer,
 	pub placements: Writer,
