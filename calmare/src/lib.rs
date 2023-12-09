@@ -124,29 +124,32 @@ where
 	}
 }
 
-impl<A: Print, B: Print> Print for (A, B) {
-	fn print(&self, f: &mut Printer) {
-		f.val(&self.0).val(&self.1);
+macro tuple {
+	(@single $($n:ident)*) => {
+		#[allow(non_snake_case, unused)]
+		impl<$($n: Print,)*> Print for ($($n,)*) {
+			fn print(&self, f: &mut Printer) {
+				let ($($n,)*) = self;
+				$(f.val($n);)*
+			}
+		}
+
+		#[allow(non_snake_case, unused)]
+		impl<$($n: Parse,)*> Parse for ($($n,)*) {
+			fn parse(f: &mut Parser) -> parse::Result<Self> {
+				$(let $n = f.val()?;)*
+				Ok(($($n,)*))
+			}
+		}
+	},
+	() => { tuple!(@single); },
+	($first:ident $($rest:ident)*) => {
+		tuple!(@single $first $($rest)*);
+		tuple!($($rest)*);
 	}
 }
 
-impl<A: Parse, B: Parse> Parse for (A, B) {
-	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		Ok((f.val()?, f.val()?))
-	}
-}
-
-impl<A: Print, B: Print, C: Print> Print for (A, B, C) {
-	fn print(&self, f: &mut Printer) {
-		f.val(&self.0).val(&self.1).val(&self.2);
-	}
-}
-
-impl<A: Parse, B: Parse, C: Parse> Parse for (A, B, C) {
-	fn parse(f: &mut Parser) -> parse::Result<Self> {
-		Ok((f.val()?, f.val()?, f.val()?))
-	}
-}
+tuple!(A B C D E F G H I J K L);
 
 impl<A: Print> Print for Option<A> {
 	fn print(&self, f: &mut Printer) {
