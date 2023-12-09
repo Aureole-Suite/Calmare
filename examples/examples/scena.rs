@@ -13,7 +13,7 @@ fn main() -> anyhow::Result<()> {
 		themelios::scena::code::decompile::decompile(&mut scena.functions);
 		themelios::scena::code::normalize::normalize(&mut scena.functions).unwrap();
 
-		let output = calmare::print(&scena);
+		let output = calmare::print(&scena, &iset);
 		print!("{}", output);
 		// let (v, diags) = calmare::parse::<Scena>(&output, &iset);
 		// let v = v.unwrap();

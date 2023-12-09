@@ -18,7 +18,7 @@ mod macros;
 mod number;
 mod string;
 
-impl Printer {
+impl Printer<'_> {
 	fn val(&mut self, val: impl Print) -> &mut Self {
 		val.print(self);
 		self.space()
@@ -205,8 +205,8 @@ impl Hex for u32 {
 	}
 }
 
-pub fn print<T: PrintBlock>(value: &T) -> String {
-	let mut printer = Printer::new();
+pub fn print<T: PrintBlock>(value: &T, iset: &iset::InsnSet) -> String {
+	let mut printer = Printer::new(iset);
 	value.print_block(&mut printer);
 	printer.finish()
 }

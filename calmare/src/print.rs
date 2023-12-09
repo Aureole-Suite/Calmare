@@ -1,29 +1,31 @@
+use themelios::scena::insn_set::InsnSet;
+
 #[derive(Debug, Clone)]
-pub struct Printer {
+pub struct Printer<'src> {
 	indent: usize,
 	out: String,
 	newline: bool,
 	space: bool,
+	iset: &'src InsnSet<'src>,
 }
 
-impl Default for Printer {
-	fn default() -> Self {
-		Self::new()
-	}
-}
-
-impl Printer {
-	pub fn new() -> Self {
+impl<'src> Printer<'src> {
+	pub fn new(iset: &'src InsnSet<'src>) -> Self {
 		Printer {
 			indent: 0,
 			out: String::new(),
 			newline: true,
 			space: false,
+			iset,
 		}
 	}
 
 	pub fn finish(self) -> String {
 		self.out
+	}
+
+	pub fn insn_set(&self) -> &'src InsnSet<'src> {
+		self.iset
 	}
 
 	fn put_space(&mut self) {
@@ -92,7 +94,7 @@ impl Printer {
 		v
 	}
 
-	pub fn term(&mut self, name: &str) -> TermPrinter<'_> {
+	pub fn term(&mut self, name: &str) -> TermPrinter<'_, 'src> {
 		self.word(name);
 		TermPrinter {
 			printer: self,
@@ -102,15 +104,15 @@ impl Printer {
 	}
 }
 
-pub struct TermPrinter<'a> {
-	printer: &'a mut Printer,
+pub struct TermPrinter<'a, 'src> {
+	printer: &'a mut Printer<'src>,
 	named: bool,
 	count: usize,
 }
 
-impl<'a> TermPrinter<'a> {
+impl<'a, 'src> TermPrinter<'a, 'src> {
 	#[must_use]
-	pub fn field(&mut self) -> &mut Printer {
+	pub fn field(&mut self) -> &mut Printer<'src> {
 		if self.count == 0 {
 			if self.named {
 				self.printer.no_space();
@@ -129,7 +131,7 @@ impl<'a> TermPrinter<'a> {
 	}
 }
 
-impl<'a> Drop for TermPrinter<'a> {
+impl<'a, 'src> Drop for TermPrinter<'a, 'src> {
 	fn drop(&mut self) {
 		match (self.count, self.named) {
 			(0, false) => self.printer.word("()"),
