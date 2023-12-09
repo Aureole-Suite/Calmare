@@ -152,7 +152,19 @@ impl PrintBlock for ed7::Scena {
 			f.line();
 		}
 
-		// placements
+		if !self.btlset.placements.is_empty() {
+			f.line();
+		}
+		for (i, sep) in self.btlset.placements.iter().enumerate() {
+			f.val(ed7::battle::PlacementId(i as u16));
+			let mut tup = f.term("");
+			for val in sep {
+				tup.field().val(val);
+			}
+			drop(tup);
+			f.line();
+		}
+
 		// battles
 
 		// for (i, func) in self.functions.iter().enumerate() {
