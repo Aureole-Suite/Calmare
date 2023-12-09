@@ -134,7 +134,24 @@ impl PrintBlock for ed7::Scena {
 			f.line();
 		}
 
-		// at rolls
+		if !self.btlset.at_rolls.is_empty() {
+			f.line();
+		}
+		for (i, roll) in self.btlset.at_rolls.iter().enumerate() {
+			f.val(ed7::battle::AtRollId(i as u16)).no_space().word(":");
+			let mut first = true;
+			for (name, val) in f.insn_set().at_roll.iter().zip(roll)  {
+				if *val != 0 {
+					if !first {
+						f.no_space().word(";");
+					}
+					first = false;
+					f.word(name).val(val);
+				}
+			}
+			f.line();
+		}
+
 		// placements
 		// battles
 

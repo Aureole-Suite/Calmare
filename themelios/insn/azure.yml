@@ -376,3 +376,21 @@ insns:
 - Ao_FD: [u16, u16]
 - Ao_FE: [u8]
 - Ao_FF: [{u8: ObjectId}, Pos3]
+
+at_roll:
+- none
+- hp10
+- hp50
+- ep10
+- ep50
+- cp10
+- cp50
+- unk1
+- unk2
+- unk3
+- unk4
+- unk5
+- unk6
+- unk7
+- unk8
+- unk9

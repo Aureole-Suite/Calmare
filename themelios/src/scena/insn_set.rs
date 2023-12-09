@@ -56,6 +56,7 @@ pub fn get(game: Game, variant: Variant) -> InsnSet<'static> {
 pub struct InsnSetInner {
 	pub game: Game,
 	pub insns: [Insn; 256],
+	pub at_roll: [String; 16],
 	pub insns_rev: BTreeMap<String, Vec<Arg>>,
 }
 
@@ -67,6 +68,7 @@ struct InsnSet_inner {
 	pub game: Game,
 	#[serde_as(as = "[_; 256]")]
 	pub insns: [Insn; 256],
+	pub at_roll: [String; 16],
 	#[serde(skip)]
 	pub insns_rev: BTreeMap<String, Vec<Arg>>,
 }
