@@ -200,7 +200,22 @@ impl ParseBlock for ed7::Scena {
 				"anim" => {
 					let id = parse_id(f, AnimId)?;
 					let span = f.span(pos);
-					return Err(Diagnostic::info(span, "not yet implemented"));
+					let val = (|| {
+						let speed = f.val()?;
+						let mut tup = f.tuple()?;
+						let mut frames = Vec::new();
+						while let Some(f) = tup.try_field()? {
+							if frames.len() >= 8 {
+								return Err(Diagnostic::error(
+									f.pos()?.as_span(),
+									"up to 8 frames allowed",
+								));
+							}
+							frames.push(f.val()?);
+						}
+						Ok(ed7::Animation { speed, frames })
+					})();
+					animations.insert(f, span, id.0 as usize, val);
 				}
 				"btlset" => {
 					return Err(Diagnostic::info(f.span(pos), "not yet implemented"));
