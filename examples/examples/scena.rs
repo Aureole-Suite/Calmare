@@ -15,17 +15,16 @@ fn main() -> anyhow::Result<()> {
 
 		let output = calmare::print(&scena, &iset);
 		print!("{}", output);
-		// let (v, diags) = calmare::parse::<Scena>(&output, &iset);
-		// let v = v.unwrap();
-		//
-		// if v != scena {
-		// 	println!("{:#?}", scena);
-		// 	println!("{:#?}", v);
-		// }
-		//
-		// print_diags(&file, &output, &diags);
+		let (v, diags) = calmare::parse::<Scena>(&output, &iset);
+		let v = v.unwrap();
 
-		// println!("{:#?}", scena.functions[0]);
+		if v != scena {
+			println!("{:#?}", scena);
+			println!("{:#?}", v);
+		}
+
+		print_diags(&file, &output, &diags);
+
 		let bytes2 = Scena::write(&iset, &scena)?;
 		if bytes != bytes2 {
 			std::fs::write(

@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::collections::BTreeMap;
 
 use themelios::scena::ed7::AnimId;
 use themelios::scena::{ed7, ChipId, EventId, FuncId, LocalCharId, LookPointId};
@@ -7,8 +6,10 @@ use themelios::types::{BgmId, FileId, TownId};
 
 use crate::macros::strukt::{Field, Slot};
 use crate::parse::{self, Diagnostic, Span};
-use crate::{Parse, ParseBlock, Parser, Print};
+use crate::{ParseBlock, Parser};
 use crate::{PrintBlock, Printer};
+
+use super::{parse_id, LocalFuncId, NpcOrMonster, PackedIndices};
 
 crate::macros::newtype_term!(ed7::AnimId, "anim");
 crate::macros::newtype_hex!(ed7::ScenaFlags);
@@ -22,7 +23,11 @@ mod battle;
 impl PrintBlock for ed7::Scena {
 	fn print_block(&self, f: &mut Printer) {
 		f.word("scena").val_block(Head {
-			name: (Cow::Borrowed(&self.path), Cow::Borrowed(&self.map), Cow::Borrowed(&self.filename)),
+			name: (
+				Cow::Borrowed(&self.path),
+				Cow::Borrowed(&self.map),
+				Cow::Borrowed(&self.filename),
+			),
 			town: self.town,
 			bgm: self.bgm,
 			flags: self.flags,
@@ -107,8 +112,156 @@ impl PrintBlock for ed7::Scena {
 
 		for (i, func) in self.functions.iter().enumerate() {
 			f.line();
-			f.val(super::LocalFuncId(i as u16)).val_block(func);
+			f.val(LocalFuncId(i as u16)).val_block(func);
 		}
+	}
+}
+
+impl ParseBlock for ed7::Scena {
+	fn parse_block(f: &mut Parser) -> parse::Result<Self> {
+		let start = f.raw_pos();
+
+		let mut head = None::<Slot<Head>>;
+		let mut entries = Slot::new();
+		let mut chips = PackedIndices::new();
+		let mut npcs_monsters = PackedIndices::new();
+		let mut events = PackedIndices::new();
+		let mut look_points = PackedIndices::new();
+		let mut labels = PackedIndices::new();
+		let mut no_labels = None::<(Span, bool)>;
+		let mut animations = PackedIndices::new();
+		let mut btlset = Slot::new();
+		let mut functions = PackedIndices::new();
+
+		f.lines(|f| {
+			let pos = f.pos()?;
+			match f.word()? {
+				"scena" => {
+					let val = f.val_block();
+					head.get_or_insert_with(Slot::new)
+						.insert(f, f.span(pos), val);
+				}
+				"entry" => {
+					let span = f.span(pos);
+					let val = f.val_block();
+					entries.insert(f, span, val);
+				}
+				"chip" => {
+					let id = parse_id(f, ChipId)?;
+					let span = f.span(pos);
+					let val = f.val::<FileId>();
+					chips.insert(f, span, id.0 as usize, val);
+				}
+				"npc" => {
+					let id = f.val::<LocalCharId>()?;
+					let span = f.span(pos);
+					let val = f.val_block().map(NpcOrMonster::Npc);
+					npcs_monsters.insert(f, span, id.0 as usize, val);
+				}
+				"monster" => {
+					let id = f.val::<LocalCharId>()?;
+					let span = f.span(pos);
+					let val = f.val_block().map(NpcOrMonster::Monster);
+					npcs_monsters.insert(f, span, id.0 as usize, val);
+				}
+				"event" => {
+					let id = parse_id(f, EventId)?;
+					let span = f.span(pos);
+					let val = f.val_block();
+					events.insert(f, span, id.0 as usize, val);
+				}
+				"look_point" => {
+					let id = parse_id(f, LookPointId)?;
+					let span = f.span(pos);
+					let val = f.val_block();
+					look_points.insert(f, span, id.0 as usize, val);
+				}
+				"labels" => {
+					let id = parse_id(f, LabelId)?;
+					let span = f.span(pos);
+					if f.check_word("null").is_ok() {
+						if let Some((prev, _)) = no_labels {
+							Diagnostic::error(span, "duplicate item")
+								.with_note(prev, "previous here")
+								.emit(f);
+						}
+						no_labels = Some((span, true));
+					} else {
+						if let Some((prev, true)) = no_labels {
+							Diagnostic::error(span, "duplicate item")
+								.with_note(prev, "previous here")
+								.emit(f);
+						}
+						no_labels = Some((span, false));
+						let val = f.val_block();
+						labels.insert(f, span, id.0 as usize, val);
+					}
+				}
+				"anim" => {
+					let id = parse_id(f, AnimId)?;
+					let span = f.span(pos);
+					return Err(Diagnostic::info(span, "not yet implemented"));
+				}
+				"btlset" => {
+					return Err(Diagnostic::info(f.span(pos), "not yet implemented"));
+				}
+				"fn" => {
+					let id = parse_id(f, LocalFuncId)?;
+					let span = f.span(pos);
+					let val = f.val_block();
+					functions.insert(f, span, id.0 as usize, val);
+				}
+				_ => return Err(Diagnostic::error(f.span(pos), "invalid declaration")),
+			}
+			Ok(())
+		});
+
+		let chips = chips.finish(f, "chip");
+		let (npcs, monsters) = super::chars(f, npcs_monsters);
+		let events = events.finish(f, "event");
+		let look_points = look_points.finish(f, "look_point");
+		let labels = labels.finish(f, "label");
+		let animations = animations.finish(f, "anim");
+		let functions = functions.finish(f, "fn");
+
+		let labels = if let Some((_, true)) = no_labels {
+			Some(vec![])
+		} else if labels.is_empty() {
+			None
+		} else {
+			Some(labels)
+		};
+
+		let Some(head) = head else {
+			return Err(Diagnostic::error(start.as_span(), "missing `scena` block"));
+		};
+
+		let Some(head) = head.get() else {
+			return Err(Diagnostic::DUMMY);
+		};
+
+		Ok(ed7::Scena {
+			path: head.name.0.into_owned(),
+			map: head.name.1.into_owned(),
+			filename: head.name.2.into_owned(),
+			town: head.town,
+			bgm: head.bgm,
+			flags: head.flags,
+			item_use: head.item_use,
+			unknown_function: head.unknown_function,
+			system30: head.system30,
+			includes: head.include.map(|v| v.unwrap_or(FileId::NONE)),
+			entries: entries.get(),
+			chips,
+			npcs,
+			monsters,
+			events,
+			look_points,
+			labels,
+			animations,
+			btlset: btlset.get().unwrap_or_default(),
+			functions,
+		})
 	}
 }
 
