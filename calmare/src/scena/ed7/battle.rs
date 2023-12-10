@@ -2,7 +2,9 @@ use themelios::scena::ed7::battle::*;
 use themelios::types::{BattleId, BgmId, FileId};
 
 use crate::macros::strukt::Field;
-use crate::{parse, Parser};
+use crate::parse::Diagnostic;
+use crate::scena::PackedIndices;
+use crate::{parse, ParseBlock, Parser};
 use crate::{PrintBlock, Printer};
 
 crate::macros::newtype_term!(SepithId, "sepith");
@@ -74,6 +76,35 @@ impl PrintBlock for BattleSet {
 			f.line();
 			f.val(BattleId(i as u32)).val_block(bat);
 		}
+	}
+}
+
+impl ParseBlock for BattleSet {
+	fn parse_block(f: &mut Parser) -> parse::Result<Self> {
+		let mut sepith = PackedIndices::new();
+		let mut at_rolls = PackedIndices::new();
+		let mut placements = PackedIndices::new();
+		let mut battles = PackedIndices::new();
+
+		f.lines(|f| {
+			let pos = f.pos()?;
+			match f.word()? {
+				_ => return Err(Diagnostic::error(f.span(pos), "invalid declaration")),
+			}
+			Ok(())
+		});
+
+		let sepith = sepith.finish(f, "sepith");
+		let at_rolls = at_rolls.finish(f, "at_rolls");
+		let placements = placements.finish(f, "placement");
+		let battles = battles.finish(f, "battle");
+
+		Ok(BattleSet {
+			sepith,
+			at_rolls,
+			placements,
+			battles,
+		})
 	}
 }
 

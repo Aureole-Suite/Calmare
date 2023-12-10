@@ -218,7 +218,9 @@ impl ParseBlock for ed7::Scena {
 					animations.insert(f, span, id.0 as usize, val);
 				}
 				"btlset" => {
-					return Err(Diagnostic::info(f.span(pos), "not yet implemented"));
+					let span = f.span(pos);
+					let val = f.val_block();
+					btlset.insert(f, span, val);
 				}
 				"fn" => {
 					let id = parse_id(f, LocalFuncId)?;
