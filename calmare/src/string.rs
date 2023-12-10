@@ -91,8 +91,10 @@ impl Parse for Text {
 		let mut string = String::new();
 		let mut pos = f.raw_pos();
 		let mut auto = None;
+		let mut skip_line = 1;
 		f.lines(|f| {
-			newlines(f.text_since(pos), string.is_empty().into(), &mut string);
+			newlines(f.text_since(pos), skip_line, &mut string);
+			skip_line = 0;
 			loop {
 				let pos = f.raw_pos();
 				match f.any_char() {
@@ -104,6 +106,7 @@ impl Parse for Text {
 								'A' => auto = Some((string.len(), f.raw_span(pos))),
 								'W' => string.push('\t'),
 								'r' => string.push('\r'),
+								'\n' => skip_line = 1,
 								ch @ (' ' | '　' | '{' | '}') => string.push(ch),
 								_ => Diagnostic::error(f.raw_span(pos), "invalid escape sequence")
 									.emit(f),
@@ -122,7 +125,7 @@ impl Parse for Text {
 			pos = f.raw_pos();
 			Ok(())
 		});
-		newlines(f.text_since(pos), 1, &mut string);
+		newlines(f.text_since(pos), 1 + skip_line, &mut string);
 
 		match auto {
 			Some((len, _)) if len == string.len() => {}
