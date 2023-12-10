@@ -1,7 +1,7 @@
 use themelios::scena::ed7::battle::*;
 use themelios::types::{BattleId, BgmId, FileId};
 
-use crate::macros::strukt::Field;
+use crate::macros::strukt::{Field, Slot};
 use crate::parse::Diagnostic;
 use crate::scena::{parse_id, PackedIndices};
 use crate::{parse, ParseBlock, Parser};
@@ -41,22 +41,31 @@ impl PrintBlock for BattleSet {
 			f.line();
 		}
 
-		if !self.at_rolls.is_empty() && !self.sepith.is_empty() {
-			f.line();
-		}
+		// TODO put on one line
+		// if !self.at_rolls.is_empty() && !self.sepith.is_empty() {
+		//	 f.line();
+		// }
 		for (i, roll) in self.at_rolls.iter().enumerate() {
-			f.val(AtRollId(i as u16)).no_space().word(":");
-			let mut first = true;
-			for (name, val) in f.insn_set().at_roll.iter().zip(roll) {
-				if *val != 0 {
-					if !first {
-						f.no_space().word(";");
-					}
-					first = false;
-					f.word(name).val(val);
-				}
-			}
 			f.line();
+			f.val(AtRollId(i as u16)).block(|f| {
+				for (name, val) in f.insn_set().at_roll.iter().zip(roll) {
+					if *val != 0 {
+						f.word(name).val(val).line();
+					}
+				}
+			});
+			// f.val(AtRollId(i as u16)).no_space().word(":");
+			// let mut first = true;
+			// for (name, val) in f.insn_set().at_roll.iter().zip(roll) {
+			// 	if *val != 0 {
+			// 		if !first {
+			// 			f.no_space().word(";");
+			// 		}
+			// 		first = false;
+			// 		f.word(name).val(val);
+			// 	}
+			// }
+			// f.line();
 		}
 
 		if !self.placements.is_empty() && (!self.at_rolls.is_empty() || !self.sepith.is_empty()) {
@@ -103,9 +112,9 @@ impl ParseBlock for BattleSet {
 				"at_roll" => {
 					let id = parse_id(f, AtRollId)?;
 					let span = f.span(pos);
-					// let val = (|| {
-					// })();
-					// sepith.insert(f, span, id.0 as usize, val);
+					f.check(":")?;
+					let val = parse_at_roll(f);
+					at_rolls.insert(f, span, id.0 as usize, val);
 				}
 				"placement" => {
 					let id = parse_id(f, PlacementId)?;
@@ -141,6 +150,25 @@ impl ParseBlock for BattleSet {
 			battles,
 		})
 	}
+}
+
+fn parse_at_roll(f: &mut Parser) -> Result<[u8; 16], Diagnostic> {
+	let mut slots = <[Slot<u8>; 16]>::default();
+	f.lines(|f| {
+		let pos = f.pos()?;
+		let word = f.word();
+		let word = word?;
+		let span = f.span(pos);
+		match f.insn_set().at_roll.iter().position(|v| v == word) {
+			Some(n) => {
+				let val = f.val();
+				slots[n].insert(f, span, val);
+			}
+			None => return Err(Diagnostic::error(f.span(pos), "invalid at roll field")),
+		}
+		Ok(())
+	});
+	Ok(slots.map(|v| v.get().unwrap_or_default()))
 }
 
 pub struct Setup {
