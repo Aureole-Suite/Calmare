@@ -119,17 +119,17 @@ impl<'src> Parser<'src> {
 			.map(|suffix| self.advance(self.rest().len() - suffix.len()))
 	}
 
-	pub fn any_char(&mut self) -> Option<char> {
-		self.pat(|_| true).map(|a| a.chars().next().unwrap())
+	pub fn any_char(&mut self) -> char {
+		if self.rest().starts_with('\n') || self.rest().is_empty() {
+			'\n'
+		} else {
+			self.pat(|_| true).unwrap().chars().next().unwrap()
+		}
 	}
 
 	pub fn pat_mul(&mut self, pat: impl Pattern<'src>) -> &'src str {
 		let suffix = self.rest().trim_start_matches(pat);
 		self.advance(self.rest().len() - suffix.len())
-	}
-
-	pub fn is_newline(&self) -> bool {
-		self.rest().starts_with('\n') || self.rest().is_empty()
 	}
 
 	pub fn peek_word(&mut self) -> Result<&'src str> {

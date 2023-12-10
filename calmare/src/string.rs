@@ -22,14 +22,14 @@ impl Parse for String {
 			.ok_or_else(|| Diagnostic::error(pos.as_span(), "expected string"))?;
 		let mut out = String::new();
 		loop {
-			if f.is_newline() {
-				return Err(Diagnostic::error(
-					pos.as_span() | f.raw_pos().as_span(),
-					"unterminated string",
-				));
-			}
-			match f.any_char().unwrap() {
+			match f.any_char() {
 				'"' => break,
+				'\n' => {
+					return Err(Diagnostic::error(
+						pos.as_span() | f.raw_pos().as_span(),
+						"unterminated string",
+					))
+				}
 				'\\' => unimplemented!(), // will be ♯ later
 				char => out.push(char),
 			}
@@ -93,23 +93,24 @@ impl Parse for Text {
 		let mut auto = None;
 		f.lines(|f| {
 			newlines(f.text_since(pos), string.is_empty().into(), &mut string);
-			while !f.is_newline() {
+			loop {
 				let pos = f.raw_pos();
-				match f.any_char().unwrap() {
+				match f.any_char() {
+					'\n' => break,
 					'♯' => {
 						let n = f.pat_mul(|c: char| char::is_ascii_digit(&c));
 						if n.is_empty() {
 							match f.any_char() {
-								Some('A') => auto = Some((string.len(), f.raw_span(pos))),
-								Some('W') => string.push('\t'),
-								Some('r') => string.push('\r'),
-								Some(ch @ (' ' | '　' | '{' | '}')) => string.push(ch),
+								'A' => auto = Some((string.len(), f.raw_span(pos))),
+								'W' => string.push('\t'),
+								'r' => string.push('\r'),
+								ch @ (' ' | '　' | '{' | '}') => string.push(ch),
 								_ => Diagnostic::error(f.raw_span(pos), "invalid escape sequence")
 									.emit(f),
 							}
 						} else {
 							match f.any_char() {
-								Some('C' | 'i' | 'x') => string.push_str(f.text_since(pos)),
+								'C' | 'i' | 'x' => string.push_str(f.text_since(pos)),
 								_ => Diagnostic::error(f.raw_span(pos), "invalid escape sequence")
 									.emit(f),
 							}
