@@ -199,6 +199,7 @@ crate::macros::strukt::strukt! {
 #[derive(Debug, Clone, Default)]
 struct Setups {
 	value: Vec<(u8, BattleSetup)>,
+	count: usize,
 }
 
 impl Field for Setups {
@@ -216,6 +217,25 @@ impl Field for Setups {
 	}
 
 	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()> {
+		if self.count == 4 {
+			parse::Diagnostic::error(f.span_of(word), "up to 4 setups allowed").emit(f);
+		}
+		self.count += 1;
+
+		let weight = f.val()?;
+		let setup = f.val_block::<Setup>()?;
+		self.value.push((
+			weight,
+			BattleSetup {
+				enemies: setup.enemies.into(),
+				placement: setup.placement.0,
+				placement_ambush: setup.placement.1,
+				bgm: setup.bgm.0,
+				bgm_ambush: setup.bgm.1,
+				at_roll: setup.at_roll,
+			},
+		));
+
 		Ok(())
 	}
 
