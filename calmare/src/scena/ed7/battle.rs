@@ -3,7 +3,7 @@ use themelios::types::{BattleId, BgmId, FileId};
 
 use crate::macros::strukt::Field;
 use crate::parse::Diagnostic;
-use crate::scena::PackedIndices;
+use crate::scena::{parse_id, PackedIndices};
 use crate::{parse, ParseBlock, Parser};
 use crate::{PrintBlock, Printer};
 
@@ -89,13 +89,48 @@ impl ParseBlock for BattleSet {
 		f.lines(|f| {
 			let pos = f.pos()?;
 			match f.word()? {
+				"sepith" => {
+					let id = parse_id(f, SepithId)?;
+					let span = f.span(pos);
+					let val = (|| {
+						let mut tup = f.tuple()?;
+						let v = std::array::try_from_fn(|_| tup.field()?.val())?;
+						tup.finish()?;
+						Ok(v)
+					})();
+					sepith.insert(f, span, id.0 as usize, val);
+				}
+				"at_roll" => {
+					let id = parse_id(f, AtRollId)?;
+					let span = f.span(pos);
+					// let val = (|| {
+					// })();
+					// sepith.insert(f, span, id.0 as usize, val);
+				}
+				"placement" => {
+					let id = parse_id(f, PlacementId)?;
+					let span = f.span(pos);
+					let val = (|| {
+						let mut tup = f.tuple()?;
+						let v = std::array::try_from_fn(|_| tup.field()?.val())?;
+						tup.finish()?;
+						Ok(v)
+					})();
+					placements.insert(f, span, id.0 as usize, val);
+				}
+				"battle" => {
+					let id = parse_id(f, BattleId)?;
+					let span = f.span(pos);
+					let val = f.val_block();
+					battles.insert(f, span, id.0 as usize, val);
+				}
 				_ => return Err(Diagnostic::error(f.span(pos), "invalid declaration")),
 			}
 			Ok(())
 		});
 
 		let sepith = sepith.finish(f, "sepith");
-		let at_rolls = at_rolls.finish(f, "at_rolls");
+		let at_rolls = at_rolls.finish(f, "at_roll");
 		let placements = placements.finish(f, "placement");
 		let battles = battles.finish(f, "battle");
 
