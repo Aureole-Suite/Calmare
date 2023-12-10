@@ -135,9 +135,11 @@ impl<'src> Parser<'src> {
 	pub fn peek_word(&mut self) -> Result<&'src str> {
 		self.pos()?;
 		let s = self.rest();
+		let start = |c| unicode_ident::is_xid_start(c) || c == '_';
+		let cont = |c| unicode_ident::is_xid_continue(c) || c == '/';
 		let suffix = s
-			.strip_prefix(|c| unicode_ident::is_xid_start(c) || c == '_')
-			.map(|suffix| suffix.trim_start_matches(unicode_ident::is_xid_continue))
+			.strip_prefix(start)
+			.map(|suffix| suffix.trim_start_matches(cont))
 			.unwrap_or(s);
 		Ok(&s[..s.len() - suffix.len()])
 	}
