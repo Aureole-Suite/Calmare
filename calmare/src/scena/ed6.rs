@@ -65,7 +65,7 @@ impl ParseBlock for ed6::Scena {
 	fn parse_block(f: &mut Parser) -> parse::Result<Self> {
 		let start = f.raw_pos();
 
-		let mut head = None::<Slot<Head>>;
+		let mut head = <Slot<Head>>::new();
 		let mut chcps = PackedIndices::new();
 		let mut npcs_monsters = PackedIndices::new();
 		let mut events = PackedIndices::new();
@@ -78,7 +78,7 @@ impl ParseBlock for ed6::Scena {
 			match f.word()? {
 				"scena" => {
 					let val = f.val_block();
-					head.get_or_insert_with(Slot::new).insert(f.span(pos), val);
+					head.insert(f.span(pos), val);
 				}
 				"entry" => {
 					entries.push(f.val_block()?);
@@ -135,7 +135,7 @@ impl ParseBlock for ed6::Scena {
 		let look_points = look_points.finish("look_point");
 		let functions = functions.finish("fn");
 
-		let Some(head) = head else {
+		if head.span().is_none() {
 			return Err(Diagnostic::error(start.as_span(), "missing `scena` block"));
 		};
 
