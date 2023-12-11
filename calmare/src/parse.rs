@@ -331,20 +331,33 @@ impl<'src> Parser<'src> {
 		}
 	}
 
-	pub fn tuple(&mut self) -> Result<TupleParser<'_, 'src>> {
+	pub fn tuple<T>(
+		&mut self,
+		func: impl FnOnce(&mut TupleParser<'_, 'src>) -> Result<T>,
+	) -> Result<T> {
 		self.check("(")?;
-		Ok(TupleParser::new(self))
+		let mut tup = TupleParser::new(self);
+		let v = func(&mut tup)?;
+		if !tup.done {
+			self.check(")")?;
+		}
+		Ok(v)
 	}
 }
 
 pub struct TupleParser<'a, 'src> {
 	parser: &'a mut Parser<'src>,
 	count: usize,
+	done: bool,
 }
 
 impl<'a, 'src> TupleParser<'a, 'src> {
 	pub fn new(parser: &'a mut Parser<'src>) -> Self {
-		Self { parser, count: 0 }
+		Self {
+			parser,
+			count: 0,
+			done: false,
+		}
 	}
 
 	pub fn field(&mut self) -> Result<&mut Parser<'src>> {
@@ -365,6 +378,7 @@ impl<'a, 'src> TupleParser<'a, 'src> {
 	pub fn try_field(&mut self) -> Result<Option<&mut Parser<'src>>> {
 		self.parser.pos()?;
 		if self.parser.check(")").is_ok() {
+			self.done = true;
 			return Ok(None);
 		}
 		if self.count != 0 {
@@ -372,10 +386,6 @@ impl<'a, 'src> TupleParser<'a, 'src> {
 		}
 		self.count += 1;
 		Ok(Some(self.parser))
-	}
-
-	pub fn finish(self) -> Result<()> {
-		self.parser.check(")")
 	}
 }
 

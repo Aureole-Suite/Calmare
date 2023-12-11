@@ -167,15 +167,17 @@ impl ParseBlock for ed7::Scena {
 				}
 				"anim" => animations.insert(f, word, |f| {
 					let speed = f.val()?;
-					let mut tup = f.tuple()?;
-					let mut frames = Vec::new();
-					while let Some(f) = tup.try_field()? {
-						if frames.len() >= 8 {
-							Diagnostic::error(f.pos()?.as_span(), "up to 8 frames allowed").emit();
+					f.tuple(|tup| {
+						let mut frames = Vec::new();
+						while let Some(f) = tup.try_field()? {
+							if frames.len() >= 8 {
+								Diagnostic::error(f.pos()?.as_span(), "up to 8 frames allowed")
+									.emit();
+							}
+							frames.push(f.val()?);
 						}
-						frames.push(f.val()?);
-					}
-					Ok(ed7::Animation { speed, frames })
+						Ok(ed7::Animation { speed, frames })
+					})
 				}),
 				"btlset" => btlset.insert(f.span(pos), f.val_block()),
 				"fn" => functions.insert(f, word, |f| f.val_block()),

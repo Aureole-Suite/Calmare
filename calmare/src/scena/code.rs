@@ -337,13 +337,14 @@ fn parse_arg(out: &mut Vec<Arg>, f: &mut Parser<'_>, iarg: &iset::Arg) -> Result
 		}
 		iset::Arg::Misc(iarg) => parse_misc_arg(out, f, iarg)?,
 		iset::Arg::Tuple(iargs) => {
-			let mut tup = f.tuple()?;
-			let mut values = Vec::new();
-			for iarg in iargs {
-				parse_arg(&mut values, tup.field()?, iarg)?;
-			}
-			tup.finish()?;
-			out.push(Arg::Tuple(values));
+			f.tuple(|tup| {
+				let mut values = Vec::new();
+				for iarg in iargs {
+					parse_arg(&mut values, tup.field()?, iarg)?;
+				}
+				out.push(Arg::Tuple(values));
+				Ok(())
+			})?;
 		}
 	}
 	Ok(())
@@ -422,11 +423,13 @@ fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> p
 	where
 		F: FnMut(&mut Parser) -> parse::Result<T>,
 	{
-		let mut tup = f.tuple()?;
 		let mut vals = Vec::new();
-		while let Some(f) = tup.try_field()? {
-			vals.push(func(f)?);
-		}
+		f.tuple(|tup| {
+			while let Some(f) = tup.try_field()? {
+				vals.push(func(f)?);
+			}
+			Ok(())
+		})?;
 		Ok(vals)
 	}
 
@@ -441,11 +444,11 @@ fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> p
 		MA::Expr => out.push(Arg::Expr(f.val()?)),
 		MA::Fork | MA::ForkLoop(_) => out.push(Arg::Code(f.val_block()?)),
 		MA::SwitchTable(_, _) => out.push(Arg::Tuple(tuple(f, |f| {
-			let mut tup = f.tuple()?;
-			let a = tup.field()?.val()?;
-			let b = tup.field()?.val()?;
-			tup.finish()?;
-			Ok(Arg::Tuple(vec![Arg::Int(a), Arg::Label(b)]))
+			f.tuple(|tup| {
+				let a = tup.field()?.val()?;
+				let b = tup.field()?.val()?;
+				Ok(Arg::Tuple(vec![Arg::Int(a), Arg::Label(b)]))
+			})
 		})?)),
 		MA::QuestList => list(out, f, |f| f.val().map(Arg::QuestId))?,
 		MA::Menu => list(out, f, |f| f.val().map(Arg::TString))?,

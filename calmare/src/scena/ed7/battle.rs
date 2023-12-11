@@ -100,20 +100,14 @@ impl ParseBlock for BattleSet {
 			let word = f.word()?;
 			match word {
 				"sepith" => sepith.insert(f, word, |f| {
-					let mut tup = f.tuple()?;
-					let v = std::array::try_from_fn(|_| tup.field()?.val())?;
-					tup.finish()?;
-					Ok(v)
+					f.tuple(|tup| std::array::try_from_fn(|_| tup.field()?.val()))
 				}),
 				"at_roll" => at_rolls.insert(f, word, |f| {
 					f.check(":")?;
 					parse_at_roll(f)
 				}),
 				"placement" => placements.insert(f, word, |f| {
-					let mut tup = f.tuple()?;
-					let v = std::array::try_from_fn(|_| tup.field()?.val())?;
-					tup.finish()?;
-					Ok(v)
+					f.tuple(|tup| std::array::try_from_fn(|_| tup.field()?.val()))
 				}),
 				"battle" => battles.insert(f, word, |f| f.val_block()),
 				_ => return Err(Diagnostic::error(f.span(pos), "invalid declaration")),
