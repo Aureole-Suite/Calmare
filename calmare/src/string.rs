@@ -5,7 +5,16 @@ use crate::{Parse, Parser, Print, Printer};
 
 impl Print for str {
 	fn print(&self, f: &mut Printer) {
-		write!(f, "{self:?}"); // TODO
+		write!(f, "\"");
+		for c in self.chars() {
+			match c {
+				'"' => write!(f, "♯\""),
+				'\n' => write!(f, "♯n"),
+				'♯' => write!(f, "♯♯"),
+				c => write!(f, "{c}"),
+			};
+		}
+		write!(f, "\"");
 	}
 }
 
@@ -22,6 +31,7 @@ impl Parse for String {
 			.ok_or_else(|| Diagnostic::error(pos.as_span(), "expected string"))?;
 		let mut out = String::new();
 		loop {
+			let pos = f.raw_pos();
 			match f.any_char() {
 				'"' => break,
 				'\n' => {
@@ -30,7 +40,12 @@ impl Parse for String {
 						"unterminated string",
 					))
 				}
-				'\\' => unimplemented!(), // will be ♯ later
+				'♯' => match f.any_char() {
+					'"' => out.push('"'),
+					'n' => out.push('\n'),
+					'♯' => out.push('♯'),
+					_ => Diagnostic::error(f.raw_span(pos), "invalid escape sequence").emit(),
+				},
 				char => out.push(char),
 			}
 		}
