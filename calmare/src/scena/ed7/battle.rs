@@ -98,41 +98,38 @@ impl ParseBlock for BattleSet {
 		f.lines(|f| {
 			let pos = f.pos()?;
 			match f.word()? {
-				"sepith" => {
-					let id = parse_id(f, SepithId)?;
-					let span = f.span(pos);
-					let val = try {
+				"sepith" => sepith.insert(
+					parse_id(f, SepithId)?.0 as usize,
+					f.span(pos),
+					try {
 						let mut tup = f.tuple()?;
 						let v = std::array::try_from_fn(|_| tup.field()?.val())?;
 						tup.finish()?;
 						v
-					};
-					sepith.insert(id.0 as usize, span, val);
-				}
+					},
+				),
 				"at_roll" => {
 					let id = parse_id(f, AtRollId)?;
 					let span = f.span(pos);
 					f.check(":")?;
 					let val = parse_at_roll(f);
-					at_rolls.insert(id.0 as usize, span, val);
+					at_rolls.insert(id.0 as usize, span, val)
 				}
-				"placement" => {
-					let id = parse_id(f, PlacementId)?;
-					let span = f.span(pos);
-					let val = try {
+				"placement" => placements.insert(
+					parse_id(f, PlacementId)?.0 as usize,
+					f.span(pos),
+					try {
 						let mut tup = f.tuple()?;
 						let v = std::array::try_from_fn(|_| tup.field()?.val())?;
 						tup.finish()?;
 						v
-					};
-					placements.insert(id.0 as usize, span, val);
-				}
-				"battle" => {
-					let id = parse_id(f, BattleId)?;
-					let span = f.span(pos);
-					let val = f.val_block();
-					battles.insert(id.0 as usize, span, val);
-				}
+					},
+				),
+				"battle" => battles.insert(
+					parse_id(f, BattleId)?.0 as usize,
+					f.span(pos),
+					f.val_block(),
+				),
 				_ => return Err(Diagnostic::error(f.span(pos), "invalid declaration")),
 			}
 			Ok(())

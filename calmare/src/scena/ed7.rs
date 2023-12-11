@@ -136,45 +136,31 @@ impl ParseBlock for ed7::Scena {
 		f.lines(|f| {
 			let pos = f.pos()?;
 			match f.word()? {
-				"scena" => {
-					let val = f.val_block();
-					head.insert(f.span(pos), val);
-				}
-				"entry" => {
-					let span = f.span(pos);
-					let val = f.val_block();
-					entries.insert(span, val);
-				}
-				"chip" => {
-					let id = parse_id(f, ChipId)?;
-					let span = f.span(pos);
-					let val = f.val::<FileId>();
-					chips.insert(id.0 as usize, span, val);
-				}
-				"npc" => {
-					let id = f.val::<LocalCharId>()?;
-					let span = f.span(pos);
-					let val = f.val_block().map(NpcOrMonster::Npc);
-					npcs_monsters.insert(id.0 as usize, span, val);
-				}
-				"monster" => {
-					let id = f.val::<LocalCharId>()?;
-					let span = f.span(pos);
-					let val = f.val_block().map(NpcOrMonster::Monster);
-					npcs_monsters.insert(id.0 as usize, span, val);
-				}
+				"scena" => head.insert(f.span(pos), f.val_block()),
+				"entry" => entries.insert(f.span(pos), f.val_block()),
+				"chip" => chips.insert(
+					parse_id(f, ChipId)?.0 as usize,
+					f.span(pos),
+					f.val::<FileId>(),
+				),
+				"npc" => npcs_monsters.insert(
+					f.val::<LocalCharId>()?.0 as usize,
+					f.span(pos),
+					f.val_block().map(NpcOrMonster::Npc),
+				),
+				"monster" => npcs_monsters.insert(
+					f.val::<LocalCharId>()?.0 as usize,
+					f.span(pos),
+					f.val_block().map(NpcOrMonster::Monster),
+				),
 				"event" => {
-					let id = parse_id(f, EventId)?;
-					let span = f.span(pos);
-					let val = f.val_block();
-					events.insert(id.0 as usize, span, val);
+					events.insert(parse_id(f, EventId)?.0 as usize, f.span(pos), f.val_block())
 				}
-				"look_point" => {
-					let id = parse_id(f, LookPointId)?;
-					let span = f.span(pos);
-					let val = f.val_block();
-					look_points.insert(id.0 as usize, span, val);
-				}
+				"look_point" => look_points.insert(
+					parse_id(f, LookPointId)?.0 as usize,
+					f.span(pos),
+					f.val_block(),
+				),
 				"labels" => {
 					let id = parse_id(f, LabelId)?;
 					let span = f.span(pos);
@@ -196,10 +182,10 @@ impl ParseBlock for ed7::Scena {
 						labels.insert(id.0 as usize, span, val);
 					}
 				}
-				"anim" => {
-					let id = parse_id(f, AnimId)?;
-					let span = f.span(pos);
-					let val = try {
+				"anim" => animations.insert(
+					parse_id(f, AnimId)?.0 as usize,
+					f.span(pos),
+					try {
 						let speed = f.val()?;
 						let mut tup = f.tuple()?;
 						let mut frames = Vec::new();
@@ -213,20 +199,14 @@ impl ParseBlock for ed7::Scena {
 							frames.push(f.val()?);
 						}
 						ed7::Animation { speed, frames }
-					};
-					animations.insert(id.0 as usize, span, val);
-				}
-				"btlset" => {
-					let span = f.span(pos);
-					let val = f.val_block();
-					btlset.insert(span, val);
-				}
-				"fn" => {
-					let id = parse_id(f, LocalFuncId)?;
-					let span = f.span(pos);
-					let val = f.val_block();
-					functions.insert(id.0 as usize, span, val);
-				}
+					},
+				),
+				"btlset" => btlset.insert(f.span(pos), f.val_block()),
+				"fn" => functions.insert(
+					parse_id(f, LocalFuncId)?.0 as usize,
+					f.span(pos),
+					f.val_block(),
+				),
 				_ => return Err(Diagnostic::error(f.span(pos), "invalid declaration")),
 			}
 			Ok(())

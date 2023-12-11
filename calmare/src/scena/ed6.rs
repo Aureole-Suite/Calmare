@@ -76,54 +76,43 @@ impl ParseBlock for ed6::Scena {
 		f.lines(|f| {
 			let pos = f.pos()?;
 			match f.word()? {
-				"scena" => {
-					let val = f.val_block();
-					head.insert(f.span(pos), val);
-				}
-				"entry" => {
-					entries.push(f.val_block()?);
-				}
+				"scena" => head.insert(f.span(pos), f.val_block()),
+				"entry" => entries.push(f.val_block()?),
 				"chip" => {
-					// TODO handle null
-					let id = parse_id(f, ChipId)?;
-					let span = f.span(pos);
-					let val = try {
-						let ch = f.val::<FileId>()?;
-						let cp = f.val::<FileId>()?;
-						(ch, cp)
-					};
-					chcps.insert(id.0 as usize, span, val);
+					chcps.insert(
+						parse_id(f, ChipId)?.0 as usize,
+						f.span(pos),
+						try {
+							// TODO handle null
+							let ch = f.val::<FileId>()?;
+							let cp = f.val::<FileId>()?;
+							(ch, cp)
+						},
+					)
 				}
-				"npc" => {
-					let id = f.val::<LocalCharId>()?;
-					let span = f.span(pos);
-					let val = f.val_block().map(NpcOrMonster::Npc);
-					npcs_monsters.insert(id.0 as usize, span, val);
-				}
-				"monster" => {
-					let id = f.val::<LocalCharId>()?;
-					let span = f.span(pos);
-					let val = f.val_block().map(NpcOrMonster::Monster);
-					npcs_monsters.insert(id.0 as usize, span, val);
-				}
+				"npc" => npcs_monsters.insert(
+					f.val::<LocalCharId>()?.0 as usize,
+					f.span(pos),
+					f.val_block().map(NpcOrMonster::Npc),
+				),
+				"monster" => npcs_monsters.insert(
+					f.val::<LocalCharId>()?.0 as usize,
+					f.span(pos),
+					f.val_block().map(NpcOrMonster::Monster),
+				),
 				"event" => {
-					let id = parse_id(f, EventId)?;
-					let span = f.span(pos);
-					let val = f.val_block();
-					events.insert(id.0 as usize, span, val);
+					events.insert(parse_id(f, EventId)?.0 as usize, f.span(pos), f.val_block())
 				}
-				"look_point" => {
-					let id = parse_id(f, LookPointId)?;
-					let span = f.span(pos);
-					let val = f.val_block();
-					look_points.insert(id.0 as usize, span, val);
-				}
-				"fn" => {
-					let id = parse_id(f, LocalFuncId)?;
-					let span = f.span(pos);
-					let val = f.val_block();
-					functions.insert(id.0 as usize, span, val);
-				}
+				"look_point" => look_points.insert(
+					parse_id(f, LookPointId)?.0 as usize,
+					f.span(pos),
+					f.val_block(),
+				),
+				"fn" => functions.insert(
+					parse_id(f, LocalFuncId)?.0 as usize,
+					f.span(pos),
+					f.val_block(),
+				),
 				_ => return Err(Diagnostic::error(f.span(pos), "invalid declaration")),
 			}
 			Ok(())
