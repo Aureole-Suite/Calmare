@@ -165,16 +165,16 @@ impl<V> PackedIndices<V> {
 }
 
 #[derive(Debug, Clone)]
-enum NpcOrMonster<A, B> {
+enum Actor<A, B> {
 	Npc(A),
 	Monster(B),
 }
 
-fn chars<A, B>(items: PackedIndices<NpcOrMonster<A, B>>) -> (Vec<A>, Vec<B>) {
+fn split_actors<A, B>(items: PackedIndices<Actor<A, B>>) -> (Vec<A>, Vec<B>) {
 	let mut iter = items.items().iter().peekable();
 	while let (Some(a), Some(b)) = (iter.next(), iter.peek()) {
-		if matches!(&a.1.get_ref(), Some(NpcOrMonster::Monster(_)))
-			&& matches!(&b.1.get_ref(), Some(NpcOrMonster::Npc(_)))
+		if matches!(&a.1.get_ref(), Some(Actor::Monster(_)))
+			&& matches!(&b.1.get_ref(), Some(Actor::Npc(_)))
 		{
 			Diagnostic::error(b.1.span().unwrap(), "npcs mut come before monsters")
 				.with_note(a.1.span().unwrap(), "is after this monster")
@@ -186,8 +186,8 @@ fn chars<A, B>(items: PackedIndices<NpcOrMonster<A, B>>) -> (Vec<A>, Vec<B>) {
 	let mut monsters = Vec::new();
 	for m in items.finish("char") {
 		match m {
-			NpcOrMonster::Npc(n) => npcs.push(n),
-			NpcOrMonster::Monster(m) => monsters.push(m),
+			Actor::Npc(n) => npcs.push(n),
+			Actor::Monster(m) => monsters.push(m),
 		}
 	}
 

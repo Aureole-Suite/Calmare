@@ -9,7 +9,7 @@ use crate::parse::{self, Diagnostic, Span};
 use crate::{ParseBlock, Parser};
 use crate::{PrintBlock, Printer};
 
-use super::{parse_id, LocalFuncId, NpcOrMonster, PackedIndices};
+use super::{parse_id, Actor, LocalFuncId, PackedIndices};
 
 crate::macros::newtype_term!(ed7::AnimId, "anim");
 crate::macros::newtype_hex!(ed7::ScenaFlags);
@@ -124,7 +124,7 @@ impl ParseBlock for ed7::Scena {
 		let mut head = <Slot<Head>>::new();
 		let mut entries = Slot::new();
 		let mut chips = PackedIndices::new();
-		let mut npcs_monsters = PackedIndices::new();
+		let mut actors = PackedIndices::new();
 		let mut events = PackedIndices::new();
 		let mut look_points = PackedIndices::new();
 		let mut labels = PackedIndices::new();
@@ -143,15 +143,15 @@ impl ParseBlock for ed7::Scena {
 					f.span(pos),
 					f.val::<FileId>(),
 				),
-				"npc" => npcs_monsters.insert(
+				"npc" => actors.insert(
 					f.val::<LocalCharId>()?.0 as usize,
 					f.span(pos),
-					f.val_block().map(NpcOrMonster::Npc),
+					f.val_block().map(Actor::Npc),
 				),
-				"monster" => npcs_monsters.insert(
+				"monster" => actors.insert(
 					f.val::<LocalCharId>()?.0 as usize,
 					f.span(pos),
-					f.val_block().map(NpcOrMonster::Monster),
+					f.val_block().map(Actor::Monster),
 				),
 				"event" => {
 					events.insert(parse_id(f, EventId)?.0 as usize, f.span(pos), f.val_block())
@@ -213,7 +213,7 @@ impl ParseBlock for ed7::Scena {
 		});
 
 		let chips = chips.finish("chip");
-		let (npcs, monsters) = super::chars(npcs_monsters);
+		let (npcs, monsters) = super::split_actors(actors);
 		let events = events.finish("event");
 		let look_points = look_points.finish("look_point");
 		let labels = labels.finish("label");

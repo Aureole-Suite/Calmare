@@ -8,7 +8,7 @@ use crate::parse::{self, Diagnostic};
 use crate::{ParseBlock, Parser};
 use crate::{PrintBlock, Printer};
 
-use super::{parse_id, LocalFuncId, NpcOrMonster, PackedIndices};
+use super::{parse_id, Actor, LocalFuncId, PackedIndices};
 
 impl PrintBlock for ed6::Scena {
 	fn print_block(&self, f: &mut Printer) {
@@ -67,7 +67,7 @@ impl ParseBlock for ed6::Scena {
 
 		let mut head = <Slot<Head>>::new();
 		let mut chcps = PackedIndices::new();
-		let mut npcs_monsters = PackedIndices::new();
+		let mut actors = PackedIndices::new();
 		let mut events = PackedIndices::new();
 		let mut look_points = PackedIndices::new();
 		let mut entries = Vec::new();
@@ -90,15 +90,15 @@ impl ParseBlock for ed6::Scena {
 						},
 					)
 				}
-				"npc" => npcs_monsters.insert(
+				"npc" => actors.insert(
 					f.val::<LocalCharId>()?.0 as usize,
 					f.span(pos),
-					f.val_block().map(NpcOrMonster::Npc),
+					f.val_block().map(Actor::Npc),
 				),
-				"monster" => npcs_monsters.insert(
+				"monster" => actors.insert(
 					f.val::<LocalCharId>()?.0 as usize,
 					f.span(pos),
-					f.val_block().map(NpcOrMonster::Monster),
+					f.val_block().map(Actor::Monster),
 				),
 				"event" => {
 					events.insert(parse_id(f, EventId)?.0 as usize, f.span(pos), f.val_block())
@@ -119,7 +119,7 @@ impl ParseBlock for ed6::Scena {
 		});
 
 		let (ch, cp) = chcps.finish("chip").into_iter().unzip();
-		let (npcs, monsters) = super::chars(npcs_monsters);
+		let (npcs, monsters) = super::split_actors(actors);
 		let events = events.finish("event");
 		let look_points = look_points.finish("look_point");
 		let functions = functions.finish("fn");
