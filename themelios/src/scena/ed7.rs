@@ -39,6 +39,7 @@ pub struct Scena {
 	pub system30: u8, // system[30], which is related to car/Merkabah position
 	pub includes: [FileId; 6],
 
+	pub entries: Option<Entry>,
 	pub chips: Vec<FileId>,
 	pub labels: Option<Vec<Label>>,
 	pub npcs: Vec<Npc>,
@@ -46,7 +47,6 @@ pub struct Scena {
 	pub events: Vec<Event>,
 	pub look_points: Vec<LookPoint>,
 	pub animations: Vec<Animation>,
-	pub entries: Option<Entry>,
 
 	pub btlset: battle::BattleSet,
 
@@ -170,6 +170,7 @@ impl Scena {
 			unknown_function,
 			system30,
 			includes,
+			entries,
 			chips,
 			labels,
 			npcs,
@@ -177,9 +178,8 @@ impl Scena {
 			events,
 			look_points,
 			animations,
-			entries,
-			functions,
 			btlset: btl.finish(),
+			functions,
 		})
 	}
 

@@ -66,11 +66,11 @@ impl ParseBlock for ed6::Scena {
 		let start = f.raw_pos();
 
 		let mut head = <Slot<Head>>::new();
+		let mut entries = Vec::new();
 		let mut chcps = PackedIndices::new("chip");
 		let mut actors = PackedIndices::new("char");
 		let mut events = PackedIndices::new("event");
 		let mut look_points = PackedIndices::new("look_point");
-		let mut entries = Vec::new();
 		let mut functions = PackedIndices::new("fn");
 
 		f.lines(|f| {
@@ -116,13 +116,13 @@ impl ParseBlock for ed6::Scena {
 			bgm: head.bgm,
 			item_use: head.item_use,
 			includes: head.include.map(|v| v.unwrap_or(FileId::NONE)),
+			entries,
 			ch,
 			cp,
 			npcs,
 			monsters,
 			events,
 			look_points,
-			entries,
 			functions,
 		})
 	}

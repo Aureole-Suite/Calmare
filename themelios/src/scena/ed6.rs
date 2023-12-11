@@ -21,15 +21,13 @@ pub struct Scena {
 	pub item_use: FuncId,      // [Item; アイテム使用時イベント]
 	pub includes: [FileId; 8], // [Scp0..7; スクリプト(１つだけは必須), これ以降は必要な場合のみ定義する]
 
-	// The script puts cp before ch.
+	pub entries: Vec<Entry>,
 	pub ch: Vec<FileId>, // [Char_Data; キャラデータファイル]
 	pub cp: Vec<FileId>, // [Char_Ptn; キャラパターンファイル]
-
 	pub npcs: Vec<Npc>,
 	pub monsters: Vec<Monster>,
 	pub events: Vec<Event>,
 	pub look_points: Vec<LookPoint>,
-	pub entries: Vec<Entry>,
 	pub functions: Vec<Code>,
 }
 
@@ -116,13 +114,13 @@ impl Scena {
 			bgm,
 			item_use,
 			includes,
+			entries,
 			ch,
 			cp,
 			npcs,
 			monsters,
 			events,
 			look_points,
-			entries,
 			functions,
 		})
 	}
