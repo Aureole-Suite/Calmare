@@ -92,37 +92,37 @@ impl ParseBlock for ed6::Scena {
 						let cp = f.val::<FileId>()?;
 						Ok((ch, cp))
 					})();
-					chcps.insert(f, span, id.0 as usize, val);
+					chcps.insert(span, id.0 as usize, val);
 				}
 				"npc" => {
 					let id = f.val::<LocalCharId>()?;
 					let span = f.span(pos);
 					let val = f.val_block().map(NpcOrMonster::Npc);
-					npcs_monsters.insert(f, span, id.0 as usize, val);
+					npcs_monsters.insert(span, id.0 as usize, val);
 				}
 				"monster" => {
 					let id = f.val::<LocalCharId>()?;
 					let span = f.span(pos);
 					let val = f.val_block().map(NpcOrMonster::Monster);
-					npcs_monsters.insert(f, span, id.0 as usize, val);
+					npcs_monsters.insert(span, id.0 as usize, val);
 				}
 				"event" => {
 					let id = parse_id(f, EventId)?;
 					let span = f.span(pos);
 					let val = f.val_block();
-					events.insert(f, span, id.0 as usize, val);
+					events.insert(span, id.0 as usize, val);
 				}
 				"look_point" => {
 					let id = parse_id(f, LookPointId)?;
 					let span = f.span(pos);
 					let val = f.val_block();
-					look_points.insert(f, span, id.0 as usize, val);
+					look_points.insert(span, id.0 as usize, val);
 				}
 				"fn" => {
 					let id = parse_id(f, LocalFuncId)?;
 					let span = f.span(pos);
 					let val = f.val_block();
-					functions.insert(f, span, id.0 as usize, val);
+					functions.insert(span, id.0 as usize, val);
 				}
 				_ => return Err(Diagnostic::error(f.span(pos), "invalid declaration")),
 			}

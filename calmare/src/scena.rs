@@ -142,7 +142,7 @@ impl<V> PackedIndices<V> {
 		Self::default()
 	}
 
-	pub fn insert(&mut self, diag: &mut Parser, s: Span, n: usize, val: parse::Result<V>) {
+	pub fn insert(&mut self, s: Span, n: usize, val: parse::Result<V>) {
 		self.items.entry(n).or_default().insert(s, val);
 	}
 
