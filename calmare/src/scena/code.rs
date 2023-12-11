@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use themelios::scena::code::Code;
 use themelios::scena::insn::{Arg, Expr, Insn};
-use themelios::scena::insn_set as iset;
+use themelios::scena::{insn_set as iset, CharId};
 use themelios::types::Text;
 
 use crate::parse::{self, Diagnostic, Emit as _, Span};
@@ -478,7 +478,13 @@ fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> p
 		MA::ED7BattlePos => out.push(Arg::BattleId(f.val()?)),
 		MA::FcPartyEquip => out.push(Arg::Int(f.val()?)),
 		MA::ScPartySetSlot => out.push(Arg::Int(f.val()?)),
-		MA::EffPlayPos => out.push(Arg::Pos3(f.val()?)), // TODO this is lossy. Bad.
+		MA::EffPlayPos => {
+			if matches!(out[0], Arg::CharId(CharId::Null)) {
+				out.push(Arg::Pos3(f.val()?))
+			} else {
+				out.push(Arg::RPos3(f.val()?))
+			}
+		}
 	}
 	Ok(())
 }
