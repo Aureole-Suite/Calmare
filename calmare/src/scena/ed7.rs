@@ -149,31 +149,31 @@ impl ParseBlock for ed7::Scena {
 					let id = parse_id(f, ChipId)?;
 					let span = f.span(pos);
 					let val = f.val::<FileId>();
-					chips.insert(span, id.0 as usize, val);
+					chips.insert(id.0 as usize, span, val);
 				}
 				"npc" => {
 					let id = f.val::<LocalCharId>()?;
 					let span = f.span(pos);
 					let val = f.val_block().map(NpcOrMonster::Npc);
-					npcs_monsters.insert(span, id.0 as usize, val);
+					npcs_monsters.insert(id.0 as usize, span, val);
 				}
 				"monster" => {
 					let id = f.val::<LocalCharId>()?;
 					let span = f.span(pos);
 					let val = f.val_block().map(NpcOrMonster::Monster);
-					npcs_monsters.insert(span, id.0 as usize, val);
+					npcs_monsters.insert(id.0 as usize, span, val);
 				}
 				"event" => {
 					let id = parse_id(f, EventId)?;
 					let span = f.span(pos);
 					let val = f.val_block();
-					events.insert(span, id.0 as usize, val);
+					events.insert(id.0 as usize, span, val);
 				}
 				"look_point" => {
 					let id = parse_id(f, LookPointId)?;
 					let span = f.span(pos);
 					let val = f.val_block();
-					look_points.insert(span, id.0 as usize, val);
+					look_points.insert(id.0 as usize, span, val);
 				}
 				"labels" => {
 					let id = parse_id(f, LabelId)?;
@@ -193,7 +193,7 @@ impl ParseBlock for ed7::Scena {
 						}
 						no_labels = Some((span, false));
 						let val = f.val_block();
-						labels.insert(span, id.0 as usize, val);
+						labels.insert(id.0 as usize, span, val);
 					}
 				}
 				"anim" => {
@@ -214,7 +214,7 @@ impl ParseBlock for ed7::Scena {
 						}
 						ed7::Animation { speed, frames }
 					};
-					animations.insert(span, id.0 as usize, val);
+					animations.insert(id.0 as usize, span, val);
 				}
 				"btlset" => {
 					let span = f.span(pos);
@@ -225,7 +225,7 @@ impl ParseBlock for ed7::Scena {
 					let id = parse_id(f, LocalFuncId)?;
 					let span = f.span(pos);
 					let val = f.val_block();
-					functions.insert(span, id.0 as usize, val);
+					functions.insert(id.0 as usize, span, val);
 				}
 				_ => return Err(Diagnostic::error(f.span(pos), "invalid declaration")),
 			}

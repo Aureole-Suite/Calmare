@@ -107,14 +107,14 @@ impl ParseBlock for BattleSet {
 						tup.finish()?;
 						v
 					};
-					sepith.insert(span, id.0 as usize, val);
+					sepith.insert(id.0 as usize, span, val);
 				}
 				"at_roll" => {
 					let id = parse_id(f, AtRollId)?;
 					let span = f.span(pos);
 					f.check(":")?;
 					let val = parse_at_roll(f);
-					at_rolls.insert(span, id.0 as usize, val);
+					at_rolls.insert(id.0 as usize, span, val);
 				}
 				"placement" => {
 					let id = parse_id(f, PlacementId)?;
@@ -125,13 +125,13 @@ impl ParseBlock for BattleSet {
 						tup.finish()?;
 						v
 					};
-					placements.insert(span, id.0 as usize, val);
+					placements.insert(id.0 as usize, span, val);
 				}
 				"battle" => {
 					let id = parse_id(f, BattleId)?;
 					let span = f.span(pos);
 					let val = f.val_block();
-					battles.insert(span, id.0 as usize, val);
+					battles.insert(id.0 as usize, span, val);
 				}
 				_ => return Err(Diagnostic::error(f.span(pos), "invalid declaration")),
 			}
