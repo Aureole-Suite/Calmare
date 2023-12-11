@@ -437,7 +437,7 @@ fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> p
 	match iarg {
 		MA::String => out.push(Arg::String(f.val()?)),
 		MA::TString => out.push(Arg::TString(f.val()?)),
-		MA::Text => out.push(Arg::Text(f.val()?)),
+		MA::Text => list(out, f, |f| f.val().map(Arg::Text))?,
 		MA::Pos2 => out.push(Arg::Pos2(f.val()?)),
 		MA::Pos3 => out.push(Arg::Pos3(f.val()?)),
 		MA::RPos3 => out.push(Arg::RPos3(f.val()?)),
