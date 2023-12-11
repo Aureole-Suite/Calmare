@@ -65,7 +65,7 @@ impl Print for Text {
 					'\r' if iter.peek() == Some(&'\n') => write!(f, "♯r").line(),
 					'\r' => write!(f, "♯r♯").line(),
 					' ' | '　' if f.is_line() => write!(f, "♯{ch}"),
-					'{' | '}' => write!(f, "♯{ch}"),
+					'{' | '}' | '♯' => write!(f, "♯{ch}"),
 					ch => write!(f, "{ch}"),
 				};
 			}
@@ -106,6 +106,7 @@ impl Parse for Text {
 								'A' => auto = Some((string.len(), f.raw_span(pos))),
 								'W' => string.push('\t'),
 								'r' => string.push('\r'),
+								'♯' => string.push('♯'),
 								'\n' => skip_line = 1,
 								ch @ (' ' | '　' | '{' | '}') => string.push(ch),
 								_ => Diagnostic::error(f.raw_span(pos), "invalid escape sequence")

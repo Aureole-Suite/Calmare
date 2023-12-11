@@ -469,8 +469,7 @@ fn text_page(f: &mut Reader) -> Result<(Text, bool)> {
 			0x1F => buf.push_str(&format!("♯{}i", f.u16()?)),
 			ch @ (0x00..=0x1F) => buf.push_str(&format!("♯{}x", ch)),
 			ch @ 0x20.. => match falcom_sjis::decode_char_from(ch, || f.u8().ok()) {
-				// write literal sharp sign as its raw sjis bytes encoding
-				Ok('♯') => buf.push_str("♯129x♯242x"),
+				Ok('♯') => buf.push_str("♯♯"),
 				Ok('㈱') => buf.push('♥'),
 				Ok(ch) => buf.push(ch),
 				Err(enc) => {

@@ -570,6 +570,7 @@ fn text_page(f: &mut Writer, s: &Text) -> Result<(), WriteError> {
 			'\t' => f.u8(0x02),
 			'\r' => f.u8(0x0D),
 			'\0'..='\x1F' => whatever!("unprintable character"),
+			'♥' => f.slice(&falcom_sjis::encode_char('㈱').unwrap()),
 
 			'♯' => {
 				let mut n = 0;
@@ -590,14 +591,11 @@ fn text_page(f: &mut Writer, s: &Text) -> Result<(), WriteError> {
 							f.u8(cast(n)?);
 							break;
 						}
+						Some('♯') => f.slice(&falcom_sjis::encode_char('♯').unwrap()),
 						None => whatever!("unterminated escape sequence"),
 						Some(_) => whatever!("illegal escape sequence (maybe try `#`?)"),
 					}
 				}
-			}
-
-			'♥' => {
-				f.slice(&falcom_sjis::encode_char('㈱').unwrap());
 			}
 
 			char => {
