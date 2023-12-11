@@ -162,7 +162,7 @@ fn parse_at_roll(f: &mut Parser) -> Result<[u8; 16], Diagnostic> {
 		match f.insn_set().at_roll.iter().position(|v| v == word) {
 			Some(n) => {
 				let val = f.val();
-				slots[n].insert(f, span, val);
+				slots[n].insert(span, val);
 			}
 			None => return Err(Diagnostic::error(f.span(pos), "invalid at roll field")),
 		}

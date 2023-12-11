@@ -78,7 +78,7 @@ impl<T> Slot<T> {
 		Slot(None)
 	}
 
-	pub fn insert(&mut self, f: &mut Parser, span: Span, value: parse::Result<T>) {
+	pub fn insert(&mut self, span: Span, value: parse::Result<T>) {
 		if let Some((prev, _)) = self.0.replace((span, value.emit())) {
 			Diagnostic::error(span, "duplicate item")
 				.with_note(prev, "previous here")
@@ -133,7 +133,7 @@ impl<T: Print + Parse> Field for PlainField<T> {
 
 	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()> {
 		let value = f.val();
-		self.value.insert(f, f.span_of(word), value);
+		self.value.insert(f.span_of(word), value);
 		Ok(())
 	}
 

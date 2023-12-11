@@ -143,7 +143,7 @@ impl<V> PackedIndices<V> {
 	}
 
 	pub fn insert(&mut self, diag: &mut Parser, s: Span, n: usize, val: parse::Result<V>) {
-		self.items.entry(n).or_default().insert(diag, s, val);
+		self.items.entry(n).or_default().insert(s, val);
 	}
 
 	pub fn items(&self) -> &BTreeMap<usize, Slot<V>> {
@@ -223,7 +223,7 @@ impl<const N: usize, T: Print + Parse> Field for Array<N, T> {
 		let pos = f.pos()?;
 		let n = f.sqbrack_val::<usize>()?;
 		let value = f.val();
-		self.value[n].insert(f, f.span_of(word) | f.span(pos), value);
+		self.value[n].insert(f.span_of(word) | f.span(pos), value);
 		Ok(())
 	}
 

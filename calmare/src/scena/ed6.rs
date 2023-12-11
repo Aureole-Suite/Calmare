@@ -78,8 +78,7 @@ impl ParseBlock for ed6::Scena {
 			match f.word()? {
 				"scena" => {
 					let val = f.val_block();
-					head.get_or_insert_with(Slot::new)
-						.insert(f, f.span(pos), val);
+					head.get_or_insert_with(Slot::new).insert(f.span(pos), val);
 				}
 				"entry" => {
 					entries.push(f.val_block()?);

@@ -138,13 +138,12 @@ impl ParseBlock for ed7::Scena {
 			match f.word()? {
 				"scena" => {
 					let val = f.val_block();
-					head.get_or_insert_with(Slot::new)
-						.insert(f, f.span(pos), val);
+					head.get_or_insert_with(Slot::new).insert(f.span(pos), val);
 				}
 				"entry" => {
 					let span = f.span(pos);
 					let val = f.val_block();
-					entries.insert(f, span, val);
+					entries.insert(span, val);
 				}
 				"chip" => {
 					let id = parse_id(f, ChipId)?;
@@ -220,7 +219,7 @@ impl ParseBlock for ed7::Scena {
 				"btlset" => {
 					let span = f.span(pos);
 					let val = f.val_block();
-					btlset.insert(f, span, val);
+					btlset.insert(span, val);
 				}
 				"fn" => {
 					let id = parse_id(f, LocalFuncId)?;
