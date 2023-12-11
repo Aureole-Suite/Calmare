@@ -302,6 +302,9 @@ impl Field for MatrixField {
 	}
 
 	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()> {
+		let val = std::array::try_from_fn(|_| f.val())
+			.map(|v| themelios::glam::Mat4::from_cols_array(&v).transpose());
+		self.value.insert(f.span_of(word), val);
 		Ok(())
 	}
 
