@@ -130,11 +130,11 @@ impl ParseBlock for ed6::Scena {
 			Ok(())
 		});
 
-		let (ch, cp) = chcps.finish(f, "chip").into_iter().unzip();
-		let (npcs, monsters) = super::chars(f, npcs_monsters);
-		let events = events.finish(f, "event");
-		let look_points = look_points.finish(f, "look_point");
-		let functions = functions.finish(f, "fn");
+		let (ch, cp) = chcps.finish("chip").into_iter().unzip();
+		let (npcs, monsters) = super::chars(npcs_monsters);
+		let events = events.finish("event");
+		let look_points = look_points.finish("look_point");
+		let functions = functions.finish("fn");
 
 		let Some(head) = head else {
 			return Err(Diagnostic::error(start.as_span(), "missing `scena` block"));

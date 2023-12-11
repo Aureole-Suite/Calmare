@@ -233,13 +233,13 @@ impl ParseBlock for ed7::Scena {
 			Ok(())
 		});
 
-		let chips = chips.finish(f, "chip");
-		let (npcs, monsters) = super::chars(f, npcs_monsters);
-		let events = events.finish(f, "event");
-		let look_points = look_points.finish(f, "look_point");
-		let labels = labels.finish(f, "label");
-		let animations = animations.finish(f, "anim");
-		let functions = functions.finish(f, "fn");
+		let chips = chips.finish("chip");
+		let (npcs, monsters) = super::chars(npcs_monsters);
+		let events = events.finish("event");
+		let look_points = look_points.finish("look_point");
+		let labels = labels.finish("label");
+		let animations = animations.finish("anim");
+		let functions = functions.finish("fn");
 
 		let labels = if let Some((_, true)) = no_labels {
 			Some(vec![])

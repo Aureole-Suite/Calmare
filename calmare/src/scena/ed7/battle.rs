@@ -138,10 +138,10 @@ impl ParseBlock for BattleSet {
 			Ok(())
 		});
 
-		let sepith = sepith.finish(f, "sepith");
-		let at_rolls = at_rolls.finish(f, "at_roll");
-		let placements = placements.finish(f, "placement");
-		let battles = battles.finish(f, "battle");
+		let sepith = sepith.finish("sepith");
+		let at_rolls = at_rolls.finish("at_roll");
+		let placements = placements.finish("placement");
+		let battles = battles.finish("battle");
 
 		Ok(BattleSet {
 			sepith,

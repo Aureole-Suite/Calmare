@@ -150,7 +150,7 @@ impl<V> PackedIndices<V> {
 		&self.items
 	}
 
-	pub fn finish(self, diag: &mut Parser, word: &str) -> Vec<V> {
+	pub fn finish(self, word: &str) -> Vec<V> {
 		let mut vs = Vec::with_capacity(self.items.len());
 		let mut expect = 0;
 		for (k, slot) in self.items {
@@ -170,7 +170,7 @@ enum NpcOrMonster<A, B> {
 	Monster(B),
 }
 
-fn chars<A, B>(diag: &mut Parser, items: PackedIndices<NpcOrMonster<A, B>>) -> (Vec<A>, Vec<B>) {
+fn chars<A, B>(items: PackedIndices<NpcOrMonster<A, B>>) -> (Vec<A>, Vec<B>) {
 	let mut iter = items.items().iter().peekable();
 	while let (Some(a), Some(b)) = (iter.next(), iter.peek()) {
 		if matches!(&a.1.get_ref(), Some(NpcOrMonster::Monster(_)))
@@ -184,7 +184,7 @@ fn chars<A, B>(diag: &mut Parser, items: PackedIndices<NpcOrMonster<A, B>>) -> (
 
 	let mut npcs = Vec::new();
 	let mut monsters = Vec::new();
-	for m in items.finish(diag, "char") {
+	for m in items.finish("char") {
 		match m {
 			NpcOrMonster::Npc(n) => npcs.push(n),
 			NpcOrMonster::Monster(m) => monsters.push(m),
