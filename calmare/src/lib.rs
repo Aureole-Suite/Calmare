@@ -1,6 +1,7 @@
 #![feature(decl_macro)]
 #![feature(pattern)]
 #![feature(array_try_from_fn)]
+#![feature(try_blocks)]
 
 pub mod print;
 use std::borrow::Cow;

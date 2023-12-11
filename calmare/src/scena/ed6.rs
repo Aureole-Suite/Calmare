@@ -87,11 +87,11 @@ impl ParseBlock for ed6::Scena {
 					// TODO handle null
 					let id = parse_id(f, ChipId)?;
 					let span = f.span(pos);
-					let val = (|| {
+					let val = try {
 						let ch = f.val::<FileId>()?;
 						let cp = f.val::<FileId>()?;
-						Ok((ch, cp))
-					})();
+						(ch, cp)
+					};
 					chcps.insert(span, id.0 as usize, val);
 				}
 				"npc" => {

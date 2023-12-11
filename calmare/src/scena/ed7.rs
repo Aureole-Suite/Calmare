@@ -199,7 +199,7 @@ impl ParseBlock for ed7::Scena {
 				"anim" => {
 					let id = parse_id(f, AnimId)?;
 					let span = f.span(pos);
-					let val = (|| {
+					let val = try {
 						let speed = f.val()?;
 						let mut tup = f.tuple()?;
 						let mut frames = Vec::new();
@@ -212,8 +212,8 @@ impl ParseBlock for ed7::Scena {
 							}
 							frames.push(f.val()?);
 						}
-						Ok(ed7::Animation { speed, frames })
-					})();
+						ed7::Animation { speed, frames }
+					};
 					animations.insert(span, id.0 as usize, val);
 				}
 				"btlset" => {

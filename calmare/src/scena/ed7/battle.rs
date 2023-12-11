@@ -101,12 +101,12 @@ impl ParseBlock for BattleSet {
 				"sepith" => {
 					let id = parse_id(f, SepithId)?;
 					let span = f.span(pos);
-					let val = (|| {
+					let val = try {
 						let mut tup = f.tuple()?;
 						let v = std::array::try_from_fn(|_| tup.field()?.val())?;
 						tup.finish()?;
-						Ok(v)
-					})();
+						v
+					};
 					sepith.insert(span, id.0 as usize, val);
 				}
 				"at_roll" => {
@@ -119,12 +119,12 @@ impl ParseBlock for BattleSet {
 				"placement" => {
 					let id = parse_id(f, PlacementId)?;
 					let span = f.span(pos);
-					let val = (|| {
+					let val = try {
 						let mut tup = f.tuple()?;
 						let v = std::array::try_from_fn(|_| tup.field()?.val())?;
 						tup.finish()?;
-						Ok(v)
-					})();
+						v
+					};
 					placements.insert(span, id.0 as usize, val);
 				}
 				"battle" => {
