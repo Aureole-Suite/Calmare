@@ -9,7 +9,7 @@ use crate::parse::{self, Diagnostic, Span};
 use crate::{ParseBlock, Parser};
 use crate::{PrintBlock, Printer};
 
-use super::{parse_id, Actor, LocalFuncId, PackedIndices};
+use super::{Actor, LocalFuncId, PackedIndices};
 
 crate::macros::newtype_term!(ed7::AnimId, "anim");
 crate::macros::newtype_hex!(ed7::ScenaFlags);
@@ -123,48 +123,30 @@ impl ParseBlock for ed7::Scena {
 
 		let mut head = <Slot<Head>>::new();
 		let mut entries = Slot::new();
-		let mut chips = PackedIndices::new();
-		let mut actors = PackedIndices::new();
-		let mut events = PackedIndices::new();
-		let mut look_points = PackedIndices::new();
-		let mut labels = PackedIndices::new();
+		let mut chips = PackedIndices::new("chip");
+		let mut actors = PackedIndices::new("char");
+		let mut events = PackedIndices::new("event");
+		let mut look_points = PackedIndices::new("look_point");
+		let mut labels = PackedIndices::new("label");
 		let mut no_labels = None::<(Span, bool)>;
-		let mut animations = PackedIndices::new();
+		let mut animations = PackedIndices::new("anim");
 		let mut btlset = Slot::new();
-		let mut functions = PackedIndices::new();
+		let mut functions = PackedIndices::new("fn");
 
 		f.lines(|f| {
 			let pos = f.pos()?;
-			match f.word()? {
+			let word = f.word()?;
+			match word {
 				"scena" => head.insert(f.span(pos), f.val_block()),
 				"entry" => entries.insert(f.span(pos), f.val_block()),
-				"chip" => chips.insert(
-					parse_id(f, ChipId)?.0 as usize,
-					f.span(pos),
-					f.val::<FileId>(),
-				),
-				"npc" => actors.insert(
-					f.val::<LocalCharId>()?.0 as usize,
-					f.span(pos),
-					f.val_block().map(Actor::Npc),
-				),
-				"monster" => actors.insert(
-					f.val::<LocalCharId>()?.0 as usize,
-					f.span(pos),
-					f.val_block().map(Actor::Monster),
-				),
-				"event" => {
-					events.insert(parse_id(f, EventId)?.0 as usize, f.span(pos), f.val_block())
-				}
-				"look_point" => look_points.insert(
-					parse_id(f, LookPointId)?.0 as usize,
-					f.span(pos),
-					f.val_block(),
-				),
-				"labels" => {
-					let id = parse_id(f, LabelId)?;
-					let span = f.span(pos);
+				"chip" => chips.insert(f, word, |f| f.val::<FileId>()),
+				"npc" => actors.insert(f, word, |f| f.val_block().map(Actor::Npc)),
+				"monster" => actors.insert(f, word, |f| f.val_block().map(Actor::Monster)),
+				"event" => events.insert(f, word, |f| f.val_block()),
+				"look_point" => look_points.insert(f, word, |f| f.val_block()),
+				"label" => {
 					if f.check_word("null").is_ok() {
+						let span = f.span(pos);
 						if let Some((prev, _)) = no_labels {
 							Diagnostic::error(span, "duplicate item")
 								.with_note(prev, "previous here")
@@ -172,53 +154,43 @@ impl ParseBlock for ed7::Scena {
 						}
 						no_labels = Some((span, true));
 					} else {
+						let span = f.span(pos);
 						if let Some((prev, true)) = no_labels {
 							Diagnostic::error(span, "duplicate item")
 								.with_note(prev, "previous here")
 								.emit();
 						}
 						no_labels = Some((span, false));
-						let val = f.val_block();
-						labels.insert(id.0 as usize, span, val);
+
+						labels.insert(f, word, |f| f.val_block())
 					}
 				}
-				"anim" => animations.insert(
-					parse_id(f, AnimId)?.0 as usize,
-					f.span(pos),
-					try {
-						let speed = f.val()?;
-						let mut tup = f.tuple()?;
-						let mut frames = Vec::new();
-						while let Some(f) = tup.try_field()? {
-							if frames.len() >= 8 {
-								return Err(Diagnostic::error(
-									f.pos()?.as_span(),
-									"up to 8 frames allowed",
-								));
-							}
-							frames.push(f.val()?);
+				"anim" => animations.insert(f, word, |f| {
+					let speed = f.val()?;
+					let mut tup = f.tuple()?;
+					let mut frames = Vec::new();
+					while let Some(f) = tup.try_field()? {
+						if frames.len() >= 8 {
+							Diagnostic::error(f.pos()?.as_span(), "up to 8 frames allowed").emit();
 						}
-						ed7::Animation { speed, frames }
-					},
-				),
+						frames.push(f.val()?);
+					}
+					Ok(ed7::Animation { speed, frames })
+				}),
 				"btlset" => btlset.insert(f.span(pos), f.val_block()),
-				"fn" => functions.insert(
-					parse_id(f, LocalFuncId)?.0 as usize,
-					f.span(pos),
-					f.val_block(),
-				),
+				"fn" => functions.insert(f, word, |f| f.val_block()),
 				_ => return Err(Diagnostic::error(f.span(pos), "invalid declaration")),
 			}
 			Ok(())
 		});
 
-		let chips = chips.finish("chip");
+		let chips = chips.finish();
 		let (npcs, monsters) = super::split_actors(actors);
-		let events = events.finish("event");
-		let look_points = look_points.finish("look_point");
-		let labels = labels.finish("label");
-		let animations = animations.finish("anim");
-		let functions = functions.finish("fn");
+		let events = events.finish();
+		let look_points = look_points.finish();
+		let labels = labels.finish();
+		let animations = animations.finish();
+		let functions = functions.finish();
 
 		let labels = if let Some((_, true)) = no_labels {
 			Some(vec![])

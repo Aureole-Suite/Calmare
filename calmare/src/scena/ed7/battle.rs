@@ -3,7 +3,7 @@ use themelios::types::{BattleId, BgmId, FileId};
 
 use crate::macros::strukt::{Field, Slot};
 use crate::parse::Diagnostic;
-use crate::scena::{parse_id, PackedIndices};
+use crate::scena::PackedIndices;
 use crate::{parse, ParseBlock, Parser};
 use crate::{PrintBlock, Printer};
 
@@ -90,55 +90,41 @@ impl PrintBlock for BattleSet {
 
 impl ParseBlock for BattleSet {
 	fn parse_block(f: &mut Parser) -> parse::Result<Self> {
-		let mut sepith = PackedIndices::new();
-		let mut at_rolls = PackedIndices::new();
-		let mut placements = PackedIndices::new();
-		let mut battles = PackedIndices::new();
+		let mut sepith = PackedIndices::new("sepith");
+		let mut at_rolls = PackedIndices::new("at_roll");
+		let mut placements = PackedIndices::new("placement");
+		let mut battles = PackedIndices::new("battle");
 
 		f.lines(|f| {
 			let pos = f.pos()?;
-			match f.word()? {
-				"sepith" => sepith.insert(
-					parse_id(f, SepithId)?.0 as usize,
-					f.span(pos),
-					try {
-						let mut tup = f.tuple()?;
-						let v = std::array::try_from_fn(|_| tup.field()?.val())?;
-						tup.finish()?;
-						v
-					},
-				),
-				"at_roll" => {
-					let id = parse_id(f, AtRollId)?;
-					let span = f.span(pos);
+			let word = f.word()?;
+			match word {
+				"sepith" => sepith.insert(f, word, |f| {
+					let mut tup = f.tuple()?;
+					let v = std::array::try_from_fn(|_| tup.field()?.val())?;
+					tup.finish()?;
+					Ok(v)
+				}),
+				"at_roll" => at_rolls.insert(f, word, |f| {
 					f.check(":")?;
-					let val = parse_at_roll(f);
-					at_rolls.insert(id.0 as usize, span, val)
-				}
-				"placement" => placements.insert(
-					parse_id(f, PlacementId)?.0 as usize,
-					f.span(pos),
-					try {
-						let mut tup = f.tuple()?;
-						let v = std::array::try_from_fn(|_| tup.field()?.val())?;
-						tup.finish()?;
-						v
-					},
-				),
-				"battle" => battles.insert(
-					parse_id(f, BattleId)?.0 as usize,
-					f.span(pos),
-					f.val_block(),
-				),
+					parse_at_roll(f)
+				}),
+				"placement" => placements.insert(f, word, |f| {
+					let mut tup = f.tuple()?;
+					let v = std::array::try_from_fn(|_| tup.field()?.val())?;
+					tup.finish()?;
+					Ok(v)
+				}),
+				"battle" => battles.insert(f, word, |f| f.val_block()),
 				_ => return Err(Diagnostic::error(f.span(pos), "invalid declaration")),
 			}
 			Ok(())
 		});
 
-		let sepith = sepith.finish("sepith");
-		let at_rolls = at_rolls.finish("at_roll");
-		let placements = placements.finish("placement");
-		let battles = battles.finish("battle");
+		let sepith = sepith.finish();
+		let at_rolls = at_rolls.finish();
+		let placements = placements.finish();
+		let battles = battles.finish();
 
 		Ok(BattleSet {
 			sepith,

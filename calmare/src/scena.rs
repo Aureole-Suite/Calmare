@@ -8,7 +8,7 @@ mod ed7;
 
 use crate::macros::strukt::{Field, Slot};
 use crate::macros::{newtype_hex, newtype_term};
-use crate::parse::{Diagnostic, Span};
+use crate::parse::{Diagnostic, Emit as _};
 use crate::{parse, Parse, Parser};
 use crate::{Print, Printer};
 
@@ -117,45 +117,62 @@ impl Parse for scena::CharAttr {
 	}
 }
 
-fn parse_id<U: Parse, T: Parse>(f: &mut Parser<'_>, func: impl FnOnce(U) -> T) -> parse::Result<T> {
-	match f.try_parse(|f| f.sqbrack_val())? {
-		Some(v) => Ok(func(v)),
-		None => Ok(f.val()?),
-	}
-}
-
 #[derive(Debug, Clone)]
 struct PackedIndices<V> {
+	name: &'static str,
 	items: BTreeMap<usize, Slot<V>>,
 }
 
-impl<V> Default for PackedIndices<V> {
-	fn default() -> Self {
+impl<V> PackedIndices<V> {
+	pub fn new(name: &'static str) -> Self {
 		Self {
+			name,
 			items: BTreeMap::new(),
 		}
 	}
-}
 
-impl<V> PackedIndices<V> {
-	pub fn new() -> Self {
-		Self::default()
-	}
+	pub fn insert<'src>(
+		&mut self,
+		f: &mut Parser<'src>,
+		word: &'src str,
+		body: impl FnOnce(&mut Parser) -> parse::Result<V>,
+	) {
+		let Some(pos) = f.pos().emit() else {
+			return;
+		};
 
-	pub fn insert(&mut self, n: usize, s: Span, val: parse::Result<V>) {
-		self.items.entry(n).or_default().insert(s, val);
+		let id = parse::Result::<usize>::emit(
+			try {
+				let res = f.check_word(self.name);
+				if word != self.name {
+					res?;
+				}
+
+				f.sqbrack_val()?
+			},
+		);
+
+		let span = f.span_of(word) | f.span(pos);
+		let val = body(f);
+		if let Some(id) = id {
+			self.items.entry(id).or_default().insert(span, val);
+		}
 	}
 
 	pub fn items(&self) -> &BTreeMap<usize, Slot<V>> {
 		&self.items
 	}
 
-	pub fn finish(self, word: &str) -> Vec<V> {
+	pub fn finish(self) -> Vec<V> {
 		let mut vs = Vec::with_capacity(self.items.len());
 		let mut expect = 0;
 		for (k, slot) in self.items {
 			if k != expect {
-				Diagnostic::error(slot.span().unwrap(), format!("missing {word}[{expect}]")).emit();
+				Diagnostic::error(
+					slot.span().unwrap(),
+					format!("missing {}[{expect}]", self.name),
+				)
+				.emit();
 			}
 			expect = k + 1;
 			vs.extend(slot.get())
@@ -184,7 +201,7 @@ fn split_actors<A, B>(items: PackedIndices<Actor<A, B>>) -> (Vec<A>, Vec<B>) {
 
 	let mut npcs = Vec::new();
 	let mut monsters = Vec::new();
-	for m in items.finish("char") {
+	for m in items.finish() {
 		match m {
 			Actor::Npc(n) => npcs.push(n),
 			Actor::Monster(m) => monsters.push(m),

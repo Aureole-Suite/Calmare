@@ -8,7 +8,7 @@ use crate::parse::{self, Diagnostic};
 use crate::{ParseBlock, Parser};
 use crate::{PrintBlock, Printer};
 
-use super::{parse_id, Actor, LocalFuncId, PackedIndices};
+use super::{Actor, LocalFuncId, PackedIndices};
 
 impl PrintBlock for ed6::Scena {
 	fn print_block(&self, f: &mut Printer) {
@@ -66,63 +66,40 @@ impl ParseBlock for ed6::Scena {
 		let start = f.raw_pos();
 
 		let mut head = <Slot<Head>>::new();
-		let mut chcps = PackedIndices::new();
-		let mut actors = PackedIndices::new();
-		let mut events = PackedIndices::new();
-		let mut look_points = PackedIndices::new();
+		let mut chcps = PackedIndices::new("chip");
+		let mut actors = PackedIndices::new("char");
+		let mut events = PackedIndices::new("event");
+		let mut look_points = PackedIndices::new("look_point");
 		let mut entries = Vec::new();
-		let mut functions = PackedIndices::new();
+		let mut functions = PackedIndices::new("fn");
 
 		f.lines(|f| {
 			let pos = f.pos()?;
-			match f.word()? {
+			let word = f.word()?;
+			match word {
 				"scena" => head.insert(f.span(pos), f.val_block()),
 				"entry" => entries.push(f.val_block()?),
-				"chip" => {
-					chcps.insert(
-						parse_id(f, ChipId)?.0 as usize,
-						f.span(pos),
-						try {
-							// TODO handle null
-							let ch = f.val::<FileId>()?;
-							let cp = f.val::<FileId>()?;
-							(ch, cp)
-						},
-					)
-				}
-				"npc" => actors.insert(
-					f.val::<LocalCharId>()?.0 as usize,
-					f.span(pos),
-					f.val_block().map(Actor::Npc),
-				),
-				"monster" => actors.insert(
-					f.val::<LocalCharId>()?.0 as usize,
-					f.span(pos),
-					f.val_block().map(Actor::Monster),
-				),
-				"event" => {
-					events.insert(parse_id(f, EventId)?.0 as usize, f.span(pos), f.val_block())
-				}
-				"look_point" => look_points.insert(
-					parse_id(f, LookPointId)?.0 as usize,
-					f.span(pos),
-					f.val_block(),
-				),
-				"fn" => functions.insert(
-					parse_id(f, LocalFuncId)?.0 as usize,
-					f.span(pos),
-					f.val_block(),
-				),
+				"chip" => chcps.insert(f, word, |f| {
+					// TODO handle null
+					let ch = f.val::<FileId>()?;
+					let cp = f.val::<FileId>()?;
+					Ok((ch, cp))
+				}),
+				"npc" => actors.insert(f, word, |f| f.val_block().map(Actor::Npc)),
+				"monster" => actors.insert(f, word, |f| f.val_block().map(Actor::Monster)),
+				"event" => events.insert(f, word, |f| f.val_block()),
+				"look_point" => look_points.insert(f, word, |f| f.val_block()),
+				"fn" => functions.insert(f, word, |f| f.val_block()),
 				_ => return Err(Diagnostic::error(f.span(pos), "invalid declaration")),
 			}
 			Ok(())
 		});
 
-		let (ch, cp) = chcps.finish("chip").into_iter().unzip();
+		let (ch, cp) = chcps.finish().into_iter().unzip();
 		let (npcs, monsters) = super::split_actors(actors);
-		let events = events.finish("event");
-		let look_points = look_points.finish("look_point");
-		let functions = functions.finish("fn");
+		let events = events.finish();
+		let look_points = look_points.finish();
+		let functions = functions.finish();
 
 		if head.span().is_none() {
 			return Err(Diagnostic::error(start.as_span(), "missing `scena` block"));
