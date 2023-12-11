@@ -109,13 +109,13 @@ impl Parse for Text {
 								'\n' => skip_line = 1,
 								ch @ (' ' | '　' | '{' | '}') => string.push(ch),
 								_ => Diagnostic::error(f.raw_span(pos), "invalid escape sequence")
-									.emit(f),
+									.emit(),
 							}
 						} else {
 							match f.any_char() {
 								'C' | 'i' | 'x' => string.push_str(f.text_since(pos)),
 								_ => Diagnostic::error(f.raw_span(pos), "invalid escape sequence")
-									.emit(f),
+									.emit(),
 							}
 						}
 					}
@@ -129,7 +129,7 @@ impl Parse for Text {
 
 		match auto {
 			Some((len, _)) if len == string.len() => {}
-			Some((_, span)) => Diagnostic::error(span, "`♯A` can only be at end").emit(f),
+			Some((_, span)) => Diagnostic::error(span, "`♯A` can only be at end").emit(),
 			None => string.push('\t'),
 		}
 

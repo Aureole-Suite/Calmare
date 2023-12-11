@@ -79,10 +79,10 @@ impl<T> Slot<T> {
 	}
 
 	pub fn insert(&mut self, f: &mut Parser, span: Span, value: parse::Result<T>) {
-		if let Some((prev, _)) = self.0.replace((span, value.emit(f))) {
+		if let Some((prev, _)) = self.0.replace((span, value.emit())) {
 			Diagnostic::error(span, "duplicate item")
 				.with_note(prev, "previous here")
-				.emit(f);
+				.emit();
 		}
 	}
 

@@ -183,14 +183,14 @@ impl ParseBlock for ed7::Scena {
 						if let Some((prev, _)) = no_labels {
 							Diagnostic::error(span, "duplicate item")
 								.with_note(prev, "previous here")
-								.emit(f);
+								.emit();
 						}
 						no_labels = Some((span, true));
 					} else {
 						if let Some((prev, true)) = no_labels {
 							Diagnostic::error(span, "duplicate item")
 								.with_note(prev, "previous here")
-								.emit(f);
+								.emit();
 						}
 						no_labels = Some((span, false));
 						let val = f.val_block();

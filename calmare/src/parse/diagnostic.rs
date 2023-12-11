@@ -1,4 +1,5 @@
-use super::{Parser, Span};
+use super::Span;
+use std::cell::RefCell;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Level {
@@ -64,9 +65,9 @@ impl Diagnostic {
 		}
 	}
 
-	pub fn emit(self, parser: &mut Parser) {
+	pub fn emit(self) {
 		if self.span != Self::DUMMY.span {
-			parser.diagnostics.push(self);
+			DIAGNOSTICS.with(|v| v.borrow_mut().push(self));
 		}
 	}
 
@@ -77,25 +78,25 @@ impl Diagnostic {
 
 pub trait Emit {
 	type Output;
-	fn emit(self, parser: &mut Parser) -> Self::Output;
+	fn emit(self) -> Self::Output;
 }
 
 impl Emit for Diagnostic {
 	type Output = ();
 
-	fn emit(self, parser: &mut Parser) {
-		Diagnostic::emit(self, parser)
+	fn emit(self) {
+		Diagnostic::emit(self)
 	}
 }
 
 impl<T, E: Emit<Output = ()>> Emit for Result<T, E> {
 	type Output = Option<T>;
 
-	fn emit(self, parser: &mut Parser) -> Option<T> {
+	fn emit(self) -> Option<T> {
 		match self {
 			Ok(v) => Some(v),
 			Err(e) => {
-				e.emit(parser);
+				e.emit();
 				None
 			}
 		}
@@ -105,9 +106,9 @@ impl<T, E: Emit<Output = ()>> Emit for Result<T, E> {
 impl<E: Emit<Output = ()>> Emit for Vec<E> {
 	type Output = ();
 
-	fn emit(self, parser: &mut Parser) {
+	fn emit(self) {
 		for e in self {
-			e.emit(parser)
+			e.emit()
 		}
 	}
 }
@@ -115,7 +116,20 @@ impl<E: Emit<Output = ()>> Emit for Vec<E> {
 impl Emit for () {
 	type Output = ();
 
-	fn emit(self, _parser: &mut Parser) {}
+	fn emit(self) {}
 }
 
 pub type Result<T, E = Diagnostic> = std::result::Result<T, E>;
+
+thread_local! {
+	pub static DIAGNOSTICS: RefCell<Vec<Diagnostic>> = RefCell::default();
+}
+
+// Note that calling [`Diagnostic::emit`] outside of [`diagnose`] will cause the diagnostic to be
+// leaked until the thread terminates.
+pub fn diagnose<A>(f: impl FnOnce() -> A) -> (A, Vec<Diagnostic>) {
+	let prev = DIAGNOSTICS.with(|a| a.take());
+	let v = f();
+	let diag = DIAGNOSTICS.with(|a| a.replace(prev));
+	(v, diag)
+}

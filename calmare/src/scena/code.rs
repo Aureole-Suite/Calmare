@@ -53,7 +53,7 @@ fn parse_remainder(
 		match find_tail_on_error(f) {
 			Ok(v) => {
 				error.note(f.last_nonspace(), "skipping to here");
-				error.emit(f);
+				error.emit();
 				if v {
 					parse_code(f, true, true);
 				}
@@ -91,14 +91,14 @@ fn parse_code_line(f: &mut Parser<'_>, cont: bool, brk: bool) -> Result<Insn, Di
 
 	if f.check_word("break").is_ok() {
 		if !brk {
-			Diagnostic::error(f.span(pos), "cannot break here").emit(f);
+			Diagnostic::error(f.span(pos), "cannot break here").emit();
 		}
 		return Ok(Insn::new("break", vec![]));
 	}
 
 	if f.check_word("continue").is_ok() {
 		if !cont {
-			Diagnostic::error(f.span(pos), "cannot break here").emit(f);
+			Diagnostic::error(f.span(pos), "cannot break here").emit();
 		}
 		return Ok(Insn::new("continue", vec![]));
 	}
@@ -125,7 +125,7 @@ fn parse_code_line(f: &mut Parser<'_>, cont: bool, brk: bool) -> Result<Insn, Di
 					// I'd have this as an error, but the vanilla scripts do it, so...
 					Diagnostic::warn(f.span(pos), "duplicate case")
 						.with_note(prev, "previous here")
-						.emit(f);
+						.emit();
 				}
 
 				f.check(":")?;
@@ -161,7 +161,7 @@ fn parse_code_line(f: &mut Parser<'_>, cont: bool, brk: bool) -> Result<Insn, Di
 		let name = name
 			.filter(|name| f.insn_set().insns_rev.contains_key(*name))
 			.ok_or_else(|| Diagnostic::error(f.span(pos), "invalid lvalue"))
-			.emit(f);
+			.emit();
 
 		let expr = expr::parse_assignment(f)?;
 		if let Some(name) = name {
@@ -459,7 +459,7 @@ fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> p
 				}
 			})?;
 			if items.len() != 4 {
-				Diagnostic::error(f.span(pos), "must be 4 items").emit(f);
+				Diagnostic::error(f.span(pos), "must be 4 items").emit();
 			}
 			out.push(Arg::Tuple(items));
 		}

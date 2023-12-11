@@ -218,7 +218,7 @@ impl Field for Setups {
 
 	fn parse_field<'src>(&mut self, word: &'src str, f: &mut Parser<'src>) -> parse::Result<()> {
 		if self.count == 4 {
-			parse::Diagnostic::error(f.span_of(word), "up to 4 setups allowed").emit(f);
+			parse::Diagnostic::error(f.span_of(word), "up to 4 setups allowed").emit();
 		}
 		self.count += 1;
 

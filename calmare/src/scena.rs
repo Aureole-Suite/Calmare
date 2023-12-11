@@ -155,8 +155,7 @@ impl<V> PackedIndices<V> {
 		let mut expect = 0;
 		for (k, slot) in self.items {
 			if k != expect {
-				Diagnostic::error(slot.span().unwrap(), format!("missing {word}[{expect}]"))
-					.emit(diag);
+				Diagnostic::error(slot.span().unwrap(), format!("missing {word}[{expect}]")).emit();
 			}
 			expect = k + 1;
 			vs.extend(slot.get())
@@ -179,7 +178,7 @@ fn chars<A, B>(diag: &mut Parser, items: PackedIndices<NpcOrMonster<A, B>>) -> (
 		{
 			Diagnostic::error(b.1.span().unwrap(), "npcs mut come before monsters")
 				.with_note(a.1.span().unwrap(), "is after this monster")
-				.emit(diag);
+				.emit();
 		}
 	}
 

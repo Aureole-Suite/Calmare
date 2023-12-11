@@ -9,7 +9,7 @@ use std::str::pattern::Pattern;
 use themelios::scena::insn_set::InsnSet;
 use themelios::types::Label;
 
-pub use diagnostic::{Diagnostic, Emit, Level, Result};
+pub use diagnostic::{diagnose, Diagnostic, Emit, Level, Result};
 use indent::{Indent, Space};
 pub use span::Span;
 
@@ -19,7 +19,6 @@ pub struct Parser<'src> {
 	indent: Indent<'src>,
 	allow_unindented: bool,
 	last_space: Option<(Span, Space<'src>)>,
-	diagnostics: Vec<Diagnostic>,
 	iset: &'src InsnSet<'src>,
 	labels: BiBTreeMap<&'src str, Label>,
 	defined_labels: BTreeSet<Label>,
@@ -42,7 +41,6 @@ impl<'src> Parser<'src> {
 			indent: Indent(&source[..0]),
 			allow_unindented: false,
 			last_space: None,
-			diagnostics: Vec::new(),
 			iset,
 			labels: BiBTreeMap::new(),
 			defined_labels: BTreeSet::new(),
@@ -72,14 +70,6 @@ impl<'src> Parser<'src> {
 			None => self.raw_pos().as_span(),
 		};
 		pos.as_span() | end
-	}
-
-	pub fn diagnostics(&self) -> &[Diagnostic] {
-		self.diagnostics.as_ref()
-	}
-
-	pub(crate) fn take_diagnostics(&mut self) -> Vec<Diagnostic> {
-		std::mem::take(&mut self.diagnostics)
 	}
 
 	pub fn insn_set(&self) -> &'src InsnSet<'src> {
@@ -236,11 +226,11 @@ impl<'src> Parser<'src> {
 
 	fn one_line(&mut self, f: &mut impl FnMut(&mut Self) -> Result<()>) {
 		let pos1 = self.raw_pos();
-		let ok = f(self).emit(self).is_some();
+		let ok = f(self).emit().is_some();
 		if self.raw_pos() == pos1 {
 			Diagnostic::error(pos1.as_span(), "line parsed as empty — this is a bug")
 				.filter(ok)
-				.emit(self);
+				.emit();
 			self.pat(|_| true);
 		}
 
@@ -256,7 +246,7 @@ impl<'src> Parser<'src> {
 		}
 		error
 			.with_note(self.last_nonspace(), "skipping to here")
-			.emit(self);
+			.emit();
 	}
 
 	pub fn last_nonspace(&mut self) -> Span {
@@ -273,10 +263,9 @@ impl<'src> Parser<'src> {
 	pub fn try_parse<T>(&mut self, f: impl FnOnce(&mut Self) -> Result<T>) -> Result<Option<T>> {
 		self.space();
 		let pos = self.raw_pos();
-		let diag = self.diagnostics().len();
 		match f(self) {
 			Ok(v) => Ok(Some(v)),
-			Err(_) if self.raw_pos() == pos && self.diagnostics().len() == diag => Ok(None),
+			Err(_) if self.raw_pos() == pos => Ok(None),
 			Err(e) => Err(e),
 		}
 	}
@@ -330,15 +319,14 @@ impl<'src> Parser<'src> {
 			let prev = self.labels.get_by_right(&label).unwrap();
 			Diagnostic::error(span, "duplicate label definition")
 				.with_note(self.span_of(prev), "previous defined here")
-				.emit(self)
+				.emit()
 		}
 	}
 
 	pub(crate) fn check_labels(&mut self) {
 		for (span, label) in &self.labels {
 			if !self.defined_labels.contains(label) {
-				self.diagnostics
-					.push(Diagnostic::error(self.span_of(span), "undefined label"))
+				Diagnostic::error(self.span_of(span), "undefined label").emit()
 			}
 		}
 	}
@@ -408,25 +396,28 @@ word
 ";
 	use themelios::scena::insn_set;
 	let iset = insn_set::get(insn_set::Game::Fc, insn_set::Variant::Base);
-	let mut parser = Parser::new(text, &iset);
-	let mut n = 0;
-	parser.lines(|f| {
-		n += 1;
-		f.check_word("word").unwrap();
-		f.lines(|f| {
+	let (n, diag) = diagnose(|| {
+		let mut parser = Parser::new(text, &iset);
+		let mut n = 0;
+		parser.lines(|f| {
 			n += 1;
 			f.check_word("word").unwrap();
 			f.lines(|f| {
 				n += 1;
 				f.check_word("word").unwrap();
+				f.lines(|f| {
+					n += 1;
+					f.check_word("word").unwrap();
+					Ok(())
+				});
 				Ok(())
 			});
 			Ok(())
 		});
-		Ok(())
+		parser.eof().emit();
+		n
 	});
-	parser.eof().emit(&mut parser);
-	println!("{:#?}", parser.diagnostics());
-	assert_eq!(parser.diagnostics().len(), 3);
+	println!("{:#?}", diag);
+	assert_eq!(diag.len(), 3);
 	assert_eq!(n, 8);
 }

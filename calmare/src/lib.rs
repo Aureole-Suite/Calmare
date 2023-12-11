@@ -219,8 +219,10 @@ pub fn parse<T: ParseBlock>(
 	source: &str,
 	iset: &iset::InsnSet,
 ) -> (Option<T>, Vec<parse::Diagnostic>) {
-	let mut parser = Parser::new(source, iset);
-	let v = T::parse_block(&mut parser).emit(&mut parser);
-	parser.check_labels();
-	(v, parser.take_diagnostics())
+	parse::diagnose(|| {
+		let mut parser = Parser::new(source, iset);
+		let v = T::parse_block(&mut parser).emit();
+		parser.check_labels();
+		v
+	})
 }
