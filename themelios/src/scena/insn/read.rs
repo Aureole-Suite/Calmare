@@ -9,6 +9,7 @@ use crate::scena::insn::Expr;
 use crate::scena::insn_set as iset;
 use crate::scena::*;
 use crate::types::*;
+use crate::util::cast;
 use crate::util::{ReaderExt, ValueError};
 
 #[derive(Debug, Snafu)]
@@ -162,9 +163,17 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 
 	fn arg(&mut self, out: &mut Vec<Arg>, arg: &iset::Arg) -> Result<(), ReadError> {
 		match arg {
+			iset::Arg::Int(int, iset::IntArg::Const(w)) => {
+				let v = self.int(*int)?;
+				ensure_whatever!(v == *w, "{v} != {w}");
+			}
+			iset::Arg::Int(int, iset::IntArg::Address) => {
+				let v = self.int(*int)?;
+				out.push(Arg::Label(Label(cast(v)?)));
+			}
 			iset::Arg::Int(int, ty) => {
 				let v = self.int(*int)?;
-				out.extend(int_arg(self.iset, v, *ty)?)
+				out.push(int_arg(self.iset, v, *ty)?)
 			}
 			iset::Arg::Misc(ty) => self.misc(out, ty)?,
 			iset::Arg::Tuple(args) => {
@@ -375,18 +384,13 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 	}
 }
 
-fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Option<Arg>> {
-	use crate::util::cast;
+fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Arg> {
 	use iset::IntArg as T;
 
-	Ok(Some(match ty {
+	Ok(match ty {
 		T::Int => Arg::Int(v),
-		T::Const(w) => {
-			ensure_whatever!(v == w, "{v} != {w}");
-			return Ok(None);
-		}
-
-		T::Address => Arg::Label(Label(cast(v)?)),
+		T::Const(_) => unreachable!(),
+		T::Address => unreachable!(),
 
 		T::Time => Arg::Time(Time(cast(v)?)),
 		T::Length => Arg::Length(Length(cast(v)?)),
@@ -442,7 +446,7 @@ fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Option<Arg>
 		T::EventFlags => Arg::EventFlags(cast(v)?),
 		T::CharFlags => Arg::CharFlags(cast(v)?),
 		T::CharFlags2 => Arg::CharFlags2(cast(v)?),
-	}))
+	})
 }
 
 fn text(f: &mut Reader, out: &mut Vec<Arg>) -> Result<()> {
