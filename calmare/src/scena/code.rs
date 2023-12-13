@@ -443,7 +443,7 @@ fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> p
 
 	use iset::MiscArg as MA;
 	match iarg {
-		MA::Const(_, _) => {},
+		MA::Const(_, _) => {}
 		MA::Label => out.push(Arg::Label(f.val()?)),
 		MA::String => out.push(f.arg(Atom::String)?),
 		MA::TString => out.push(f.arg(Atom::TString)?),
