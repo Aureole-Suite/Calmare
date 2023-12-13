@@ -3,7 +3,7 @@ use snafu::prelude::*;
 use strict_result::Strict as _;
 
 use super::{Arg, Insn};
-use crate::scena::code::visit::visit_args;
+use crate::scena::code::visit::visit_labels;
 use crate::scena::code::Code;
 use crate::scena::insn::Expr;
 use crate::scena::insn_set as iset;
@@ -75,11 +75,8 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 			{
 				break;
 			}
-			visit_args(i, |arg| {
-				if let Arg::Label(Label(l)) = arg {
-					extent = extent.max(*l);
-				}
-			});
+
+			visit_labels(i, |arg| extent = extent.max(arg.0));
 		}
 		ensure_whatever!(self.pos() <= end, "overshot end: {} > {}", self.pos(), end);
 

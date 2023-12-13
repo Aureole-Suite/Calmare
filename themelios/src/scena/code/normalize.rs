@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::ControlFlow;
 
+use crate::scena::code::visit_mut::visit_labels_mut;
 use crate::types::Label;
 
 use super::visit::{Visit, Visitable};
@@ -20,7 +21,7 @@ pub fn normalize(code: &mut impl VisitableMut) -> Result<(), NormalizeError> {
 	let used = find_used(code)?;
 	remove_unused(code, &used);
 	let order = find_order(code);
-	rename(code, |l| Label(order[&l]));
+	visit_labels_mut(code, |l| *l = Label(order[l]));
 	Ok(())
 }
 
@@ -43,11 +44,8 @@ fn find_used(code: &impl Visitable) -> Result<BTreeSet<Label>, NormalizeError> {
 			}
 		}
 
-		fn visit_arg(&mut self, arg: &Arg) -> ControlFlow<()> {
-			if let Arg::Label(l) = arg {
-				self.used.insert(*l);
-			}
-			ControlFlow::Continue(())
+		fn visit_label(&mut self, arg: &Label) {
+			self.used.insert(*arg);
 		}
 	}
 
@@ -108,25 +106,4 @@ fn find_order(code: &impl Visitable) -> BTreeMap<Label, usize> {
 	};
 	code.accept(&mut vis);
 	vis.order
-}
-
-fn rename(code: &mut impl VisitableMut, order: impl FnMut(Label) -> Label) {
-	struct Vis<F> {
-		order: F,
-	}
-
-	impl<F> VisitMut for Vis<F>
-	where
-		F: FnMut(Label) -> Label,
-	{
-		fn visit_arg_mut(&mut self, arg: &mut Arg) -> ControlFlow<()> {
-			if let Arg::Label(l) = arg {
-				*l = (self.order)(*l)
-			}
-			ControlFlow::Continue(())
-		}
-	}
-
-	let mut vis = Vis { order };
-	code.accept_mut(&mut vis);
 }
