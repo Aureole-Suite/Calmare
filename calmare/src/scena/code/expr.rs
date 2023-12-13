@@ -1,4 +1,4 @@
-use themelios::scena::insn::{Arg, AssOp, BinOp, Expr, UnOp};
+use themelios::scena::insn::{AssOp, Atom, BinOp, Expr, UnOp};
 
 use crate::parse::{self, Diagnostic};
 use crate::{Parser, Printer};
@@ -9,7 +9,7 @@ pub fn print(e: &Expr, f: &mut Printer) {
 
 fn print_prio(e: &Expr, prio: u8, f: &mut Printer) {
 	match e {
-		Expr::Arg(v) => {
+		Expr::Atom(v) => {
 			f.val(v);
 		}
 		Expr::Insn(i) => {
@@ -111,7 +111,7 @@ fn parse_atom(f: &mut Parser) -> parse::Result<Expr> {
 	}
 
 	if let Some(e) = f.try_parse(parse_lvalue)? {
-		return Ok(Expr::Arg(e));
+		return Ok(Expr::Atom(e));
 	}
 
 	if let Some(i) = f.try_val()? {
@@ -125,9 +125,9 @@ fn parse_atom(f: &mut Parser) -> parse::Result<Expr> {
 	Err(Diagnostic::error(f.pos()?.as_span(), "invalid expression"))
 }
 
-pub fn parse_lvalue(f: &mut Parser) -> parse::Result<Arg> {
+pub fn parse_lvalue(f: &mut Parser) -> parse::Result<Atom> {
 	macro test($($a:ident),*) {
-		$(if let Some(v) = f.try_val()?.map(Arg::$a) {
+		$(if let Some(v) = f.try_val()?.map(Atom::$a) {
 			return Ok(v)
 		})*
 	}

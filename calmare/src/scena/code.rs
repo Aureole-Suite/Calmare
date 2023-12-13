@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use themelios::scena::code::Code;
-use themelios::scena::insn::{Arg, Expr, Insn};
+use themelios::scena::insn::{Arg, Atom, Expr, Insn};
 use themelios::scena::{insn_set as iset, CharId};
 use themelios::types::Text;
 
@@ -131,7 +131,9 @@ fn parse_code_line(f: &mut Parser<'_>, cont: bool, brk: bool) -> Result<Insn, Di
 				f.check(":")?;
 				let body = parse_code(f, cont, true);
 				cases.push(match case {
-					Some(v) => Insn::new("case", vec![Arg::Int(v as _), Arg::Code(body)]),
+					Some(v) => {
+						Insn::new("case", vec![Arg::Atom(Atom::Int(v as _)), Arg::Code(body)])
+					}
 					None => Insn::new("default", vec![Arg::Code(body)]),
 				});
 				Ok(())
@@ -152,10 +154,10 @@ fn parse_code_line(f: &mut Parser<'_>, cont: bool, brk: bool) -> Result<Insn, Di
 
 	if let Some(lhs) = f.try_parse(expr::parse_lvalue)? {
 		let name = match &lhs {
-			Arg::Var(_) => Some("Var"),
-			Arg::Global(_) => Some("Global"),
-			Arg::Attr(_) => Some("Attr"),
-			Arg::CharAttr(_) => Some("CharAttr"),
+			Atom::Var(_) => Some("Var"),
+			Atom::Global(_) => Some("Global"),
+			Atom::Attr(_) => Some("Attr"),
+			Atom::CharAttr(_) => Some("CharAttr"),
 			_ => None,
 		};
 		let name = name
@@ -165,7 +167,10 @@ fn parse_code_line(f: &mut Parser<'_>, cont: bool, brk: bool) -> Result<Insn, Di
 
 		let expr = expr::parse_assignment(f)?;
 		if let Some(name) = name {
-			return Ok(Insn::new(name, vec![lhs, Arg::Expr(Box::new(expr))]));
+			return Ok(Insn::new(
+				name,
+				vec![Arg::Atom(lhs), Arg::Expr(Box::new(expr))],
+			));
 		} else {
 			return Err(Diagnostic::DUMMY);
 		}
@@ -212,7 +217,7 @@ impl Print for Insn {
 				f.word("Menu");
 				let mut n = 0;
 				for arg in args {
-					if matches!(arg, Arg::TString(_)) {
+					if matches!(arg, Arg::Atom(Atom::TString(_))) {
 						f.line().indent(|f| {
 							f.val(arg);
 							write!(f, "// {n}");
@@ -248,23 +253,6 @@ impl Print for Arg {
 	fn print(&self, f: &mut Printer) {
 		match self {
 			Arg::Label(v) => f.val(v),
-
-			Arg::Int(v) => f.val(v),
-			Arg::String(v) => f.val(v),
-			Arg::Time(v) => f.val(v),
-			Arg::Angle(v) => f.val(v),
-			Arg::Angle32(v) => f.val(v),
-			Arg::Speed(v) => f.val(v),
-			Arg::AngularSpeed(v) => f.val(v),
-			Arg::Length(v) => f.val(v),
-			Arg::Color(v) => f.val(v),
-
-			Arg::Pos2(v) => f.val(v),
-			Arg::Pos3(v) => f.val(v),
-			Arg::RPos3(v) => f.val(v),
-
-			Arg::TString(v) => f.val(v),
-			Arg::Text(v) => f.val(v),
 			Arg::Tuple(v) => {
 				let mut term = f.term("");
 				for v in v {
@@ -273,50 +261,74 @@ impl Print for Arg {
 				drop(term);
 				f
 			}
-
-			Arg::FileId(v) => f.val(v),
-			Arg::BattleId(v) => f.val(v),
-			Arg::BgmId(v) => f.val(v),
-			Arg::ItemId(v) => f.val(v),
-			Arg::MagicId(v) => f.val(v),
-			Arg::NameId(v) => f.val(v),
-			Arg::QuestId(v) => f.val(v),
-			Arg::RecipeId(v) => f.val(v),
-			Arg::ShopId(v) => f.val(v),
-			Arg::SoundId(v) => f.val(v),
-			Arg::TownId(v) => f.val(v),
-
-			Arg::FuncId(v) => f.val(v),
-			Arg::LookPointId(v) => f.val(v),
-			Arg::EventId(v) => f.val(v),
-
-			Arg::EntranceId(v) => f.val(v),
-			Arg::ObjectId(v) => f.val(v),
-			Arg::ForkId(v) => f.val(v),
-			Arg::MenuId(v) => f.val(v),
-			Arg::EffId(v) => f.val(v),
-			Arg::EffInstanceId(v) => f.val(v),
-			Arg::ChipId(v) => f.val(v),
-			Arg::VisId(v) => f.val(v),
-
-			Arg::CharId(v) => f.val(v),
-
-			Arg::Flag(v) => f.val(v),
-			Arg::Var(v) => f.val(v),
-			Arg::Global(v) => f.val(v),
-			Arg::Attr(v) => f.val(v),
-			Arg::CharAttr(v) => f.val(v),
 			Arg::Code(v) => f.val_block(v),
 			Arg::Expr(v) => f.val(v),
+			Arg::Atom(v) => f.val(v),
+		};
+	}
+}
 
-			Arg::QuestTask(v) => f.hex(v),
-			Arg::QuestFlags(v) => f.hex(v),
-			Arg::SystemFlags(v) => f.hex(v),
-			Arg::LookPointFlags(v) => f.hex(v),
-			Arg::ObjectFlags(v) => f.hex(v),
-			Arg::EventFlags(v) => f.hex(v),
-			Arg::CharFlags(v) => f.hex(v),
-			Arg::CharFlags2(v) => f.hex(v),
+impl Print for Atom {
+	fn print(&self, f: &mut Printer) {
+		match self {
+			Atom::Int(v) => f.val(v),
+			Atom::String(v) => f.val(v),
+			Atom::Time(v) => f.val(v),
+			Atom::Angle(v) => f.val(v),
+			Atom::Angle32(v) => f.val(v),
+			Atom::Speed(v) => f.val(v),
+			Atom::AngularSpeed(v) => f.val(v),
+			Atom::Length(v) => f.val(v),
+			Atom::Color(v) => f.val(v),
+
+			Atom::Pos2(v) => f.val(v),
+			Atom::Pos3(v) => f.val(v),
+			Atom::RPos3(v) => f.val(v),
+
+			Atom::TString(v) => f.val(v),
+			Atom::Text(v) => f.val(v),
+
+			Atom::FileId(v) => f.val(v),
+			Atom::BattleId(v) => f.val(v),
+			Atom::BgmId(v) => f.val(v),
+			Atom::ItemId(v) => f.val(v),
+			Atom::MagicId(v) => f.val(v),
+			Atom::NameId(v) => f.val(v),
+			Atom::QuestId(v) => f.val(v),
+			Atom::RecipeId(v) => f.val(v),
+			Atom::ShopId(v) => f.val(v),
+			Atom::SoundId(v) => f.val(v),
+			Atom::TownId(v) => f.val(v),
+
+			Atom::FuncId(v) => f.val(v),
+			Atom::LookPointId(v) => f.val(v),
+			Atom::EventId(v) => f.val(v),
+
+			Atom::EntranceId(v) => f.val(v),
+			Atom::ObjectId(v) => f.val(v),
+			Atom::ForkId(v) => f.val(v),
+			Atom::MenuId(v) => f.val(v),
+			Atom::EffId(v) => f.val(v),
+			Atom::EffInstanceId(v) => f.val(v),
+			Atom::ChipId(v) => f.val(v),
+			Atom::VisId(v) => f.val(v),
+
+			Atom::CharId(v) => f.val(v),
+
+			Atom::Flag(v) => f.val(v),
+			Atom::Var(v) => f.val(v),
+			Atom::Global(v) => f.val(v),
+			Atom::Attr(v) => f.val(v),
+			Atom::CharAttr(v) => f.val(v),
+
+			Atom::QuestTask(v) => f.hex(v),
+			Atom::QuestFlags(v) => f.hex(v),
+			Atom::SystemFlags(v) => f.hex(v),
+			Atom::LookPointFlags(v) => f.hex(v),
+			Atom::ObjectFlags(v) => f.hex(v),
+			Atom::EventFlags(v) => f.hex(v),
+			Atom::CharFlags(v) => f.hex(v),
+			Atom::CharFlags2(v) => f.hex(v),
 		};
 	}
 }
@@ -332,8 +344,9 @@ fn parse_args(f: &mut Parser, iargs: &[iset::Arg]) -> parse::Result<Vec<Arg>> {
 fn parse_arg(out: &mut Vec<Arg>, f: &mut Parser<'_>, iarg: &iset::Arg) -> Result<(), Diagnostic> {
 	match iarg {
 		iset::Arg::Int(_, iset::IntArg::Const(_)) => {}
+		iset::Arg::Int(_, iset::IntArg::Address) => out.push(Arg::Label(f.val()?)),
 		iset::Arg::Int(_, iarg) => {
-			out.push(parse_int_arg(f, *iarg)?);
+			out.push(Arg::Atom(parse_int_arg(f, *iarg)?));
 		}
 		iset::Arg::Misc(iarg) => parse_misc_arg(out, f, iarg)?,
 		iset::Arg::Tuple(iargs) => {
@@ -350,62 +363,62 @@ fn parse_arg(out: &mut Vec<Arg>, f: &mut Parser<'_>, iarg: &iset::Arg) -> Result
 	Ok(())
 }
 
-fn parse_int_arg(f: &mut Parser, iarg: iset::IntArg) -> parse::Result<Arg> {
+fn parse_int_arg(f: &mut Parser, iarg: iset::IntArg) -> parse::Result<Atom> {
 	use iset::IntArg as IA;
-	Ok(match iarg {
+	match iarg {
 		IA::Const(_) => unreachable!(),
-		IA::Int => Arg::Int(f.val()?),
-		IA::Address => Arg::Label(f.val()?),
+		IA::Address => unreachable!(),
+		IA::Int => f.atom(Atom::Int),
 
-		IA::Time => Arg::Time(f.val()?),
-		IA::Length => Arg::Length(f.val()?),
-		IA::Speed => Arg::Speed(f.val()?),
-		IA::Angle => Arg::Angle(f.val()?),
-		IA::AngularSpeed => Arg::AngularSpeed(f.val()?),
-		IA::Angle32 => Arg::Angle32(f.val()?),
-		IA::Color => Arg::Color(f.val()?),
+		IA::Time => f.atom(Atom::Time),
+		IA::Length => f.atom(Atom::Length),
+		IA::Speed => f.atom(Atom::Speed),
+		IA::Angle => f.atom(Atom::Angle),
+		IA::AngularSpeed => f.atom(Atom::AngularSpeed),
+		IA::Angle32 => f.atom(Atom::Angle32),
+		IA::Color => f.atom(Atom::Color),
 
-		IA::FileId => Arg::FileId(f.val()?),
-		IA::BattleId => Arg::BattleId(f.val()?),
-		IA::BgmId => Arg::BgmId(f.val()?),
-		IA::ItemId => Arg::ItemId(f.val()?),
-		IA::MagicId => Arg::MagicId(f.val()?),
-		IA::NameId => Arg::NameId(f.val()?),
-		IA::QuestId => Arg::QuestId(f.val()?),
-		IA::RecipeId => Arg::RecipeId(f.val()?),
-		IA::ShopId => Arg::ShopId(f.val()?),
-		IA::SoundId => Arg::SoundId(f.val()?),
-		IA::TownId => Arg::TownId(f.val()?),
-		IA::FuncId => Arg::FuncId(f.val()?),
-		IA::LookPointId => Arg::LookPointId(f.val()?),
-		IA::EventId => Arg::EventId(f.val()?),
+		IA::FileId => f.atom(Atom::FileId),
+		IA::BattleId => f.atom(Atom::BattleId),
+		IA::BgmId => f.atom(Atom::BgmId),
+		IA::ItemId => f.atom(Atom::ItemId),
+		IA::MagicId => f.atom(Atom::MagicId),
+		IA::NameId => f.atom(Atom::NameId),
+		IA::QuestId => f.atom(Atom::QuestId),
+		IA::RecipeId => f.atom(Atom::RecipeId),
+		IA::ShopId => f.atom(Atom::ShopId),
+		IA::SoundId => f.atom(Atom::SoundId),
+		IA::TownId => f.atom(Atom::TownId),
+		IA::FuncId => f.atom(Atom::FuncId),
+		IA::LookPointId => f.atom(Atom::LookPointId),
+		IA::EventId => f.atom(Atom::EventId),
 
-		IA::EntranceId => Arg::EntranceId(f.val()?),
-		IA::ObjectId => Arg::ObjectId(f.val()?),
-		IA::ForkId => Arg::ForkId(f.val()?),
-		IA::MenuId => Arg::MenuId(f.val()?),
-		IA::EffId => Arg::EffId(f.val()?),
-		IA::EffInstanceId => Arg::EffInstanceId(f.val()?),
-		IA::ChipId => Arg::ChipId(f.val()?),
-		IA::VisId => Arg::VisId(f.val()?),
+		IA::EntranceId => f.atom(Atom::EntranceId),
+		IA::ObjectId => f.atom(Atom::ObjectId),
+		IA::ForkId => f.atom(Atom::ForkId),
+		IA::MenuId => f.atom(Atom::MenuId),
+		IA::EffId => f.atom(Atom::EffId),
+		IA::EffInstanceId => f.atom(Atom::EffInstanceId),
+		IA::ChipId => f.atom(Atom::ChipId),
+		IA::VisId => f.atom(Atom::VisId),
 
-		IA::CharId => Arg::CharId(f.val()?),
+		IA::CharId => f.atom(Atom::CharId),
 
-		IA::Flag => Arg::Flag(f.val()?),
-		IA::Var => Arg::Var(f.val()?),
-		IA::Global => Arg::Global(f.val()?),
-		IA::Attr => Arg::Attr(f.val()?),
-		IA::CharAttr => Arg::CharAttr(f.val()?),
+		IA::Flag => f.atom(Atom::Flag),
+		IA::Var => f.atom(Atom::Var),
+		IA::Global => f.atom(Atom::Global),
+		IA::Attr => f.atom(Atom::Attr),
+		IA::CharAttr => f.atom(Atom::CharAttr),
 
-		IA::QuestTask => Arg::QuestTask(f.val()?),
-		IA::QuestFlags => Arg::QuestFlags(f.val()?),
-		IA::SystemFlags => Arg::SystemFlags(f.val()?),
-		IA::LookPointFlags => Arg::LookPointFlags(f.val()?),
-		IA::ObjectFlags => Arg::ObjectFlags(f.val()?),
-		IA::EventFlags => Arg::EventFlags(f.val()?),
-		IA::CharFlags => Arg::CharFlags(f.val()?),
-		IA::CharFlags2 => Arg::CharFlags2(f.val()?),
-	})
+		IA::QuestTask => f.atom(Atom::QuestTask),
+		IA::QuestFlags => f.atom(Atom::QuestFlags),
+		IA::SystemFlags => f.atom(Atom::SystemFlags),
+		IA::LookPointFlags => f.atom(Atom::LookPointFlags),
+		IA::ObjectFlags => f.atom(Atom::ObjectFlags),
+		IA::EventFlags => f.atom(Atom::EventFlags),
+		IA::CharFlags => f.atom(Atom::CharFlags),
+		IA::CharFlags2 => f.atom(Atom::CharFlags2),
+	}
 }
 
 fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> parse::Result<()> {
@@ -435,30 +448,30 @@ fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> p
 
 	use iset::MiscArg as MA;
 	match iarg {
-		MA::String => out.push(Arg::String(f.val()?)),
-		MA::TString => out.push(Arg::TString(f.val()?)),
-		MA::Text => list(out, f, |f| f.val().map(Arg::Text))?,
-		MA::Pos2 => out.push(Arg::Pos2(f.val()?)),
-		MA::Pos3 => out.push(Arg::Pos3(f.val()?)),
-		MA::RPos3 => out.push(Arg::RPos3(f.val()?)),
+		MA::String => out.push(f.arg(Atom::String)?),
+		MA::TString => out.push(f.arg(Atom::TString)?),
+		MA::Text => list(out, f, |f| f.arg(Atom::Text))?,
+		MA::Pos2 => out.push(f.arg(Atom::Pos2)?),
+		MA::Pos3 => out.push(f.arg(Atom::Pos3)?),
+		MA::RPos3 => out.push(f.arg(Atom::RPos3)?),
 		MA::Expr => out.push(Arg::Expr(f.val()?)),
 		MA::Fork | MA::ForkLoop(_) => out.push(Arg::Code(f.val_block()?)),
 		MA::SwitchTable(_, _) => out.push(Arg::Tuple(tuple(f, |f| {
 			f.tuple(|tup| {
-				let a = tup.field()?.val()?;
+				let a = tup.field()?.arg(Atom::Int)?;
 				let b = tup.field()?.val()?;
-				Ok(Arg::Tuple(vec![Arg::Int(a), Arg::Label(b)]))
+				Ok(Arg::Tuple(vec![a, Arg::Label(b)]))
 			})
 		})?)),
-		MA::QuestList => list(out, f, |f| f.val().map(Arg::QuestId))?,
-		MA::Menu => list(out, f, |f| f.val().map(Arg::TString))?,
+		MA::QuestList => list(out, f, |f| f.arg(Atom::QuestId))?,
+		MA::Menu => list(out, f, |f| f.arg(Atom::TString))?,
 		MA::PartySelectMandatory => {
 			let pos = f.pos()?;
 			let items = tuple(f, |f| {
 				if f.check_word("null").is_ok() {
-					Ok(Arg::CharId(themelios::scena::CharId::Null))
+					Ok(Arg::Atom(Atom::CharId(CharId::Null)))
 				} else {
-					f.val().map(Arg::NameId)
+					f.arg(Atom::NameId)
 				}
 			})?;
 			if items.len() != 4 {
@@ -466,23 +479,23 @@ fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> p
 			}
 			out.push(Arg::Tuple(items));
 		}
-		MA::PartySelectOptional => list(out, f, |f| f.val().map(Arg::NameId))?,
-		MA::TcMembers => out.push(Arg::Tuple(tuple(f, |f| f.val().map(Arg::NameId))?)),
-		MA::ED7CharAnimation => out.push(Arg::Tuple(tuple(f, |f| f.val().map(Arg::Int))?)),
+		MA::PartySelectOptional => list(out, f, |f| f.arg(Atom::NameId))?,
+		MA::TcMembers => out.push(Arg::Tuple(tuple(f, |f| f.arg(Atom::NameId))?)),
+		MA::ED7CharAnimation => out.push(Arg::Tuple(tuple(f, |f| f.arg(Atom::Int))?)),
 		MA::EvoSave => {
 			if f.insn_set().variant == iset::Variant::Evo {
-				out.push(Arg::Int(f.val()?))
+				out.push(f.arg(Atom::Int)?)
 			}
 		}
-		MA::KaiSoundId => out.push(Arg::SoundId(f.val()?)),
-		MA::ED7BattlePos => out.push(Arg::BattleId(f.val()?)),
-		MA::FcPartyEquip => out.push(Arg::Int(f.val()?)),
-		MA::ScPartySetSlot => out.push(Arg::Int(f.val()?)),
+		MA::KaiSoundId => out.push(f.arg(Atom::SoundId)?),
+		MA::ED7BattlePos => out.push(f.arg(Atom::BattleId)?),
+		MA::FcPartyEquip => out.push(f.arg(Atom::Int)?),
+		MA::ScPartySetSlot => out.push(f.arg(Atom::Int)?),
 		MA::EffPlayPos => {
-			if matches!(out[0], Arg::CharId(CharId::Null)) {
-				out.push(Arg::Pos3(f.val()?))
+			if matches!(out[0], Arg::Atom(Atom::CharId(CharId::Null))) {
+				out.push(f.arg(Atom::Pos3)?)
 			} else {
-				out.push(Arg::RPos3(f.val()?))
+				out.push(f.arg(Atom::RPos3)?)
 			}
 		}
 	}
@@ -498,5 +511,16 @@ impl Print for Expr {
 impl Parse for Expr {
 	fn parse(f: &mut Parser) -> parse::Result<Self> {
 		expr::parse(f)
+	}
+}
+
+#[extend::ext]
+impl<'src> Parser<'src> {
+	fn atom<T: Parse>(&mut self, f: impl Fn(T) -> Atom) -> parse::Result<Atom> {
+		self.val().map(f)
+	}
+
+	fn arg<T: Parse>(&mut self, f: impl Fn(T) -> Atom) -> parse::Result<Arg> {
+		self.atom(f).map(Arg::Atom)
 	}
 }
