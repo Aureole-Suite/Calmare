@@ -5,7 +5,7 @@ _def:
  - &FileId {u32: FileId}
  - &CharId {u16: CharId}
 insns:
--
+- []
 - [Return]
 - [_if, Expr, Label]
 - [_goto, Label]
@@ -53,7 +53,7 @@ insns:
   on: u8
   cases:
   - [ED6_1D_0, u8, u8, u8, Pos3, i32, i32, {i32: Angle32}]
-  -
+  - []
   - [ED6_1D_2, u8, u8]
   - [ED6_1D_3, u8, u8]
 - [BgmPlay, {u16: BgmId}, u8]
@@ -71,7 +71,7 @@ insns:
   head: [{u16: QuestId}]
   on: u8
   cases:
-  -
+  - []
   - [QuestTaskSet, {u16: QuestTask}]
   - [QuestTaskUnset, {u16: QuestTask}]
   - [QuestFlagsUnset, {u8: QuestFlags}]
@@ -114,16 +114,16 @@ insns:
 - [Event, {u16: FuncId}]
 - [_Char4A, *CharId, u8]
 - [_Char4B, *CharId, u8]
--
+- []
 - [Var, {u16: Var}, Expr]
--
+- []
 - [Attr, {u8: Attr}, Expr]
--
+- []
 - [CharAttr, {u24: CharAttr}, Expr]
 - [TextStart, *CharId]
 - [TextEnd, *CharId]
 - [TextMessage, *CharId, Text]
--
+- []
 - [TextClose, u8]
 - [MenuSetTitle, u16, u16, u16, TString]
 - [TextWait]
@@ -237,16 +237,16 @@ insns:
 - [_A0, *CharId, {u32: Color}, u8, u8, u8]
 - [FlagSet, {u16: Flag}]
 - [FlagUnset, {u16: Flag}]
--
+- []
 - [FlagWaitSet, {u16: Flag}]
 - [FlagWaitUnset, {u16: Flag}]
--
+- []
 - [ShopOpen, {u8: ShopId}]
 - [RecipeLearn, {u16: RecipeId}]
 - [ED7_B1, u8]
--
--
--
+- []
+- []
+- []
 - !match
   on: u8
   cases:
@@ -314,7 +314,7 @@ insns:
 - [ED7_DA, u8]
 - [ED7_DB]
 - [Ao_DE, String]
--
+- []
 - [Zero_DE, u16]
 - [ED7_E0, u8]
 - [ED7_E1, Pos3]
@@ -364,18 +364,18 @@ insns:
 - [AoEvoStopwatchStart]
 - [AoEvo_F2, u8, u8]
 - [AoEvo_F3, u8, u8]
--
--
--
--
--
--
--
--
--
--
--
--
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
 
 at_roll:
 - none

@@ -5,7 +5,7 @@ _def:
  - &FileId {u32: FileId}
  - &CharId {u16: CharId}
 insns:
--
+- []
 - [Return]
 - [_if, Expr, Label]
 - [_goto, Label]
@@ -45,8 +45,8 @@ insns:
 - !match
   on: u8
   cases:
-  -
-  -
+  - []
+  - []
   - [ZeroMap_2, i32, Pos2, u16, u16, u16, u16]
   - [ZeroMap_3, u8, u16]
 - [Save]
@@ -57,7 +57,7 @@ insns:
   on: u8
   cases:
   - [ED6_1D_0, u8, u8, u8, Pos3, i32, i32, {i32: Angle32}]
-  -
+  - []
   - [ED6_1D_2, u8, u8]
   - [ED6_1D_3, u8, u8]
 - [BgmPlay, {u16: BgmId}, u8]
@@ -75,7 +75,7 @@ insns:
   head: [{u16: QuestId}]
   on: u8
   cases:
-  -
+  - []
   - [QuestTaskSet, {u16: QuestTask}]
   - [QuestTaskUnset, {u16: QuestTask}]
   - [QuestFlagsUnset, {u8: QuestFlags}]
@@ -118,16 +118,16 @@ insns:
 - [Event, {u16: FuncId}]
 - [_Char4A, *CharId, u8]
 - [_Char4B, *CharId, u8]
--
+- []
 - [Var, {u16: Var}, Expr]
--
+- []
 - [Attr, {u8: Attr}, Expr]
--
+- []
 - [CharAttr, {u24: CharAttr}, Expr]
 - [TextStart, *CharId]
 - [TextEnd, *CharId]
 - [TextMessage, *CharId, Text]
--
+- []
 - [TextClose, u8]
 - [MenuSetTitle, u16, u16, u16, TString]
 - [TextWait]
@@ -234,16 +234,16 @@ insns:
 - [_A0, *CharId, {u32: Color}, u8, u8, u8]
 - [FlagSet, {u16: Flag}]
 - [FlagUnset, {u16: Flag}]
--
+- []
 - [FlagWaitSet, {u16: Flag}]
 - [FlagWaitUnset, {u16: Flag}]
--
+- []
 - [ShopOpen, {u8: ShopId}]
 - [RecipeLearn, {u16: RecipeId}]
 - [ED7_B1, u8]
--
--
--
+- []
+- []
+- []
 - !match
   on: u8
   cases:
@@ -256,7 +256,7 @@ insns:
   - [VideoEnd, String, u16, u16]
 - [ReturnToTitle, u8]
 - [ED7_B8, u16, u16]
--
+- []
 - [_B8, {u8: NameId}]
 - [ItemUse, {u16: ItemId}, *CharId]
 - [PartyHasSpell, {u8: NameId}, {u16: MagicId}]
@@ -288,7 +288,7 @@ insns:
   - [VisWait, {u8: VisId}, u8]
   - [VisHide, {u8: VisId}, u8]
 - [_C8, u16, u16, String, u8, u16]
--
+- []
 - !match
   on: u8
   cases:
@@ -308,11 +308,11 @@ insns:
 - [UnloadChip, {u8: ChipId}]
 - [PartyGetAttr, {u8: NameId}, u8]
 - [PartyGetEquipped, {u8: NameId}, u8]
--
+- []
 - [ED7_DA, u8]
 - [ED7_DB]
--
--
+- []
+- []
 - [Zero_DE, u16]
 - [ED7_E0, u8]
 - [ED7_E1, Pos3]
@@ -332,19 +332,19 @@ insns:
   - [ED7Note_2, u8]
   - [ED7Note_3]
 - [ED7_E3, u8]
--
+- []
 - [_DB]
 - [_DC]
 - [SaveClearData]
--
+- []
 - [ED7_EE, u8, u16]
--
--
--
+- []
+- []
+- []
 - [ED7_F2, u8]
--
--
--
+- []
+- []
+- []
 - [ED7_F8, u16]
 - [ZeroEvo_E0]
 - [ZeroEvo_E1, [u32,u32,u32,u32], [u32,u32,u32,u32], [u32,u32,u32,u32]]
@@ -356,28 +356,28 @@ insns:
 - [ZeroEvo_E7, u8, u8]
 - [ZeroEvo_E8, u8]
 - [ZeroEvo_E9, u16, [u32,u32,u32,u32], [u32,u32,u32,u32]]
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
 
 at_roll:
 - none

@@ -359,16 +359,13 @@ impl<'de> Deserialize<'de> for Insn {
 				InsnInner::deserialize(de)
 			}
 
-			fn visit_unit<E: de::Error>(self) -> Result<Self::Value, E> {
-				Ok(Insn::Blank)
-			}
-
 			fn visit_seq<A: de::SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
-				let name = seq
-					.next_element()?
-					.ok_or_else(|| de::Error::invalid_length(0, &self))?;
-				let args = Vec::deserialize(de::value::SeqAccessDeserializer::new(seq))?;
-				Ok(Insn::Regular { name, args })
+				if let Some(name) = seq.next_element()? {
+					let args = Vec::deserialize(de::value::SeqAccessDeserializer::new(seq))?;
+					Ok(Insn::Regular { name, args })
+				} else {
+					Ok(Insn::Blank)
+				}
 			}
 		}
 		de.deserialize_any(V)

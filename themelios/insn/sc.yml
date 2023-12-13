@@ -5,7 +5,7 @@ _def:
  - &FileId {u32: FileId}
  - &CharId {u16: CharId}
 insns:
--
+- []
 - [Return]
 - [_if, Expr, Label]
 - [_goto, Label]
@@ -49,12 +49,12 @@ insns:
 - [SoundSetVolume, {u16: SoundId}, u8]
 - [SoundPlayContinuously, {u16: SoundId}, Pos3, u32, u32, u8, u32]
 - [SoundLoad, {u16: SoundId}]
--
+- []
 - !match
   head: [{u16: QuestId}]
   on: u8
   cases:
-  -
+  - []
   - [QuestTaskSet, {u16: QuestTask}]
   - [QuestTaskUnset, {u16: QuestTask}]
   - [QuestFlagsUnset, {u8: QuestFlags}]
@@ -73,8 +73,8 @@ insns:
 - [PartyClear]
 - [_30, u8]
 - [PartySetAttr, {u8: NameId}, u8, u16]
--
--
+- []
+- []
 - [PartyAddArt, {u8: NameId}, {u16: MagicId}]
 - [PartyAddCraft, {u8: NameId}, {u16: MagicId}]
 - [PartyAddSCraft, {u8: NameId}, {u16: MagicId}]
@@ -99,16 +99,16 @@ insns:
 - [Event, {u24: FuncId}]
 - [_Char4A, *CharId, u8]
 - [_Char4B, *CharId, u8]
--
+- []
 - [Var, {u16: Var}, Expr]
--
+- []
 - [Attr, {u8: Attr}, Expr]
--
+- []
 - [CharAttr, {u24: CharAttr}, Expr]
 - [TextStart, *CharId]
 - [TextEnd, *CharId]
 - [TextMessage, {?255: CharId}, Text]
--
+- []
 - [TextClose, u8]
 - [MenuSetTitle, u16, u16, u16, TString]
 - [TextWait]
@@ -127,7 +127,7 @@ insns:
 - [LookPointFlagsUnset, {u8: LookPointId}, {u16: LookPointFlags}]
 - [CamChangeAxis, u16]
 - [CamSetDistance, [i32, i32, i32], *Time]
--
+- []
 - [CamLookChar, *CharId, *Time]
 - [_Char6A, *CharId]
 - [CamZoom, i32, *Time]
@@ -209,11 +209,11 @@ insns:
 - [CharAttachObj, *CharId, {u16: ObjectId}]
 - [FlagSet, {u16: Flag}]
 - [FlagUnset, {u16: Flag}]
--
+- []
 - [FlagWaitSet, {u16: Flag}]
 - [FlagWaitUnset, {u16: Flag}]
 - [VarWait, {u16: Var}, u16]
--
+- []
 - [ShopOpen, {u8: ShopId}]
 - [PartySave]
 - [PartyLoad]
@@ -241,14 +241,14 @@ insns:
 - [PartyHasSpell, {u8: NameId}, {u16: MagicId}]
 - [PartyHasSlot, {u8: NameId}, u8]
 - [PartySetPortrait, {u8: NameId}, u8, u8, u8, u8, u8]
--
+- []
 - [PartySetPortraitFinish]
 - [_BE, [u8, u8, u8, u8], u16, u16, u8, [i32,i32,i32,i32,i32,i32]]
 - [_BF, [u8, u8, u8, u8], {u16: Flag}]
 - [Minigame, u8, i32, i32, i32, i32, i32, i32, i32, i32]
 - [_C1, {u16: ItemId}, u32]
 - [Sc_C2]
--
+- []
 - !match
   on: u8
   cases:
@@ -301,10 +301,10 @@ insns:
 - [_DC]
 - [SaveClearData]
 - [PlaceSetNameString, TString]
--
+- []
 - [_E0, {u8: ObjectId}, Pos3]
--
--
+- []
+- []
 - [_E3, u8, *CharId, u8]
 - [_E4, u8, u16]
 - [_E5, *CharId, u8]
@@ -317,23 +317,23 @@ insns:
 - [EvoVoiceLine, u16]
 - [Evo_E6, Text]
 - [EvoVisLipSync, {u8: VisId}, u8]
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
+- []
 
 at_roll:
 - none
