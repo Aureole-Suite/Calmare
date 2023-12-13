@@ -42,7 +42,14 @@ impl Insn {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Arg {
 	Label(Label),
+	Tuple(Vec<Arg>),
+	Code(Code),
+	Expr(Box<Expr>),
+	Atom(Atom),
+}
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Atom {
 	Int(i64), // easier to have a single integer type encompassing everything
 	String(String),
 
@@ -61,7 +68,6 @@ pub enum Arg {
 	TString(TString),
 	Text(Text),
 
-	Tuple(Vec<Arg>),
 	FileId(FileId),
 
 	BattleId(BattleId), // This one's weird since it's global in Sky but local in CB
@@ -95,9 +101,6 @@ pub enum Arg {
 	Global(Global),
 	Attr(Attr),
 	CharAttr(CharAttr),
-
-	Code(Code),
-	Expr(Box<Expr>),
 
 	QuestTask(u16),
 	QuestFlags(u8),
@@ -156,7 +159,7 @@ pub enum AssOp {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expr {
-	Arg(Arg),
+	Atom(Atom),
 	Bin(BinOp, Box<Expr>, Box<Expr>),
 	Unary(UnOp, Box<Expr>),
 	Assign(AssOp, Box<Expr>),

@@ -4,6 +4,7 @@ use gospel::write::{Label as GLabel, Le as _, Writer};
 use snafu::prelude::*;
 use strict_result::Strict as _;
 
+use super::Atom;
 use super::{Arg, Expr, Insn};
 use crate::scena::code::Code;
 use crate::scena::insn_set as iset;
@@ -283,18 +284,18 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 		use iset::MiscArg as T;
 		match iarg {
 			T::String | T::TString => {
-				expect!(Arg::String(s) | Arg::TString(TString(s)) in iter, "string");
+				expect!(Arg::Atom(Atom::String(s) | Atom::TString(TString(s))) in iter, "string");
 				f.string(s)?;
 			}
 			T::Text => text(f, iter)?,
 
 			T::Pos2 => {
-				expect!(Arg::Pos2(p) in iter, "pos2");
+				expect!(Arg::Atom(Atom::Pos2(p)) in iter, "pos2");
 				f.i32(p.x);
 				f.i32(p.z);
 			}
 			T::Pos3 | T::RPos3 | T::EffPlayPos => {
-				expect!(Arg::Pos3(p) | Arg::RPos3(p) in iter, "pos3");
+				expect!(Arg::Atom(Atom::Pos3(p) | Atom::RPos3(p)) in iter, "pos3");
 				f.i32(p.x);
 				f.i32(p.y);
 				f.i32(p.z);
@@ -353,7 +354,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				expect!(Arg::Tuple(val) in iter, "tuple of 4");
 				ensure_whatever!(val.len() == 4, "expected tuple of 4, got {val:?}");
 				for val in val {
-					if let Arg::CharId(CharId::Null) = val {
+					if let Arg::Atom(Atom::CharId(CharId::Null)) = val {
 						f.u16(0xFF);
 					} else {
 						let val = int_arg(self.iset, val)?;
@@ -388,7 +389,10 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 			T::Menu => {
 				let mut out = String::new();
 				for val in iter {
-					expect!((Arg::String(s) | Arg::TString(TString(s))) = val, "string");
+					expect!(
+						Arg::Atom(Atom::String(s) | Atom::TString(TString(s))) = val,
+						"string"
+					);
 					out.push_str(s.as_str());
 					out.push('\x01');
 				}
@@ -447,8 +451,9 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 	}
 
 	fn expr(&mut self, expr: &Expr) -> Result<(), WriteError> {
+		use Atom as A;
 		match *expr {
-			Expr::Arg(Arg::Int(n)) => {
+			Expr::Atom(A::Int(n)) => {
 				self.f.u8(0x00);
 				self.f.u32(cast(n)?);
 			}
@@ -469,19 +474,19 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				self.f.u8(0x1C);
 				self.insn(insn)?;
 			}
-			Expr::Arg(Arg::Flag(Flag(v))) => {
+			Expr::Atom(A::Flag(Flag(v))) => {
 				self.f.u8(0x1E);
 				self.f.u16(v);
 			}
-			Expr::Arg(Arg::Var(Var(v))) => {
+			Expr::Atom(A::Var(Var(v))) => {
 				self.f.u8(0x1F);
 				self.f.u16(v);
 			}
-			Expr::Arg(Arg::Attr(Attr(v))) => {
+			Expr::Atom(A::Attr(Attr(v))) => {
 				self.f.u8(0x20);
 				self.f.u8(v);
 			}
-			Expr::Arg(Arg::CharAttr(CharAttr(id, v))) => {
+			Expr::Atom(A::CharAttr(CharAttr(id, v))) => {
 				self.f.u8(0x21);
 				self.f.u16(id.to_u16(self.iset.game)?);
 				self.f.u8(v);
@@ -489,62 +494,64 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 			Expr::Rand => {
 				self.f.u8(0x22);
 			}
-			Expr::Arg(Arg::Global(Global(v))) => {
+			Expr::Atom(A::Global(Global(v))) => {
 				self.f.u8(0x23);
 				self.f.u8(v);
 			}
-			Expr::Arg(ref v) => whatever!("cannot use {v:?} in Expr"),
+			Expr::Atom(ref v) => whatever!("cannot use {v:?} in Expr"),
 		}
 		Ok(())
 	}
 }
 
 fn int_arg(iset: &iset::InsnSet, arg: &Arg) -> Result<i64, WriteError> {
-	Ok(match *arg {
-		Arg::Int(v) => v,
-		Arg::Time(Time(v)) => v as i64,
-		Arg::Angle(Angle(v)) => v as i64,
-		Arg::Angle32(Angle32(v)) => v as i64,
-		Arg::Speed(Speed(v)) => v as i64,
-		Arg::AngularSpeed(AngularSpeed(v)) => v as i64,
-		Arg::Length(Length(v)) => v as i64,
-		Arg::Color(Color(v)) => v as i64,
-		Arg::FileId(FileId(v)) => v as i64,
-		Arg::BattleId(BattleId(v)) => v as i64,
-		Arg::BgmId(BgmId(v)) => v as i64,
-		Arg::ItemId(ItemId(v)) => v as i64,
-		Arg::MagicId(MagicId(v)) => v as i64,
-		Arg::NameId(NameId(v)) => v as i64,
-		Arg::QuestId(QuestId(v)) => v as i64,
-		Arg::RecipeId(RecipeId(v)) => v as i64,
-		Arg::ShopId(ShopId(v)) => v as i64,
-		Arg::SoundId(SoundId(v)) => v as i64,
-		Arg::TownId(TownId(v)) => v as i64,
-		Arg::FuncId(FuncId(a, b)) => (a as i64) | (b as i64) << 8,
-		Arg::LookPointId(LookPointId(v)) => v as i64,
-		Arg::EventId(EventId(v)) => v as i64,
-		Arg::EntranceId(EntranceId(v)) => v as i64,
-		Arg::ObjectId(ObjectId(v)) => v as i64,
-		Arg::ForkId(ForkId(v)) => v as i64,
-		Arg::MenuId(MenuId(v)) => v as i64,
-		Arg::EffId(EffId(v)) => v as i64,
-		Arg::EffInstanceId(EffInstanceId(v)) => v as i64,
-		Arg::ChipId(ChipId(v)) => v as i64,
-		Arg::VisId(VisId(v)) => v as i64,
-		Arg::CharId(v) => v.to_u16(iset.game)? as i64,
-		Arg::Flag(Flag(v)) => v as i64,
-		Arg::Var(Var(v)) => v as i64,
-		Arg::Global(Global(v)) => v as i64,
-		Arg::Attr(Attr(v)) => v as i64,
-		Arg::CharAttr(CharAttr(char, attr)) => char.to_u16(iset.game)? as i64 | (attr as i64) << 16,
-		Arg::QuestTask(v) => v as i64,
-		Arg::QuestFlags(v) => v as i64,
-		Arg::SystemFlags(v) => v as i64,
-		Arg::LookPointFlags(v) => v as i64,
-		Arg::ObjectFlags(v) => v as i64,
-		Arg::EventFlags(v) => v as i64,
-		Arg::CharFlags(v) => v as i64,
-		Arg::CharFlags2(v) => v as i64,
+	use Atom as A;
+	expect!(Arg::Atom(sc) = arg, "atom");
+	Ok(match *sc {
+		A::Int(v) => v,
+		A::Time(Time(v)) => v as i64,
+		A::Angle(Angle(v)) => v as i64,
+		A::Angle32(Angle32(v)) => v as i64,
+		A::Speed(Speed(v)) => v as i64,
+		A::AngularSpeed(AngularSpeed(v)) => v as i64,
+		A::Length(Length(v)) => v as i64,
+		A::Color(Color(v)) => v as i64,
+		A::FileId(FileId(v)) => v as i64,
+		A::BattleId(BattleId(v)) => v as i64,
+		A::BgmId(BgmId(v)) => v as i64,
+		A::ItemId(ItemId(v)) => v as i64,
+		A::MagicId(MagicId(v)) => v as i64,
+		A::NameId(NameId(v)) => v as i64,
+		A::QuestId(QuestId(v)) => v as i64,
+		A::RecipeId(RecipeId(v)) => v as i64,
+		A::ShopId(ShopId(v)) => v as i64,
+		A::SoundId(SoundId(v)) => v as i64,
+		A::TownId(TownId(v)) => v as i64,
+		A::FuncId(FuncId(a, b)) => (a as i64) | (b as i64) << 8,
+		A::LookPointId(LookPointId(v)) => v as i64,
+		A::EventId(EventId(v)) => v as i64,
+		A::EntranceId(EntranceId(v)) => v as i64,
+		A::ObjectId(ObjectId(v)) => v as i64,
+		A::ForkId(ForkId(v)) => v as i64,
+		A::MenuId(MenuId(v)) => v as i64,
+		A::EffId(EffId(v)) => v as i64,
+		A::EffInstanceId(EffInstanceId(v)) => v as i64,
+		A::ChipId(ChipId(v)) => v as i64,
+		A::VisId(VisId(v)) => v as i64,
+		A::CharId(v) => v.to_u16(iset.game)? as i64,
+		A::Flag(Flag(v)) => v as i64,
+		A::Var(Var(v)) => v as i64,
+		A::Global(Global(v)) => v as i64,
+		A::Attr(Attr(v)) => v as i64,
+		A::CharAttr(CharAttr(char, attr)) => char.to_u16(iset.game)? as i64 | (attr as i64) << 16,
+		A::QuestTask(v) => v as i64,
+		A::QuestFlags(v) => v as i64,
+		A::SystemFlags(v) => v as i64,
+		A::LookPointFlags(v) => v as i64,
+		A::ObjectFlags(v) => v as i64,
+		A::EventFlags(v) => v as i64,
+		A::CharFlags(v) => v as i64,
+		A::CharFlags2(v) => v as i64,
 		_ => whatever!("expected integer-valued argument"),
 	})
 }
@@ -552,7 +559,7 @@ fn int_arg(iset: &iset::InsnSet, arg: &Arg) -> Result<i64, WriteError> {
 fn text<'c>(f: &mut Writer, iter: impl Iterator<Item = &'c Arg>) -> Result<(), WriteError> {
 	let mut first = true;
 	for val in iter {
-		expect!(Arg::Text(t) = val, "text");
+		expect!(Arg::Atom(Atom::Text(t)) = val, "text");
 		if !std::mem::take(&mut first) {
 			f.u8(0x03); // page break
 		}

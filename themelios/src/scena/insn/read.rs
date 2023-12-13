@@ -2,7 +2,7 @@ use gospel::read::{Le as _, Reader};
 use snafu::prelude::*;
 use strict_result::Strict as _;
 
-use super::{Arg, Insn};
+use super::{Arg, Atom, Insn};
 use crate::scena::code::visit::visit_labels;
 use crate::scena::code::Code;
 use crate::scena::insn::Expr;
@@ -170,7 +170,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 			}
 			iset::Arg::Int(int, ty) => {
 				let v = self.int(*int)?;
-				out.push(int_arg(self.iset, v, *ty)?)
+				out.push(Arg::Atom(int_arg(self.iset, v, *ty)?))
 			}
 			iset::Arg::Misc(ty) => self.misc(out, ty)?,
 			iset::Arg::Tuple(args) => {
@@ -186,15 +186,16 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 
 	fn misc(&mut self, out: &mut Vec<Arg>, ty: &iset::MiscArg) -> Result<()> {
 		let f = &mut self.f;
+		use insn::Atom as A;
 		use iset::MiscArg as T;
 		match ty {
-			T::String => out.push(Arg::String(f.string()?)),
-			T::TString => out.push(Arg::TString(TString(f.string()?))),
+			T::String => out.push(Arg::Atom(A::String(f.string()?))),
+			T::TString => out.push(Arg::Atom(A::TString(TString(f.string()?)))),
 			T::Text => text(f, out)?,
 
-			T::Pos2 => out.push(Arg::Pos2(f.pos2()?)),
-			T::Pos3 => out.push(Arg::Pos3(f.pos3()?)),
-			T::RPos3 => out.push(Arg::RPos3(f.pos3()?)),
+			T::Pos2 => out.push(Arg::Atom(A::Pos2(f.pos2()?))),
+			T::Pos3 => out.push(Arg::Atom(A::Pos3(f.pos3()?))),
+			T::RPos3 => out.push(Arg::Atom(A::RPos3(f.pos3()?))),
 
 			T::Expr => out.push(Arg::Expr(self.expr()?)),
 
@@ -237,13 +238,13 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 			T::QuestList => loop {
 				match f.u16()? {
 					0xFFFF => break,
-					q => out.push(Arg::QuestId(QuestId(q))),
+					q => out.push(Arg::Atom(A::QuestId(QuestId(q)))),
 				}
 			},
 
 			T::Menu => {
 				for line in f.string()?.split_terminator('\x01') {
-					out.push(Arg::TString(TString(line.to_owned())))
+					out.push(Arg::Atom(A::TString(TString(line.to_owned()))))
 				}
 			}
 
@@ -251,8 +252,8 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 				let mut v = Vec::with_capacity(4);
 				for _ in 0..4 {
 					match f.u16()? {
-						0xFF => v.push(Arg::CharId(CharId::Null)),
-						n => v.push(Arg::NameId(NameId(n))),
+						0xFF => v.push(Arg::Atom(A::CharId(CharId::Null))),
+						n => v.push(Arg::Atom(A::NameId(NameId(n)))),
 					}
 				}
 				out.push(Arg::Tuple(v));
@@ -261,7 +262,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 			T::PartySelectOptional => loop {
 				match f.u16()? {
 					0xFFFF => break,
-					q => out.push(Arg::NameId(NameId(q))),
+					q => out.push(Arg::Atom(A::NameId(NameId(q)))),
 				}
 			},
 
@@ -271,7 +272,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 				let n = f.u32()?;
 				for i in 0..32 {
 					if n & (1 << i) != 0 {
-						v.push(Arg::NameId(NameId(i)));
+						v.push(Arg::Atom(A::NameId(NameId(i))));
 					}
 				}
 				out.push(Arg::Tuple(v));
@@ -284,7 +285,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 					f.check_u8(0)?;
 				}
 				for _ in 0..n {
-					v.push(Arg::Int(f.u8()? as i64));
+					v.push(Arg::Atom(A::Int(f.u8()? as i64)));
 				}
 				out.push(Arg::Tuple(v));
 			}
@@ -305,12 +306,12 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 			}
 
 			T::ED7BattlePos => {
-				out.push(Arg::BattleId(BattleId(f.u32()?)));
+				out.push(Arg::Atom(A::BattleId(BattleId(f.u32()?))));
 				// This is remapped later
 			}
 
 			T::FcPartyEquip => {
-				let int = if matches!(out[1], Arg::ItemId(ItemId(600..=799))) {
+				let int = if matches!(out[1], Arg::Atom(A::ItemId(ItemId(600..=799)))) {
 					iset::IntType::u8
 				} else {
 					iset::IntType::Const(0)
@@ -319,7 +320,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 			}
 
 			T::ScPartySetSlot => {
-				let int = if matches!(out[1], Arg::Int(0x7F..=0xFE)) {
+				let int = if matches!(out[1], Arg::Atom(A::Int(0x7F..=0xFE))) {
 					iset::IntType::u8
 				} else {
 					iset::IntType::Const(0)
@@ -329,10 +330,10 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 
 			T::EffPlayPos => {
 				let pos = f.pos3()?;
-				if matches!(out[0], Arg::CharId(CharId::Null)) {
-					out.push(Arg::Pos3(pos))
+				if matches!(out[0], Arg::Atom(A::CharId(CharId::Null))) {
+					out.push(Arg::Atom(A::Pos3(pos)))
 				} else {
-					out.push(Arg::RPos3(pos))
+					out.push(Arg::Atom(A::RPos3(pos)))
 				}
 			}
 		}
@@ -341,6 +342,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 
 	fn expr(&mut self) -> Result<Box<Expr>> {
 		use crate::scena::insn::{AssOp, BinOp, UnOp};
+		use insn::Atom as A;
 		let mut stack = Vec::new();
 		loop {
 			let f = &mut self.f;
@@ -357,18 +359,18 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 				stack.push(Expr::Assign(op, Box::new(arg)))
 			} else {
 				stack.push(match op {
-					0x00 => Expr::Arg(Arg::Int(f.u32()? as i64)),
+					0x00 => Expr::Atom(A::Int(f.u32()? as i64)),
 					0x01 => break,
 					0x1C => Expr::Insn(self.insn()?),
-					0x1E => Expr::Arg(Arg::Flag(Flag(f.u16()?))),
-					0x1F => Expr::Arg(Arg::Var(Var(f.u16()?))),
-					0x20 => Expr::Arg(Arg::Attr(Attr(f.u8()?))),
-					0x21 => Expr::Arg(Arg::CharAttr(CharAttr(
+					0x1E => Expr::Atom(A::Flag(Flag(f.u16()?))),
+					0x1F => Expr::Atom(A::Var(Var(f.u16()?))),
+					0x20 => Expr::Atom(A::Attr(Attr(f.u8()?))),
+					0x21 => Expr::Atom(A::CharAttr(CharAttr(
 						CharId::from_u16(self.iset.game, f.u16()?)?,
 						f.u8()?,
 					))),
 					0x22 => Expr::Rand,
-					0x23 => Expr::Arg(Arg::Global(Global(f.u8()?))),
+					0x23 => Expr::Atom(A::Global(Global(f.u8()?))),
 					op => Err(ValueError::new("Expr", format!("0x{op:02X}")))?,
 				})
 			};
@@ -381,75 +383,76 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 	}
 }
 
-fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Arg> {
+fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Atom> {
+	use insn::Atom as A;
 	use iset::IntArg as T;
 
 	Ok(match ty {
-		T::Int => Arg::Int(v),
+		T::Int => A::Int(v),
 		T::Const(_) => unreachable!(),
 		T::Address => unreachable!(),
 
-		T::Time => Arg::Time(Time(cast(v)?)),
-		T::Length => Arg::Length(Length(cast(v)?)),
-		T::Angle => Arg::Angle(Angle(cast(v)?)),
-		T::Angle32 => Arg::Angle32(Angle32(cast(v)?)),
-		T::Speed => Arg::Speed(Speed(cast(v)?)),
-		T::AngularSpeed => Arg::AngularSpeed(AngularSpeed(cast(v)?)),
-		T::Color => Arg::Color(Color(cast(v)?)),
+		T::Time => A::Time(Time(cast(v)?)),
+		T::Length => A::Length(Length(cast(v)?)),
+		T::Angle => A::Angle(Angle(cast(v)?)),
+		T::Angle32 => A::Angle32(Angle32(cast(v)?)),
+		T::Speed => A::Speed(Speed(cast(v)?)),
+		T::AngularSpeed => A::AngularSpeed(AngularSpeed(cast(v)?)),
+		T::Color => A::Color(Color(cast(v)?)),
 
-		T::FileId => Arg::FileId(FileId(cast(v)?)),
+		T::FileId => A::FileId(FileId(cast(v)?)),
 
-		T::BattleId => Arg::BattleId(BattleId(cast(v)?)),
-		T::BgmId => Arg::BgmId(BgmId(cast(v)?)),
-		T::ItemId => Arg::ItemId(ItemId(cast(v)?)),
-		T::MagicId => Arg::MagicId(MagicId(cast(v)?)),
-		T::NameId => Arg::NameId(NameId(cast(v)?)),
-		T::QuestId => Arg::QuestId(QuestId(cast(v)?)),
-		T::RecipeId => Arg::RecipeId(RecipeId(cast(v)?)),
-		T::ShopId => Arg::ShopId(ShopId(cast(v)?)),
-		T::SoundId => Arg::SoundId(SoundId(cast(v)?)),
-		T::TownId => Arg::TownId(TownId(cast(v)?)),
+		T::BattleId => A::BattleId(BattleId(cast(v)?)),
+		T::BgmId => A::BgmId(BgmId(cast(v)?)),
+		T::ItemId => A::ItemId(ItemId(cast(v)?)),
+		T::MagicId => A::MagicId(MagicId(cast(v)?)),
+		T::NameId => A::NameId(NameId(cast(v)?)),
+		T::QuestId => A::QuestId(QuestId(cast(v)?)),
+		T::RecipeId => A::RecipeId(RecipeId(cast(v)?)),
+		T::ShopId => A::ShopId(ShopId(cast(v)?)),
+		T::SoundId => A::SoundId(SoundId(cast(v)?)),
+		T::TownId => A::TownId(TownId(cast(v)?)),
 
-		T::FuncId => Arg::FuncId(FuncId(cast(v & 0xFF)?, cast(v >> 8)?)),
-		T::LookPointId => Arg::LookPointId(LookPointId(cast(v)?)),
-		T::EventId => Arg::EventId(EventId(cast(v)?)),
-		T::EntranceId => Arg::EntranceId(EntranceId(cast(v)?)),
-		T::ObjectId => Arg::ObjectId(ObjectId(cast(v)?)),
+		T::FuncId => A::FuncId(FuncId(cast(v & 0xFF)?, cast(v >> 8)?)),
+		T::LookPointId => A::LookPointId(LookPointId(cast(v)?)),
+		T::EventId => A::EventId(EventId(cast(v)?)),
+		T::EntranceId => A::EntranceId(EntranceId(cast(v)?)),
+		T::ObjectId => A::ObjectId(ObjectId(cast(v)?)),
 
-		T::ForkId => Arg::ForkId(ForkId(cast(v)?)),
-		T::MenuId => Arg::MenuId(MenuId(cast(v)?)),
-		T::EffId => Arg::EffId(EffId(cast(v)?)),
-		T::EffInstanceId => Arg::EffInstanceId(EffInstanceId(cast(v)?)),
-		T::ChipId => Arg::ChipId(ChipId(cast(v)?)),
-		T::VisId => Arg::VisId(VisId(cast(v)?)),
+		T::ForkId => A::ForkId(ForkId(cast(v)?)),
+		T::MenuId => A::MenuId(MenuId(cast(v)?)),
+		T::EffId => A::EffId(EffId(cast(v)?)),
+		T::EffInstanceId => A::EffInstanceId(EffInstanceId(cast(v)?)),
+		T::ChipId => A::ChipId(ChipId(cast(v)?)),
+		T::VisId => A::VisId(VisId(cast(v)?)),
 
-		T::CharId => Arg::CharId(CharId::from_u16(iset.game, cast(v)?)?),
+		T::CharId => A::CharId(CharId::from_u16(iset.game, cast(v)?)?),
 
-		T::Flag => Arg::Flag(Flag(cast(v)?)),
-		T::Var => Arg::Var(Var(cast(v)?)),
-		T::Global => Arg::Global(Global(cast(v)?)),
-		T::Attr => Arg::Attr(Attr(cast(v)?)),
+		T::Flag => A::Flag(Flag(cast(v)?)),
+		T::Var => A::Var(Var(cast(v)?)),
+		T::Global => A::Global(Global(cast(v)?)),
+		T::Attr => A::Attr(Attr(cast(v)?)),
 		T::CharAttr => {
 			let char = CharId::from_u16(iset.game, cast(v & 0xFFFF)?)?;
 			let attr: u8 = cast(v >> 16)?;
-			Arg::CharAttr(CharAttr(char, attr))
+			A::CharAttr(CharAttr(char, attr))
 		}
 
-		T::QuestTask => Arg::QuestTask(cast(v)?),
-		T::QuestFlags => Arg::QuestFlags(cast(v)?),
-		T::SystemFlags => Arg::SystemFlags(cast(v)?),
-		T::LookPointFlags => Arg::LookPointFlags(cast(v)?),
-		T::ObjectFlags => Arg::ObjectFlags(cast(v)?),
-		T::EventFlags => Arg::EventFlags(cast(v)?),
-		T::CharFlags => Arg::CharFlags(cast(v)?),
-		T::CharFlags2 => Arg::CharFlags2(cast(v)?),
+		T::QuestTask => A::QuestTask(cast(v)?),
+		T::QuestFlags => A::QuestFlags(cast(v)?),
+		T::SystemFlags => A::SystemFlags(cast(v)?),
+		T::LookPointFlags => A::LookPointFlags(cast(v)?),
+		T::ObjectFlags => A::ObjectFlags(cast(v)?),
+		T::EventFlags => A::EventFlags(cast(v)?),
+		T::CharFlags => A::CharFlags(cast(v)?),
+		T::CharFlags2 => A::CharFlags2(cast(v)?),
 	})
 }
 
 fn text(f: &mut Reader, out: &mut Vec<Arg>) -> Result<()> {
 	loop {
 		let (page, more) = text_page(f)?;
-		out.push(Arg::Text(page));
+		out.push(Arg::Atom(Atom::Text(page)));
 		if !more {
 			break;
 		}

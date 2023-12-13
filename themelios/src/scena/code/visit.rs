@@ -1,6 +1,9 @@
 use std::ops::ControlFlow;
 
-use super::{insn::Expr, Arg, Code, Insn};
+use super::{
+	insn::{Atom, Expr},
+	Arg, Code, Insn,
+};
 use crate::types::Label;
 
 #[allow(unused_variables)]
@@ -15,7 +18,7 @@ pub trait Visit {
 	fn visit_expr(&mut self, arg: &Expr) -> ControlFlow<()> {
 		ControlFlow::Continue(())
 	}
-	fn visit_arg(&mut self, arg: &Arg) {}
+	fn visit_atom(&mut self, arg: &Atom) {}
 }
 
 pub trait Visitable {
@@ -71,8 +74,14 @@ impl Visitable for Arg {
 			Arg::Tuple(t) => t.accept(f),
 			Arg::Code(t) => t.accept(f),
 			Arg::Expr(t) => t.accept(f),
-			t => f.visit_arg(t),
+			Arg::Atom(t) => t.accept(f),
 		}
+	}
+}
+
+impl Visitable for Atom {
+	fn accept(&self, f: &mut impl Visit) {
+		f.visit_atom(self)
 	}
 }
 
@@ -80,7 +89,7 @@ impl Visitable for Expr {
 	fn accept(&self, f: &mut impl Visit) {
 		if f.visit_expr(self).is_continue() {
 			match self {
-				Expr::Arg(t) => t.accept(f),
+				Expr::Atom(t) => t.accept(f),
 				Expr::Bin(_, l, r) => {
 					l.accept(f);
 					r.accept(f);
@@ -95,15 +104,15 @@ impl Visitable for Expr {
 	}
 }
 
-pub fn visit_args(val: &(impl Visitable + ?Sized), f: impl FnMut(&Arg)) {
+pub fn visit_atoms(val: &(impl Visitable + ?Sized), f: impl FnMut(&Atom)) {
 	struct Vis<F> {
 		f: F,
 	}
 	impl<F> Visit for Vis<F>
 	where
-		F: FnMut(&Arg),
+		F: FnMut(&Atom),
 	{
-		fn visit_arg(&mut self, arg: &Arg) {
+		fn visit_atom(&mut self, arg: &Atom) {
 			(self.f)(arg);
 		}
 	}

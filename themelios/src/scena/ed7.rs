@@ -14,9 +14,9 @@ use crate::util::{cast, list, ReaderExt as _, WriterExt as _};
 
 use self::battle::BattleRead;
 
-use super::code::visit::visit_args;
-use super::code::visit_mut::visit_args_mut;
-use super::insn::{Arg, InsnReader, InsnWriter};
+use super::code::visit::visit_atoms;
+use super::code::visit_mut::visit_atoms_mut;
+use super::insn::{Atom, InsnReader, InsnWriter};
 use super::{CharFlags, ChipId, EntryFlags};
 use super::{ReadError, WriteError};
 
@@ -314,8 +314,8 @@ fn load_battles(
 	}
 	// If I had an iterator this would be way easier, but unfortunately all I have is internal iteration
 	let mut battle_pos = Vec::new();
-	visit_args(functions, |arg| {
-		if let Arg::BattleId(battle) = arg {
+	visit_atoms(functions, |arg| {
+		if let Atom::BattleId(battle) = arg {
 			battle_pos.push(*battle)
 		}
 	});
@@ -325,8 +325,8 @@ fn load_battles(
 		.map(|i| Ok((i, btl.get_battle(&mut f.clone().at(i as usize)?)?)))
 		.collect::<Result<BTreeMap<_, _>, _>>()
 		.strict()?;
-	visit_args_mut(functions, |arg| {
-		if let Arg::BattleId(battle) = arg {
+	visit_atoms_mut(functions, |arg| {
+		if let Atom::BattleId(battle) = arg {
 			*battle = battle_pos[&battle.0];
 		}
 	});
