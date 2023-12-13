@@ -132,8 +132,6 @@ enum IntType_inner {
 pub enum IntArg {
 	#[serde(skip)]
 	Int,
-	#[serde(skip)]
-	Const(i64),
 
 	Time,
 	Length,
@@ -191,6 +189,8 @@ pub enum IntArg {
 pub enum MiscArg {
 	Label,
 
+	Const(IntType, i64),
+
 	String,
 	TString,
 	Text,
@@ -235,7 +235,7 @@ fn make_rev_table<D: serde::de::Error>(
 ) -> Result<(), D> {
 	for (i, insn) in insns.iter().enumerate() {
 		let mut my_args = prev_args.clone();
-		my_args.push(Arg::Int(ty, IntArg::Const(i as i64)));
+		my_args.push(Arg::Misc(MiscArg::Const(ty, i as i64)));
 		match insn {
 			Insn::Blank => {}
 			Insn::Regular { name, args } => {

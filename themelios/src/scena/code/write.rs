@@ -213,9 +213,6 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 		iter: &mut impl Iterator<Item = &'c Arg>,
 	) -> Result<(), WriteError> {
 		match iarg {
-			iset::Arg::Int(int, iset::IntArg::Const(val)) => {
-				self.int(*int, *val)?;
-			}
 			iset::Arg::Int(int, iarg) => {
 				let Some(val) = iter.next() else {
 					whatever!("too few arguments; expected {iarg:?}");
@@ -281,6 +278,10 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 					iset::IntType::u32 => self.f.label32(label),
 					_ => whatever!("can't write label as {int:?}"),
 				}
+			}
+
+			T::Const(int, val) => {
+				self.int(*int, *val)?;
 			}
 
 			T::String | T::TString => {

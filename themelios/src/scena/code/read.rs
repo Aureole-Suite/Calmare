@@ -158,10 +158,6 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 
 	fn arg(&mut self, out: &mut Vec<Arg>, arg: &iset::Arg) -> Result<(), ReadError> {
 		match arg {
-			iset::Arg::Int(int, iset::IntArg::Const(w)) => {
-				let v = self.int(*int)?;
-				ensure_whatever!(v == *w, "{v} != {w}");
-			}
 			iset::Arg::Int(int, ty) => {
 				let v = self.int(*int)?;
 				out.push(Arg::Atom(int_arg(self.iset, v, *ty)?))
@@ -186,6 +182,11 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 			T::Label => {
 				let v = self.int(self.iset.address_size)?;
 				out.push(Arg::Label(Label(cast(v)?)));
+			}
+
+			T::Const(int, w) => {
+				let v = self.int(*int)?;
+				ensure_whatever!(v == *w, "{v} != {w}");
 			}
 
 			T::String => out.push(Arg::Atom(A::String(f.string()?))),
@@ -387,7 +388,6 @@ fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Atom> {
 
 	Ok(match ty {
 		T::Int => A::Int(v),
-		T::Const(_) => unreachable!(),
 
 		T::Time => A::Time(Time(cast(v)?)),
 		T::Length => A::Length(Length(cast(v)?)),
