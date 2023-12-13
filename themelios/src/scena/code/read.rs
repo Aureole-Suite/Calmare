@@ -162,10 +162,6 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 				let v = self.int(*int)?;
 				ensure_whatever!(v == *w, "{v} != {w}");
 			}
-			iset::Arg::Int(int, iset::IntArg::Address) => {
-				let v = self.int(*int)?;
-				out.push(Arg::Label(Label(cast(v)?)));
-			}
 			iset::Arg::Int(int, ty) => {
 				let v = self.int(*int)?;
 				out.push(Arg::Atom(int_arg(self.iset, v, *ty)?))
@@ -187,6 +183,11 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 		use iset::MiscArg as T;
 		use Atom as A;
 		match ty {
+			T::Label => {
+				let v = self.int(self.iset.address_size)?;
+				out.push(Arg::Label(Label(cast(v)?)));
+			}
+
 			T::String => out.push(Arg::Atom(A::String(f.string()?))),
 			T::TString => out.push(Arg::Atom(A::TString(TString(f.string()?)))),
 			T::Text => text(f, out)?,
@@ -387,7 +388,6 @@ fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Atom> {
 	Ok(match ty {
 		T::Int => A::Int(v),
 		T::Const(_) => unreachable!(),
-		T::Address => unreachable!(),
 
 		T::Time => A::Time(Time(cast(v)?)),
 		T::Length => A::Length(Length(cast(v)?)),

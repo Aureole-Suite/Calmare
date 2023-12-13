@@ -216,16 +216,6 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 			iset::Arg::Int(int, iset::IntArg::Const(val)) => {
 				self.int(*int, *val)?;
 			}
-			iset::Arg::Int(int, iset::IntArg::Address) => {
-				expect!(Arg::Label(l) in iter, "label");
-				let label = self.label(l);
-				match int {
-					iset::IntType::u8 => self.f.label8(label),
-					iset::IntType::u16 => self.f.label16(label),
-					iset::IntType::u32 => self.f.label32(label),
-					_ => whatever!("can't write label as {int:?}"),
-				}
-			}
 			iset::Arg::Int(int, iarg) => {
 				let Some(val) = iter.next() else {
 					whatever!("too few arguments; expected {iarg:?}");
@@ -281,6 +271,18 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 		let f = &mut self.f;
 		use iset::MiscArg as T;
 		match iarg {
+			T::Label => {
+				expect!(Arg::Label(l) in iter, "label");
+				let label = self.label(l);
+				let int = self.iset.address_size;
+				match int {
+					iset::IntType::u8 => self.f.label8(label),
+					iset::IntType::u16 => self.f.label16(label),
+					iset::IntType::u32 => self.f.label32(label),
+					_ => whatever!("can't write label as {int:?}"),
+				}
+			}
+
 			T::String | T::TString => {
 				expect!(Arg::Atom(Atom::String(s) | Atom::TString(TString(s))) in iter, "string");
 				f.string(s)?;

@@ -1,15 +1,15 @@
 game: 3rd
+address_size: u16
 _def:
  - &Time {u32: Time}
  - &FileId {u32: FileId}
  - &CharId {u16: CharId}
- - &Address {u16: Address}
 insns:
 -
 - Return: []
-- _if: [Expr, *Address]
-- _goto: [*Address]
-- _switch: [Expr, !SwitchTable [u16, [u16, *Address]], *Address]
+- _if: [Expr, Label]
+- _goto: [Label]
+- _switch: [Expr, !SwitchTable [u16, [u16, Label]], Label]
 - Call: [{u24: FuncId}]
 - NewScene: [*FileId, u8, u8, u8]
 - Hcf: []

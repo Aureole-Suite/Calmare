@@ -343,7 +343,6 @@ fn parse_args(f: &mut Parser, iargs: &[iset::Arg]) -> parse::Result<Vec<Arg>> {
 fn parse_arg(out: &mut Vec<Arg>, f: &mut Parser<'_>, iarg: &iset::Arg) -> Result<(), Diagnostic> {
 	match iarg {
 		iset::Arg::Int(_, iset::IntArg::Const(_)) => {}
-		iset::Arg::Int(_, iset::IntArg::Address) => out.push(Arg::Label(f.val()?)),
 		iset::Arg::Int(_, iarg) => {
 			out.push(Arg::Atom(parse_int_arg(f, *iarg)?));
 		}
@@ -366,7 +365,6 @@ fn parse_int_arg(f: &mut Parser, iarg: iset::IntArg) -> parse::Result<Atom> {
 	use iset::IntArg as IA;
 	match iarg {
 		IA::Const(_) => unreachable!(),
-		IA::Address => unreachable!(),
 		IA::Int => f.atom(Atom::Int),
 
 		IA::Time => f.atom(Atom::Time),
@@ -447,6 +445,7 @@ fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> p
 
 	use iset::MiscArg as MA;
 	match iarg {
+		MA::Label => out.push(Arg::Label(f.val()?)),
 		MA::String => out.push(f.arg(Atom::String)?),
 		MA::TString => out.push(f.arg(Atom::TString)?),
 		MA::Text => list(out, f, |f| f.arg(Atom::Text))?,

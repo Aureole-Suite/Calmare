@@ -55,6 +55,7 @@ pub fn get(game: Game, variant: Variant) -> InsnSet<'static> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InsnSetInner {
 	pub game: Game,
+	pub address_size: IntType,
 	pub insns: [Insn; 256],
 	pub at_roll: [String; 16],
 	pub insns_rev: BTreeMap<String, Vec<Arg>>,
@@ -66,6 +67,7 @@ pub struct InsnSetInner {
 #[serde(remote = "InsnSetInner")]
 struct InsnSet_inner {
 	pub game: Game,
+	pub address_size: IntType,
 	#[serde_as(as = "[_; 256]")]
 	pub insns: [Insn; 256],
 	pub at_roll: [String; 16],
@@ -133,8 +135,6 @@ pub enum IntArg {
 	#[serde(skip)]
 	Const(i64),
 
-	Address,
-
 	Time,
 	Length,
 	Speed,
@@ -189,6 +189,8 @@ pub enum IntArg {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub enum MiscArg {
+	Label,
+
 	String,
 	TString,
 	Text,
