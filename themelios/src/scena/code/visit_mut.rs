@@ -1,9 +1,6 @@
 use std::ops::ControlFlow;
 
-use super::{
-	insn::{Atom, Expr},
-	Arg, Code, Insn,
-};
+use super::{Arg, Atom, Code, Expr, Insn};
 use crate::types::Label;
 
 #[allow(unused_variables)]

@@ -2,10 +2,8 @@ use gospel::read::{Le as _, Reader};
 use snafu::prelude::*;
 use strict_result::Strict as _;
 
-use super::{Arg, Atom, Insn};
+use super::{Arg, Atom, Code, Expr, Insn};
 use crate::scena::code::visit::visit_labels;
-use crate::scena::code::Code;
-use crate::scena::insn::Expr;
 use crate::scena::insn_set as iset;
 use crate::scena::*;
 use crate::types::*;
@@ -186,8 +184,8 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 
 	fn misc(&mut self, out: &mut Vec<Arg>, ty: &iset::MiscArg) -> Result<()> {
 		let f = &mut self.f;
-		use insn::Atom as A;
 		use iset::MiscArg as T;
+		use Atom as A;
 		match ty {
 			T::String => out.push(Arg::Atom(A::String(f.string()?))),
 			T::TString => out.push(Arg::Atom(A::TString(TString(f.string()?)))),
@@ -341,8 +339,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 	}
 
 	fn expr(&mut self) -> Result<Box<Expr>> {
-		use crate::scena::insn::{AssOp, BinOp, UnOp};
-		use insn::Atom as A;
+		use code::{AssOp, Atom as A, BinOp, UnOp};
 		let mut stack = Vec::new();
 		loop {
 			let f = &mut self.f;
@@ -384,8 +381,8 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 }
 
 fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Atom> {
-	use insn::Atom as A;
 	use iset::IntArg as T;
+	use Atom as A;
 
 	Ok(match ty {
 		T::Int => A::Int(v),

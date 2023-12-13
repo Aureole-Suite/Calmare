@@ -6,7 +6,6 @@ pub mod code;
 pub mod ed6;
 pub mod ed7;
 
-pub mod insn;
 pub mod insn_set;
 
 use self::insn_set::Game;
@@ -18,7 +17,7 @@ pub enum ReadError {
 	#[snafu(context(false))]
 	Decode { source: crate::util::DecodeError },
 	#[snafu(context(false))]
-	Insn { source: insn::ReadError },
+	Code { source: code::ReadError },
 	#[snafu(whatever, display("{message}"))]
 	Whatever { message: String },
 }
@@ -30,7 +29,7 @@ pub enum WriteError {
 	#[snafu(context(false))]
 	Value { source: ValueError },
 	#[snafu(context(false))]
-	Insn { source: insn::WriteError },
+	Code { source: code::WriteError },
 	#[snafu(context(false))]
 	Encode { source: crate::util::EncodeError },
 	#[snafu(whatever, display("{message}"))]

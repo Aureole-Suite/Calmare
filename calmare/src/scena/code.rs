@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 
-use themelios::scena::code::Code;
-use themelios::scena::insn::{Arg, Atom, Expr, Insn};
+use themelios::scena::code::{Arg, Atom, Code, Expr, Insn};
 use themelios::scena::{insn_set as iset, CharId};
 use themelios::types::Text;
 

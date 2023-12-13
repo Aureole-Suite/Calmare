@@ -6,19 +6,17 @@ use gospel::write::{Le as _, Writer};
 use snafu::prelude::*;
 use strict_result::Strict;
 
-use crate::scena::code::Code;
-use crate::scena::ed7::battle::BattleWrite;
+use crate::scena::code::visit::visit_atoms;
+use crate::scena::code::visit_mut::visit_atoms_mut;
+use crate::scena::code::{Atom, Code, InsnReader, InsnWriter};
 use crate::scena::{insn_set as iset, FuncId};
+use crate::scena::{CharFlags, ChipId, EntryFlags};
+use crate::scena::{ReadError, WriteError};
+
 use crate::types::*;
 use crate::util::{cast, list, ReaderExt as _, WriterExt as _};
 
-use self::battle::BattleRead;
-
-use super::code::visit::visit_atoms;
-use super::code::visit_mut::visit_atoms_mut;
-use super::insn::{Atom, InsnReader, InsnWriter};
-use super::{CharFlags, ChipId, EntryFlags};
-use super::{ReadError, WriteError};
+use self::battle::{BattleRead, BattleWrite};
 
 pub mod battle;
 

@@ -1,8 +1,7 @@
 use std::collections::BTreeMap;
 
 use super::visit_mut::{VisitMut, VisitableMut};
-use super::Code;
-use crate::scena::insn::{Arg, Insn};
+use super::{Arg, Code, Insn};
 use crate::types::Label;
 
 pub fn decompile(code: &mut impl VisitableMut) {

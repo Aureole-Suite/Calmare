@@ -4,9 +4,7 @@ use gospel::write::{Label as GLabel, Le as _, Writer};
 use snafu::prelude::*;
 use strict_result::Strict as _;
 
-use super::Atom;
-use super::{Arg, Expr, Insn};
-use crate::scena::code::Code;
+use super::{Arg, Atom, Code, Expr, Insn};
 use crate::scena::insn_set as iset;
 use crate::scena::*;
 use crate::types::*;

@@ -1,4 +1,4 @@
-use themelios::scena::insn::{AssOp, Atom, BinOp, Expr, UnOp};
+use themelios::scena::code::{AssOp, Atom, BinOp, Expr, UnOp};
 
 use crate::parse::{self, Diagnostic};
 use crate::{Parser, Printer};
