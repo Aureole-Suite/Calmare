@@ -363,9 +363,11 @@ impl<'de> Deserialize<'de> for Insn {
 				Ok(Insn::Blank)
 			}
 
-			fn visit_map<A: de::MapAccess<'de>>(self, map: A) -> Result<Self::Value, A::Error> {
-				let de = de::value::MapAccessDeserializer::new(map);
-				let Kv(name, args) = Kv::deserialize(de)?;
+			fn visit_seq<A: de::SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+				let name = seq
+					.next_element()?
+					.ok_or_else(|| de::Error::invalid_length(0, &self))?;
+				let args = Vec::deserialize(de::value::SeqAccessDeserializer::new(seq))?;
 				Ok(Insn::Regular { name, args })
 			}
 		}

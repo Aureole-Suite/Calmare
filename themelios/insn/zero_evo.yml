@@ -6,180 +6,180 @@ _def:
  - &CharId {u16: CharId}
 insns:
 -
-- Return: []
-- _if: [Expr, Label]
-- _goto: [Label]
-- _switch: [Expr, !SwitchTable [u8, [u16, Label]], Label]
-- Call: [{u16: FuncId}]
-- NewScene: [*FileId, u8, u8, u8]
-- Hcf: []
-- Sleep: [{u16: Time}]
-- SystemFlagsSet: [{u32: SystemFlags}]
-- SystemFlagsUnset: [{u32: SystemFlags}]
-- FadeOut: [*Time, {u32: Color}, u8]
-- FadeIn: [*Time, {u32: Color}]
-- FadeWait: []
-- CrossFade: [*Time]
+- [Return]
+- [_if, Expr, Label]
+- [_goto, Label]
+- [_switch, Expr, !SwitchTable [u8, [u16, Label]], Label]
+- [Call, {u16: FuncId}]
+- [NewScene, *FileId, u8, u8, u8]
+- [Hcf]
+- [Sleep, {u16: Time}]
+- [SystemFlagsSet, {u32: SystemFlags}]
+- [SystemFlagsUnset, {u32: SystemFlags}]
+- [FadeOut, *Time, {u32: Color}, u8]
+- [FadeIn, *Time, {u32: Color}]
+- [FadeWait]
+- [CrossFade, *Time]
 - !match
   on: ed7battle
   cases:
-  - ED7Battle:
+  - - ED7Battle
     - ED7BattlePos
     - *FileId
     - u8
     - u16
     - u16
     - {u16: CharId}
-  - ED7NpcBattle:
+  - - ED7NpcBattle
     - *FileId
     - u8
     - [*FileId, *FileId, *FileId, *FileId, *FileId, *FileId, *FileId, *FileId]
     - [u32, u32, u32, u32]
     - u16
     - u16
-- EntranceSetDisabled: [{u8: EntranceId}, u8]
-- Fog: [{u24: Color}, i32, i32, i32]
-- ED7_12: [{u16: SoundId}, u16, u8]
-- BlurOn: [*Time, {u32: Color}, u32, u8, u32]
-- BlurOff: [*Time]
+- [EntranceSetDisabled, {u8: EntranceId}, u8]
+- [Fog, {u24: Color}, i32, i32, i32]
+- [ED7_12, {u16: SoundId}, u16, u8]
+- [BlurOn, *Time, {u32: Color}, u32, u8, u32]
+- [BlurOff, *Time]
 - !match
   on: u8
   cases:
   -
   -
-  - ZeroMap_2: [i32, Pos2, u16, u16, u16, u16]
-  - ZeroMap_3: [u8, u16]
-- Save: []
-- EventBegin: [u8]
-- EventEnd: [u8]
-- EntranceSetFunc: [{u8: EntranceId}, {u24: FuncId}]
+  - [ZeroMap_2, i32, Pos2, u16, u16, u16, u16]
+  - [ZeroMap_3, u8, u16]
+- [Save]
+- [EventBegin, u8]
+- [EventEnd, u8]
+- [EntranceSetFunc, {u8: EntranceId}, {u24: FuncId}]
 - !match
   on: u8
   cases:
-  - ED6_1D_0: [u8, u8, u8, Pos3, i32, i32, {i32: Angle32}]
+  - [ED6_1D_0, u8, u8, u8, Pos3, i32, i32, {i32: Angle32}]
   -
-  - ED6_1D_2: [u8, u8]
-  - ED6_1D_3: [u8, u8]
-- BgmPlay: [{u16: BgmId}, u8]
-- BgmResume: []
-- BgmVolume: [u8, *Time]
-- BgmStop: [*Time]
-- BgmWait: []
-- SoundPlay: [KaiSoundId, u8, u8, u8]
-- SoundStop: [{u16: SoundId}]
-- SoundSetVolume: [{u16: SoundId}, u8]
-- SoundPlayContinuously: [{u16: SoundId}, Pos3, u32, u32, u8, u32]
-- SoundLoad: [{u16: SoundId}]
-- NextFrame2: []
-- !match
-  head: [{u16: QuestId}]
-  on: u8
-  cases:
-  -
-  - QuestTaskSet: [{u16: QuestTask}]
-  - QuestTaskUnset: [{u16: QuestTask}]
-  - QuestFlagsUnset: [{u8: QuestFlags}]
-  - QuestFlagsSet: [{u8: QuestFlags}]
+  - [ED6_1D_2, u8, u8]
+  - [ED6_1D_3, u8, u8]
+- [BgmPlay, {u16: BgmId}, u8]
+- [BgmResume]
+- [BgmVolume, u8, *Time]
+- [BgmStop, *Time]
+- [BgmWait]
+- [SoundPlay, KaiSoundId, u8, u8, u8]
+- [SoundStop, {u16: SoundId}]
+- [SoundSetVolume, {u16: SoundId}, u8]
+- [SoundPlayContinuously, {u16: SoundId}, Pos3, u32, u32, u8, u32]
+- [SoundLoad, {u16: SoundId}]
+- [NextFrame2]
 - !match
   head: [{u16: QuestId}]
   on: u8
   cases:
-  - QuestFlagsGet: [{u8: QuestFlags}]
-  - QuestTaskGet: [{u16: QuestTask}]
-- QuestList: [QuestList] # as QuestId...
-- QuestBonusBp: [{u16: QuestId}, u16]
-- QuestBonusMira: [{u16: QuestId}, u16]
-- PartyAdd: [{u8: NameId}, {u8: CharId}, u8]
-- PartyRemove: [{u8: NameId}, u8]
-- PartyClear: []
-- _30: [u8]
-- PartySetAttr: [{u8: NameId}, u8, u16]
-- PartyAddArt: [{u8: NameId}, {u16: MagicId}]
-- PartyAddCraft: [{u8: NameId}, {u16: MagicId}]
-- ED7_37: []
-- PartySetSlot: [{u8: NameId}, u8, ScPartySetSlot]
-- SepithAdd: [u8, u16]
-- SepithRemove: [u8, u16]
-- MiraAdd: [u16]
-- MiraRemove: [u16]
-- BpAdd: [u16]
-- BpRemove: [u16]
-- ItemAdd: [{u16: ItemId}, u16]
-- ItemRemove: [{u16: ItemId}, u16]
-- ItemHas: [{u16: ItemId}, u8]
-- PartyEquip: [{u8: NameId}, {u16: ItemId}, u8]
-- PartyPosition: [{u8: NameId}]
-- ForkFunc: [*CharId, {u8: ForkId}, {u16: FuncId}]
-- ForkQuit: [*CharId, {u8: ForkId}]
-- Fork:     [*CharId, {u8: ForkId}, Fork]
-- ForkLoop: [*CharId, {u8: ForkId}, !ForkLoop NextFrame2]
-- ForkWait: [*CharId, {u8: ForkId}]
-- NextFrame: []
-- Event: [{u16: FuncId}]
-- _Char4A: [*CharId, u8]
-- _Char4B: [*CharId, u8]
+  -
+  - [QuestTaskSet, {u16: QuestTask}]
+  - [QuestTaskUnset, {u16: QuestTask}]
+  - [QuestFlagsUnset, {u8: QuestFlags}]
+  - [QuestFlagsSet, {u8: QuestFlags}]
+- !match
+  head: [{u16: QuestId}]
+  on: u8
+  cases:
+  - [QuestFlagsGet, {u8: QuestFlags}]
+  - [QuestTaskGet, {u16: QuestTask}]
+- [QuestList, QuestList] # as QuestId...
+- [QuestBonusBp, {u16: QuestId}, u16]
+- [QuestBonusMira, {u16: QuestId}, u16]
+- [PartyAdd, {u8: NameId}, {u8: CharId}, u8]
+- [PartyRemove, {u8: NameId}, u8]
+- [PartyClear]
+- [_30, u8]
+- [PartySetAttr, {u8: NameId}, u8, u16]
+- [PartyAddArt, {u8: NameId}, {u16: MagicId}]
+- [PartyAddCraft, {u8: NameId}, {u16: MagicId}]
+- [ED7_37]
+- [PartySetSlot, {u8: NameId}, u8, ScPartySetSlot]
+- [SepithAdd, u8, u16]
+- [SepithRemove, u8, u16]
+- [MiraAdd, u16]
+- [MiraRemove, u16]
+- [BpAdd, u16]
+- [BpRemove, u16]
+- [ItemAdd, {u16: ItemId}, u16]
+- [ItemRemove, {u16: ItemId}, u16]
+- [ItemHas, {u16: ItemId}, u8]
+- [PartyEquip, {u8: NameId}, {u16: ItemId}, u8]
+- [PartyPosition, {u8: NameId}]
+- [ForkFunc, *CharId, {u8: ForkId}, {u16: FuncId}]
+- [ForkQuit, *CharId, {u8: ForkId}]
+- [Fork,     *CharId, {u8: ForkId}, Fork]
+- [ForkLoop, *CharId, {u8: ForkId}, !ForkLoop NextFrame2]
+- [ForkWait, *CharId, {u8: ForkId}]
+- [NextFrame]
+- [Event, {u16: FuncId}]
+- [_Char4A, *CharId, u8]
+- [_Char4B, *CharId, u8]
 -
-- Var: [{u16: Var}, Expr]
+- [Var, {u16: Var}, Expr]
 -
-- Attr: [{u8: Attr}, Expr]
+- [Attr, {u8: Attr}, Expr]
 -
-- CharAttr: [{u24: CharAttr}, Expr]
-- TextStart: [*CharId]
-- TextEnd: [*CharId]
-- TextMessage: [*CharId, Text]
+- [CharAttr, {u24: CharAttr}, Expr]
+- [TextStart, *CharId]
+- [TextEnd, *CharId]
+- [TextMessage, *CharId, Text]
 -
-- TextClose: [u8]
-- MenuSetTitle: [u16, u16, u16, TString]
-- TextWait: []
-- _59: []
-- TextSetPos: [i16, i16, i16, i16]
-- TextTalk: [*CharId, Text]
-- TextTalkNamed: [*CharId, TString, Text]
-- Menu: [{u16: MenuId}, i16, i16, u8, Menu] # as TString...
-- MenuWait: [{u16: Var}]
-- MenuClose: [{u16: MenuId}]
-- TextSetName: [TString]
-- CharName2: [*CharId] # TODO rename to TextSetNameAs
-- Emote: [*CharId, {i32: Length}, {i32: Length}, u8, u8, *Time, u8]
-- EmoteStop: [*CharId]
-- LookPointFlagsSet: [{u8: LookPointId}, {u16: LookPointFlags}]
-- LookPointFlagsUnset: [{u8: LookPointId}, {u16: LookPointFlags}]
-- CamChangeAxis: [u16]
-- CamSetDistance: [[i32, i32, i32], *Time]
-- ED7_Cam69: [u8, u16]
-- CamLookChar: [*CharId, *Time]
-- _Char6A: [*CharId]
-- CamZoom: [i32, *Time]
-- ED7CamRotate: [[{i16: Angle}, {i16: Angle}, {i16: Angle}], *Time]
-- CamPers: [i32, *Time]
-- CamWait: [u8]
-- ObjFrame: [{u8: ObjectId}, u16]
-- ED7ObjPlay: [{u8: ObjectId}, u16, u16, u16, u32]
-- ObjFlagsSet: [{u8: ObjectId}, {u32: ObjectFlags}]
-- ObjFlagsUnset: [{u8: ObjectId}, {u32: ObjectFlags}]
-- ED7_74: [{u8: ObjectId}, u8, u8]
-- ED7_75: [{u8: ObjectId}, u8, *Time]
+- [TextClose, u8]
+- [MenuSetTitle, u16, u16, u16, TString]
+- [TextWait]
+- [_59]
+- [TextSetPos, i16, i16, i16, i16]
+- [TextTalk, *CharId, Text]
+- [TextTalkNamed, *CharId, TString, Text]
+- [Menu, {u16: MenuId}, i16, i16, u8, Menu] # as TString...
+- [MenuWait, {u16: Var}]
+- [MenuClose, {u16: MenuId}]
+- [TextSetName, TString]
+- [CharName2, *CharId] # TODO rename to TextSetNameAs
+- [Emote, *CharId, {i32: Length}, {i32: Length}, u8, u8, *Time, u8]
+- [EmoteStop, *CharId]
+- [LookPointFlagsSet, {u8: LookPointId}, {u16: LookPointFlags}]
+- [LookPointFlagsUnset, {u8: LookPointId}, {u16: LookPointFlags}]
+- [CamChangeAxis, u16]
+- [CamSetDistance, [i32, i32, i32], *Time]
+- [ED7_Cam69, u8, u16]
+- [CamLookChar, *CharId, *Time]
+- [_Char6A, *CharId]
+- [CamZoom, i32, *Time]
+- [ED7CamRotate, [{i16: Angle}, {i16: Angle}, {i16: Angle}], *Time]
+- [CamPers, i32, *Time]
+- [CamWait, u8]
+- [ObjFrame, {u8: ObjectId}, u16]
+- [ED7ObjPlay, {u8: ObjectId}, u16, u16, u16, u32]
+- [ObjFlagsSet, {u8: ObjectId}, {u32: ObjectFlags}]
+- [ObjFlagsUnset, {u8: ObjectId}, {u32: ObjectFlags}]
+- [ED7_74, {u8: ObjectId}, u8, u8]
+- [ED7_75, {u8: ObjectId}, u8, *Time]
 - !match
   head: [{u8: ObjectId}, String]
   on: u8
   cases:
-  - ED7_76_0: [u32]
-  - ED7_76_1: [u32]
-  - ED7_76_2: [String]
-  - ED7_76_3: [i32]
-  - ED7_76_4: [i32]
-- ED7_77: [{u8: ObjectId}, u16]
-- ED7_78: [{u8: ObjectId}, *CharId]
-- ObjWait: [{u16: ObjectId}]
-- MapColor: [{u32: Color}, {u32: Color}]
-- Shake: [[u32, u32, u32], *Time]
+  - [ED7_76_0, u32]
+  - [ED7_76_1, u32]
+  - [ED7_76_2, String]
+  - [ED7_76_3, i32]
+  - [ED7_76_4, i32]
+- [ED7_77, {u8: ObjectId}, u16]
+- [ED7_78, {u8: ObjectId}, *CharId]
+- [ObjWait, {u16: ObjectId}]
+- [MapColor, {u32: Color}, {u32: Color}]
+- [Shake, [u32, u32, u32], *Time]
 - !match
   on: u8
   cases:
-  - _7D_0: [*CharId, u16, u16]
-  - _7D_1: [*CharId, u16, u16]
-- EffLoad: [{u8: EffId}, String]
-- EffPlay:
+  - [_7D_0, *CharId, u16, u16]
+  - [_7D_1, *CharId, u16, u16]
+- [EffLoad, {u8: EffId}, String]
+- - EffPlay
   - {u8: EffId}
   - {u8: EffInstanceId}
   - [*CharId, u16, EffPlayPos]
@@ -187,93 +187,93 @@ insns:
   - [u32, u32, u32]
   - [*CharId, Pos3]
   - *Time
-- EffPlay2:
+- - EffPlay2
   - {u8: EffId}
   - {u8: EffInstanceId}
   - [{u8: ObjectId}, String, u16, RPos3]
   - [i16, i16, i16]
   - [u32, u32, u32]
   - *Time
-- EffStop: [{u8: EffInstanceId}, u8]
-- _83: [{u8: EffInstanceId}, u8] # EffWait?
-- EffUnload: [{u8: EffId}]
-- _85: [*CharId]
-- CharSetChipBase: [*CharId, {u8: ChipId}]
-- CharSetChipPattern: [*CharId, {u8: ChipId}]
-- CharSetName: [*CharId, TString]
-- CharSetPos: [*CharId, Pos3, {i16: Angle}]
-- CharSetPos2: [*CharId, Pos3, {i16: Angle}]
-- CharTurnToChar: [*CharId, *CharId, {u16: AngularSpeed}]
-- CharTurnToPos: [*CharId, Pos2, {u16: AngularSpeed}]
-- CharTurnTo: [*CharId, {i16: Angle}, {u16: AngularSpeed}]
-- CharIdle: [*CharId, Pos2, Pos2, {u32: Speed}]
-- CharWalkToPos: [*CharId, Pos3, {u32: Speed}, u8] # TODO rename to CharMoveToPos
-- CharWalkToPos2: [*CharId, Pos3, {u32: Speed}, u8]
-- _Char90: [*CharId, RPos3, {u32: Speed}, u8] # TODO rename to CharMoveRelative
-- _Char91: [*CharId, RPos3, {u32: Speed}, u8]
-- CharWalkToChar: [*CharId, *CharId, {i32: Length}, {u32: Speed}, u8]
-- CharWalkToChar2: [*CharId, *CharId, {i32: Length}, {u32: Speed}, u8]
-- _94: [u8, *CharId, {i16: Angle}, i32, {u32: Speed}, u8]
-- CharJump: [*CharId, RPos3, u32, {u32: Speed}] # TODO first u32 is Length (jump height?)
-- _Char96: [*CharId, Pos3, i32, i32]
-- _Char97: [*CharId, Pos2, {i32: Angle32}, u32, u16]
+- [EffStop, {u8: EffInstanceId}, u8]
+- [_83, {u8: EffInstanceId}, u8] # EffWait?
+- [EffUnload, {u8: EffId}]
+- [_85, *CharId]
+- [CharSetChipBase, *CharId, {u8: ChipId}]
+- [CharSetChipPattern, *CharId, {u8: ChipId}]
+- [CharSetName, *CharId, TString]
+- [CharSetPos, *CharId, Pos3, {i16: Angle}]
+- [CharSetPos2, *CharId, Pos3, {i16: Angle}]
+- [CharTurnToChar, *CharId, *CharId, {u16: AngularSpeed}]
+- [CharTurnToPos, *CharId, Pos2, {u16: AngularSpeed}]
+- [CharTurnTo, *CharId, {i16: Angle}, {u16: AngularSpeed}]
+- [CharIdle, *CharId, Pos2, Pos2, {u32: Speed}]
+- [CharWalkToPos, *CharId, Pos3, {u32: Speed}, u8] # TODO rename to CharMoveToPos
+- [CharWalkToPos2, *CharId, Pos3, {u32: Speed}, u8]
+- [_Char90, *CharId, RPos3, {u32: Speed}, u8] # TODO rename to CharMoveRelative
+- [_Char91, *CharId, RPos3, {u32: Speed}, u8]
+- [CharWalkToChar, *CharId, *CharId, {i32: Length}, {u32: Speed}, u8]
+- [CharWalkToChar2, *CharId, *CharId, {i32: Length}, {u32: Speed}, u8]
+- [_94, u8, *CharId, {i16: Angle}, i32, {u32: Speed}, u8]
+- [CharJump, *CharId, RPos3, u32, {u32: Speed}] # TODO first u32 is Length (jump height?)
+- [_Char96, *CharId, Pos3, i32, i32]
+- [_Char97, *CharId, Pos2, {i32: Angle32}, u32, u16]
 - !match
   on: u8
   cases:
-  - CharPathNew: [*CharId]
-  - CharPathAdd: [Pos3]
-  - CharPathRun: [*CharId, {u32: Speed}, u8]
-- ED7_A0: [*CharId, {u16: Time}, u8, u8]
-- ED7CharAnimation: [*CharId, {u16: Time}, ED7CharAnimation]
-- CharFlagsSet: [*CharId, {u16: CharFlags}]
-- CharFlagsUnset: [*CharId, {u16: CharFlags}]
-- CharFlags2Set: [*CharId, {u16: CharFlags2}]
-- CharFlags2Unset: [*CharId, {u16: CharFlags2}]
-- CharShake: [*CharId, [u32, u32, u32], *Time]
-- CharColor: [*CharId, {u32: Color}, *Time]
-- _A0: [*CharId, {u32: Color}, u8, u8, u8]
-- FlagSet: [{u16: Flag}]
-- FlagUnset: [{u16: Flag}]
+  - [CharPathNew, *CharId]
+  - [CharPathAdd, Pos3]
+  - [CharPathRun, *CharId, {u32: Speed}, u8]
+- [ED7_A0, *CharId, {u16: Time}, u8, u8]
+- [ED7CharAnimation, *CharId, {u16: Time}, ED7CharAnimation]
+- [CharFlagsSet, *CharId, {u16: CharFlags}]
+- [CharFlagsUnset, *CharId, {u16: CharFlags}]
+- [CharFlags2Set, *CharId, {u16: CharFlags2}]
+- [CharFlags2Unset, *CharId, {u16: CharFlags2}]
+- [CharShake, *CharId, [u32, u32, u32], *Time]
+- [CharColor, *CharId, {u32: Color}, *Time]
+- [_A0, *CharId, {u32: Color}, u8, u8, u8]
+- [FlagSet, {u16: Flag}]
+- [FlagUnset, {u16: Flag}]
 -
-- FlagWaitSet: [{u16: Flag}]
-- FlagWaitUnset: [{u16: Flag}]
+- [FlagWaitSet, {u16: Flag}]
+- [FlagWaitUnset, {u16: Flag}]
 -
-- ShopOpen: [{u8: ShopId}]
-- RecipeLearn: [{u16: RecipeId}]
-- ED7_B1: [u8]
+- [ShopOpen, {u8: ShopId}]
+- [RecipeLearn, {u16: RecipeId}]
+- [ED7_B1, u8]
 -
 -
 -
 - !match
   on: u8
   cases:
-  - TriggerFlagsSet: [{u8: EventId}, {u16: EventFlags}]
-  - TriggerFlagsUnset: [{u8: EventId}, {u16: EventFlags}]
+  - [TriggerFlagsSet, {u8: EventId}, {u16: EventFlags}]
+  - [TriggerFlagsUnset, {u8: EventId}, {u16: EventFlags}]
 - !match
   on: u8
   cases:
-  - VideoPlay: [String, u16, u16]
-  - VideoEnd: [String, u16, u16]
-- ReturnToTitle: [u8]
-- ED7_B8: [u16, u16]
+  - [VideoPlay, String, u16, u16]
+  - [VideoEnd, String, u16, u16]
+- [ReturnToTitle, u8]
+- [ED7_B8, u16, u16]
 -
-- _B8: [{u8: NameId}]
-- ItemUse: [{u16: ItemId}, *CharId]
-- PartyHasSpell: [{u8: NameId}, {u16: MagicId}]
-- PartyHasSlot: [{u8: NameId}, u8]
-- PartySetPortrait: [{u8: NameId}, u8, u8, u8, u8, u8]
-- PartySetPortraitFinish: []
-- _BE: [[u8, u8, u8, u8], u16, u16, u8, [i32,i32,i32,i32,i32,i32]]
-- _BF: [[u8, u8, u8, u8], {u16: Flag}]
-- Minigame: [u8, i32, i32, i32, i32, i32, i32, i32, i32]
-- _C1: [{u16: ItemId}, u32]
-- Tc_C2: [u8, u8]
+- [_B8, {u8: NameId}]
+- [ItemUse, {u16: ItemId}, *CharId]
+- [PartyHasSpell, {u8: NameId}, {u16: MagicId}]
+- [PartyHasSlot, {u8: NameId}, u8]
+- [PartySetPortrait, {u8: NameId}, u8, u8, u8, u8, u8]
+- [PartySetPortraitFinish]
+- [_BE, [u8, u8, u8, u8], u16, u16, u8, [i32,i32,i32,i32,i32,i32]]
+- [_BF, [u8, u8, u8, u8], {u16: Flag}]
+- [Minigame, u8, i32, i32, i32, i32, i32, i32, i32, i32]
+- [_C1, {u16: ItemId}, u32]
+- [Tc_C2, u8, u8]
 - !match
   on: u8
   cases:
-  - _C4_0: [u32]
-  - _C4_1: [u32]
-- VisShow:
+  - [_C4_0, u32]
+  - [_C4_1, u32]
+- - VisShow
   - {u8: VisId}
   - [i16, i16, u16, u16]
   - [i16, i16, u16, u16]
@@ -281,41 +281,41 @@ insns:
   - {u32: Color}
   - u8
   - String
-- VisSet: [{u8: VisId}, u8, i32, i32, i32, 0]
+- [VisSet, {u8: VisId}, u8, i32, i32, i32, 0]
 - !match
   on: u8
   cases:
-  - VisWait: [{u8: VisId}, u8]
-  - VisHide: [{u8: VisId}, u8]
-- _C8: [u16, u16, String, u8, u16]
+  - [VisWait, {u8: VisId}, u8]
+  - [VisHide, {u8: VisId}, u8]
+- [_C8, u16, u16, String, u8, u16]
 -
 - !match
   on: u8
   cases:
-  - ED7MenuNew: [{u8: MenuId}]
-  - MenuAdd: [{u8: MenuId}, TString]
-  - ED7MenuShow: [{u8: MenuId}, u16, u16, u8]
-  - MenuSetDisabled: [{u8: MenuId}, u8]
-  - MenuSetStyle: [{u8: MenuId}, u8]
-  - MenuSelect: [{u8: MenuId}, u8]
-  - Menu_6: [{u8: MenuId}]
-- _CD: [*CharId]
-- Global: [{u8: Global}, Expr]
-- _CF: [*CharId, u8, String]
-- _D0: [{i32: Angle32}, *Time]
-- _D1: [*CharId, {i32: Angle32}, {i32: Angle32}, i32, *Time]
-- ED7LoadChip: [*FileId, {u8: ChipId}]
-- UnloadChip: [{u8: ChipId}]
-- PartyGetAttr: [{u8: NameId}, u8]
-- PartyGetEquipped: [{u8: NameId}, u8]
+  - [ED7MenuNew, {u8: MenuId}]
+  - [MenuAdd, {u8: MenuId}, TString]
+  - [ED7MenuShow, {u8: MenuId}, u16, u16, u8]
+  - [MenuSetDisabled, {u8: MenuId}, u8]
+  - [MenuSetStyle, {u8: MenuId}, u8]
+  - [MenuSelect, {u8: MenuId}, u8]
+  - [Menu_6, {u8: MenuId}]
+- [_CD, *CharId]
+- [Global, {u8: Global}, Expr]
+- [_CF, *CharId, u8, String]
+- [_D0, {i32: Angle32}, *Time]
+- [_D1, *CharId, {i32: Angle32}, {i32: Angle32}, i32, *Time]
+- [ED7LoadChip, *FileId, {u8: ChipId}]
+- [UnloadChip, {u8: ChipId}]
+- [PartyGetAttr, {u8: NameId}, u8]
+- [PartyGetEquipped, {u8: NameId}, u8]
 -
-- ED7_DA: [u8]
-- ED7_DB: []
+- [ED7_DA, u8]
+- [ED7_DB]
 -
 -
-- Zero_DE: [u16]
-- ED7_E0: [u8]
-- ED7_E1: [Pos3]
+- [Zero_DE, u16]
+- [ED7_E0, u8]
+- [ED7_E1, Pos3]
 - !match
   on: u8
   cases:
@@ -323,39 +323,39 @@ insns:
     head: [u8]
     on: u8
     cases:
-    - ED7NoteFishCount: []
-    - ED7NoteFishMaxSize: []
+    - [ED7NoteFishCount]
+    - [ED7NoteFishMaxSize]
   - !match
     on: u8
     cases:
-    - ED7NoteBattleMonsterCount: []
-  - ED7Note_2: [u8]
-  - ED7Note_3: []
-- ED7_E3: [u8]
+    - [ED7NoteBattleMonsterCount]
+  - [ED7Note_2, u8]
+  - [ED7Note_3]
+- [ED7_E3, u8]
 -
-- _DB: []
-- _DC: []
-- SaveClearData: []
+- [_DB]
+- [_DC]
+- [SaveClearData]
 -
-- ED7_EE: [u8, u16]
--
--
--
-- ED7_F2: [u8]
+- [ED7_EE, u8, u16]
 -
 -
 -
-- ED7_F8: [u16]
-- ZeroEvo_E0: []
-- ZeroEvo_E1: [[u32,u32,u32,u32], [u32,u32,u32,u32], [u32,u32,u32,u32]]
-- ZeroEvo_E2: [u32,u32,u32, u8, u32, u32]
-- ZeroEvo_E3: [u8, String, u32, u32, u8]
-- ZeroEvo_E4: [u8, u16]
-- ZeroEvo_E5: [u8, u8, String, String, Pos3, Pos3, Pos3, u8]
-- ZeroEvo_E6: [u8, u8, Pos3, Pos3, Pos3]
-- ZeroEvo_E7: [u8, u8]
-- ZeroEvo_E8: [u8]
-- ZeroEvo_E9: [u16, [u32,u32,u32,u32], [u32,u32,u32,u32]]
+- [ED7_F2, u8]
+-
+-
+-
+- [ED7_F8, u16]
+- [ZeroEvo_E0]
+- [ZeroEvo_E1, [u32,u32,u32,u32], [u32,u32,u32,u32], [u32,u32,u32,u32]]
+- [ZeroEvo_E2, u32,u32,u32, u8, u32, u32]
+- [ZeroEvo_E3, u8, String, u32, u32, u8]
+- [ZeroEvo_E4, u8, u16]
+- [ZeroEvo_E5, u8, u8, String, String, Pos3, Pos3, Pos3, u8]
+- [ZeroEvo_E6, u8, u8, Pos3, Pos3, Pos3]
+- [ZeroEvo_E7, u8, u8]
+- [ZeroEvo_E8, u8]
+- [ZeroEvo_E9, u16, [u32,u32,u32,u32], [u32,u32,u32,u32]]
 -
 -
 -
