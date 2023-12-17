@@ -47,18 +47,14 @@ pub macro strukt($(struct $type:ty {
 			#[allow(unused_mut)]
 			let mut missing: Vec<&str> = Vec::new();
 
-			$(
-				if !$field.is_present() {
-					missing.push(concat!("`", name!($field $($alias)?), "`"));
-				}
-			)*
+			$(if !$field.is_present() {
+				missing.push(concat!("`", name!($field $($alias)?), "`"));
+			})*
 
 			if missing.is_empty() {
-				$(
-					let Some($field) = $field.get() else {
-						return Err(parse::Diagnostic::DUMMY);
-					};
-				)*
+				$(let Some($field) = $field.get() else {
+					return Err(parse::Diagnostic::DUMMY);
+				};)*
 				Ok(Self { $($field,)* })
 			} else {
 				Err(
