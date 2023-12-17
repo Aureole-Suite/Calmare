@@ -35,9 +35,9 @@ pub macro strukt($(struct $type:ty {
 					let mut diag = parse::Diagnostic::error(f.span_of(word), "unknown field");
 					if first_error {
 						first_error = false;
-						diag.note(f.span_of(word), format!(
-							"allowed fields are {}",
-							[$(concat!("`", name!($field $($alias)?), "`")),*].join(", ")
+						diag.note(f.span_of(word), concat!(
+							"allowed fields are "
+							$(, "`", name!($field $($alias)?), "`", )", "*
 						));
 					}
 					Err(diag)
