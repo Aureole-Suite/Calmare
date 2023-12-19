@@ -58,20 +58,19 @@ pub fn get(game: Game, variant: Variant) -> InsnSet<'static> {
 pub struct InsnSetInner {
 	pub game: Game,
 	pub address_size: IntType,
-	pub insns: [Insn; 256],
+	pub insns: Vec<Insn>,
 	pub at_roll: [String; 16],
 	pub insns_rev: BTreeMap<String, Vec<Arg>>,
 }
 
 #[allow(non_camel_case_types)]
-#[serde_with::serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(remote = "InsnSetInner")]
 struct InsnSet_inner {
 	pub game: Game,
 	pub address_size: IntType,
-	#[serde_as(as = "[_; 256]")]
-	pub insns: [Insn; 256],
+	#[serde(deserialize_with = "insn_list")]
+	pub insns: Vec<Insn>,
 	pub at_roll: [String; 16],
 	#[serde(skip)]
 	pub insns_rev: BTreeMap<String, Vec<Arg>>,
@@ -224,6 +223,9 @@ pub enum MiscArg {
 impl<'de> Deserialize<'de> for InsnSetInner {
 	fn deserialize<D: serde::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
 		let mut iset = InsnSet_inner::deserialize(de)?;
+		if iset.insns.len() != 256 {
+			return Err(serde::de::Error::invalid_length(iset.insns.len(), &"256 insns"));
+		}
 		make_rev_table(IntType::u8, &iset.insns, &mut iset.insns_rev, vec![])?;
 		Ok(iset)
 	}
@@ -335,6 +337,10 @@ impl<'de> Deserialize<'de> for IntType {
 	}
 }
 
+fn insn_list<'de, D: serde::Deserializer<'de>>(de: D) -> Result<Vec<Insn>, D::Error> {
+	Vec::deserialize(de)
+}
+
 impl<'de> Deserialize<'de> for Insn {
 	fn deserialize<D: serde::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
 		use serde::de;
@@ -386,7 +392,7 @@ struct Match {
 	head: Vec<Arg>,
 	#[serde(default = "u8")]
 	on: IntType,
-	#[serde(deserialize_with = "parse_cases")]
+	#[serde(deserialize_with = "insn_list")]
 	cases: Vec<Insn>,
 }
 
@@ -411,16 +417,12 @@ impl<'de> Deserialize<'de> for Match {
 				Ok(Match {
 					head: vec![],
 					on: IntType::u8,
-					cases: parse_cases(de)?,
+					cases: insn_list(de)?,
 				})
 			}
 		}
 		de.deserialize_any(V)
 	}
-}
-
-fn parse_cases<'de, D: serde::Deserializer<'de>>(de: D) -> Result<Vec<Insn>, D::Error> {
-	Vec::deserialize(de)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
