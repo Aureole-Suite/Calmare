@@ -297,23 +297,7 @@ insns:
 - [EvoVoiceLine, u16]
 - [Evo_E6, Text]
 - [EvoVisLipSync, {u8: VisId}, u8]
-- []
-- []
-- []
-- []
-- []
-- []
-- []
-- []
-- []
-- []
-- []
-- []
-- []
-- []
-- []
-- []
-- []
+- !skip 17
 
 at_roll:
 - none

@@ -335,47 +335,76 @@ impl<'de> Deserialize<'de> for IntType {
 	}
 }
 
-fn insn_list<'de, D: de::Deserializer<'de>>(de: D) -> Result<Vec<Insn>, D::Error> {
-	Vec::deserialize(de)
+struct Insns<'a>(&'a mut Vec<Insn>);
+
+impl<'de> de::DeserializeSeed<'de> for Insns<'_> {
+	type Value = ();
+	fn deserialize<D: de::Deserializer<'de>>(self, de: D) -> Result<(), D::Error> {
+		de.deserialize_any(self)
+	}
 }
 
-impl<'de> Deserialize<'de> for Insn {
-	fn deserialize<D: de::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
-		struct V;
-		impl<'de> de::Visitor<'de> for V {
-			type Value = Insn;
+impl<'de> de::Visitor<'de> for Insns<'_> {
+	type Value = ();
 
-			fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-				f.write_str("Insn")
-			}
+	fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		f.write_str("Insn")
+	}
 
-			fn visit_enum<A: de::EnumAccess<'de>>(self, d: A) -> Result<Self::Value, A::Error> {
-				#[derive(Deserialize)]
-				#[serde(rename_all = "lowercase")]
-				enum InsnInner {
-					Match(Match),
-				}
+	fn visit_enum<A: de::EnumAccess<'de>>(self, d: A) -> Result<Self::Value, A::Error> {
+		#[derive(Deserialize)]
+		#[serde(rename_all = "lowercase")]
+		enum InsnInner {
+			Match(Match),
+			Skip(usize),
+		}
 
-				let de = de::value::EnumAccessDeserializer::new(d);
-				let InsnInner::Match(m) = InsnInner::deserialize(de)?;
-				Ok(Insn::Match {
-					head: m.head,
-					on: m.on,
-					cases: m.cases,
-				})
-			}
-
-			fn visit_seq<A: de::SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
-				if let Some(name) = seq.next_element()? {
-					let args = Vec::deserialize(de::value::SeqAccessDeserializer::new(seq))?;
-					Ok(Insn::Regular { name, args })
-				} else {
-					Ok(Insn::Blank)
+		let de = de::value::EnumAccessDeserializer::new(d);
+		match InsnInner::deserialize(de)? {
+			InsnInner::Match(m) => self.0.push(Insn::Match {
+				head: m.head,
+				on: m.on,
+				cases: m.cases,
+			}),
+			InsnInner::Skip(n) => {
+				for _ in 0..n {
+					self.0.push(Insn::Blank)
 				}
 			}
 		}
-		de.deserialize_any(V)
+		Ok(())
 	}
+
+	fn visit_seq<A: de::SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+		if let Some(name) = seq.next_element()? {
+			let de = de::value::SeqAccessDeserializer::new(seq);
+			let args = Vec::deserialize(de)?;
+			self.0.push(Insn::Regular { name, args });
+		} else {
+			self.0.push(Insn::Blank);
+		}
+		Ok(())
+	}
+}
+
+fn insn_list<'de, D: de::Deserializer<'de>>(de: D) -> Result<Vec<Insn>, D::Error> {
+	struct V;
+
+	impl<'de> de::Visitor<'de> for V {
+		type Value = Vec<Insn>;
+
+		fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+			formatter.write_str("a sequence")
+		}
+
+		fn visit_seq<A: de::SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+			let mut values = Vec::new();
+			while let Some(()) = seq.next_element_seed(Insns(&mut values))? {}
+			Ok(values)
+		}
+	}
+
+	de.deserialize_seq(V)
 }
 
 fn u8() -> IntType {

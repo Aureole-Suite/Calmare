@@ -338,18 +338,7 @@ insns:
 - [AoEvoStopwatchStart]
 - [AoEvo_F2, u8, u8]
 - [AoEvo_F3, u8, u8]
-- []
-- []
-- []
-- []
-- []
-- []
-- []
-- []
-- []
-- []
-- []
-- []
+- !skip 12
 
 at_roll:
 - none
