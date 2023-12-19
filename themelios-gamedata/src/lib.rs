@@ -3,7 +3,7 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
-use serde::Deserialize;
+use serde::{de, Deserialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -221,17 +221,17 @@ pub enum MiscArg {
 }
 
 impl<'de> Deserialize<'de> for InsnSetInner {
-	fn deserialize<D: serde::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
+	fn deserialize<D: de::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
 		let mut iset = InsnSet_inner::deserialize(de)?;
 		if iset.insns.len() != 256 {
-			return Err(serde::de::Error::invalid_length(iset.insns.len(), &"256 insns"));
+			return Err(de::Error::invalid_length(iset.insns.len(), &"256 insns"));
 		}
 		make_rev_table(IntType::u8, &iset.insns, &mut iset.insns_rev, vec![])?;
 		Ok(iset)
 	}
 }
 
-fn make_rev_table<D: serde::de::Error>(
+fn make_rev_table<D: de::Error>(
 	ty: IntType,
 	insns: &[Insn],
 	insns_rev: &mut BTreeMap<String, Vec<Arg>>,
@@ -258,8 +258,7 @@ fn make_rev_table<D: serde::de::Error>(
 }
 
 impl<'de> Deserialize<'de> for Arg {
-	fn deserialize<D: serde::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
-		use serde::de;
+	fn deserialize<D: de::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
 		struct V;
 		impl<'de> de::Visitor<'de> for V {
 			type Value = Arg;
@@ -308,8 +307,7 @@ impl<'de> Deserialize<'de> for Arg {
 }
 
 impl<'de> Deserialize<'de> for IntType {
-	fn deserialize<D: serde::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
-		use serde::de;
+	fn deserialize<D: de::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
 		struct V;
 		impl<'de> de::Visitor<'de> for V {
 			type Value = IntType;
@@ -337,13 +335,12 @@ impl<'de> Deserialize<'de> for IntType {
 	}
 }
 
-fn insn_list<'de, D: serde::Deserializer<'de>>(de: D) -> Result<Vec<Insn>, D::Error> {
+fn insn_list<'de, D: de::Deserializer<'de>>(de: D) -> Result<Vec<Insn>, D::Error> {
 	Vec::deserialize(de)
 }
 
 impl<'de> Deserialize<'de> for Insn {
-	fn deserialize<D: serde::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
-		use serde::de;
+	fn deserialize<D: de::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
 		struct V;
 		impl<'de> de::Visitor<'de> for V {
 			type Value = Insn;
@@ -397,8 +394,7 @@ struct Match {
 }
 
 impl<'de> Deserialize<'de> for Match {
-	fn deserialize<D: serde::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
-		use serde::de;
+	fn deserialize<D: de::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
 		struct V;
 		impl<'de> de::Visitor<'de> for V {
 			type Value = Match;
@@ -433,8 +429,7 @@ where
 	K: Deserialize<'de>,
 	V: Deserialize<'de>,
 {
-	fn deserialize<D: serde::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
-		use serde::de;
+	fn deserialize<D: de::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
 		struct Vis<K, V>(std::marker::PhantomData<(K, V)>);
 
 		impl<'de, K, V> de::Visitor<'de> for Vis<K, V>
@@ -459,7 +454,7 @@ where
 	}
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Builtin {
 	Fc,
