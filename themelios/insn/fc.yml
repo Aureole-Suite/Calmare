@@ -28,8 +28,6 @@ insns:
 - []
 - []
 - !match
-  on: u8
-  cases:
   - [MapHide]
   - [MapShow]
   - [MapSet, i32, Pos2, *FileId]
@@ -52,7 +50,6 @@ insns:
 - []
 - !match
   head: [{u16: QuestId}]
-  on: u8
   cases:
   - []
   - [QuestTaskSet, {u16: QuestTask}]
@@ -61,7 +58,6 @@ insns:
   - [QuestFlagsSet, {u8: QuestFlags}]
 - !match
   head: [{u16: QuestId}]
-  on: u8
   cases:
   - [QuestFlagsGet, {u8: QuestFlags}]
   - [QuestTaskGet, {u16: QuestTask}]
@@ -189,8 +185,6 @@ insns:
 - [_Char96, *CharId, Pos3, i32, i32]
 - [_Char97, *CharId, Pos2, {i32: Angle32}, u32, u16]
 - !match
-  on: u8
-  cases:
   - [CharPathNew, *CharId]
   - [CharPathAdd, Pos3]
   - [CharPathRun, *CharId, {u32: Speed}, u8]
@@ -220,13 +214,9 @@ insns:
 - [_ObjB0, {u16: ObjectId}, u8]
 - [OpLoad, String]
 - !match
-  on: u8
-  cases:
   - [TriggerFlagsSet, {u8: EventId}, {u16: EventFlags}]
   - [TriggerFlagsUnset, {u8: EventId}, {u16: EventFlags}]
 - !match
-  on: u8
-  cases:
   - [VideoPlay, String, 0, 0]
   - [VideoEnd, String, 0, 0]
 - [ReturnToTitle, u8]
@@ -257,8 +247,6 @@ insns:
   - String
 - [VisSet, {u8: VisId}, u8, i32, i32, i32, i32]
 - !match
-  on: u8
-  cases:
   - [VisWait, {u8: VisId}, u8]
   - [VisHide, {u8: VisId}, u8]
 - []

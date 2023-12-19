@@ -346,17 +346,18 @@ impl<'de> Deserialize<'de> for Insn {
 
 			fn visit_enum<A: de::EnumAccess<'de>>(self, d: A) -> Result<Self::Value, A::Error> {
 				#[derive(Deserialize)]
-				#[serde(rename_all = "lowercase", remote = "Insn")]
+				#[serde(rename_all = "lowercase")]
 				enum InsnInner {
-					Match {
-						#[serde(default)]
-						head: Vec<Arg>,
-						on: IntType,
-						cases: Vec<Insn>,
-					},
+					Match(Match),
 				}
+
 				let de = de::value::EnumAccessDeserializer::new(d);
-				InsnInner::deserialize(de)
+				let InsnInner::Match(m) = InsnInner::deserialize(de)?;
+				Ok(Insn::Match {
+					head: m.head,
+					on: m.on,
+					cases: m.cases,
+				})
 			}
 
 			fn visit_seq<A: de::SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
@@ -370,6 +371,54 @@ impl<'de> Deserialize<'de> for Insn {
 		}
 		de.deserialize_any(V)
 	}
+}
+
+fn u8() -> IntType {
+	IntType::u8
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "lowercase", remote = "Self")]
+struct Match {
+	#[serde(default)]
+	head: Vec<Arg>,
+	#[serde(default = "u8")]
+	on: IntType,
+	#[serde(deserialize_with = "parse_cases")]
+	cases: Vec<Insn>,
+}
+
+impl<'de> Deserialize<'de> for Match {
+	fn deserialize<D: serde::Deserializer<'de>>(de: D) -> Result<Self, D::Error> {
+		use serde::de;
+		struct V;
+		impl<'de> de::Visitor<'de> for V {
+			type Value = Match;
+
+			fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+				f.write_str("mapping or sequence")
+			}
+
+			fn visit_map<A: de::MapAccess<'de>>(self, map: A) -> Result<Self::Value, A::Error> {
+				let de = de::value::MapAccessDeserializer::new(map);
+				Match::deserialize(de)
+			}
+
+			fn visit_seq<A: de::SeqAccess<'de>>(self, seq: A) -> Result<Self::Value, A::Error> {
+				let de = de::value::SeqAccessDeserializer::new(seq);
+				Ok(Match {
+					head: vec![],
+					on: IntType::u8,
+					cases: parse_cases(de)?,
+				})
+			}
+		}
+		de.deserialize_any(V)
+	}
+}
+
+fn parse_cases<'de, D: serde::Deserializer<'de>>(de: D) -> Result<Vec<Insn>, D::Error> {
+	Vec::deserialize(de)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

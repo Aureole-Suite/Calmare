@@ -28,8 +28,6 @@ insns:
 - [BlurOn, *Time, {u32: Color}, u32, u8, u32]
 - [BlurOff, *Time]
 - !match
-  on: u8
-  cases:
   - [MapHide]
   - [MapShow]
   - [MapSet, i32, Pos2, *FileId]
@@ -52,7 +50,6 @@ insns:
 - []
 - !match
   head: [{u16: QuestId}]
-  on: u8
   cases:
   - []
   - [QuestTaskSet, {u16: QuestTask}]
@@ -61,7 +58,6 @@ insns:
   - [QuestFlagsSet, {u8: QuestFlags}]
 - !match
   head: [{u16: QuestId}]
-  on: u8
   cases:
   - [QuestFlagsGet, {u8: QuestFlags}]
   - [QuestTaskGet, {u16: QuestTask}]
@@ -149,8 +145,6 @@ insns:
 - [_7B]
 - [Shake, [u32, u32, u32], *Time]
 - !match
-  on: u8
-  cases:
   - [_7D_0, *CharId, u16, u16]
   - [_7D_1, *CharId, u16, u16]
 - [_7E, i16, i16, i16, u8, u32]
@@ -193,8 +187,6 @@ insns:
 - [_Char96, *CharId, Pos3, i32, i32]
 - [_Char97, *CharId, Pos2, {i32: Angle32}, u32, u16]
 - !match
-  on: u8
-  cases:
   - [CharPathNew, *CharId]
   - [CharPathAdd, Pos3]
   - [CharPathRun, *CharId, {u32: Speed}, u8]
@@ -216,11 +208,9 @@ insns:
 - []
 - [ShopOpen, {u8: ShopId}]
 - !match
-  on: u8
-  cases:
-    - [MonumentOpen, u8, u8, u8]
-    - [MonumentDisable, u8, u8, u8]
-    - [MonumentEnable, u8, u8, u8]
+  - [MonumentOpen, u8, u8, u8]
+  - [MonumentDisable, u8, u8, u8]
+  - [MonumentEnable, u8, u8, u8]
 - []
 - [RecipeLearn, {u16: RecipeId}]
 - [ImageShow, *FileId, u16, u16, *Time]
@@ -229,13 +219,9 @@ insns:
 - [_ObjB0, {u16: ObjectId}, u8]
 - [OpLoad, String]
 - !match
-  on: u8
-  cases:
   - [TriggerFlagsSet, {u8: EventId}, {u16: EventFlags}]
   - [TriggerFlagsUnset, {u8: EventId}, {u16: EventFlags}]
 - !match
-  on: u8
-  cases:
   - [VideoPlay, String, u16, u16]
   - [VideoEnd, String, u16, u16]
 - [ReturnToTitle, u8]
@@ -255,8 +241,6 @@ insns:
 - [Tc_C2, u8, u8]
 - []
 - !match
-  on: u8
-  cases:
   - [_C4_0, u32]
   - [_C4_1, u32]
 - - VisShow
@@ -269,8 +253,6 @@ insns:
   - String
 - [VisSet, {u8: VisId}, u8, i32, i32, i32, 0]
 - !match
-  on: u8
-  cases:
   - [VisWait, {u8: VisId}, u8]
   - [VisHide, {u8: VisId}, u8]
 - [_C8, u16, u16, String, u8, u16]
@@ -278,8 +260,6 @@ insns:
 - [_CA, {u8: ObjectId}, u8, i32, u32]
 - [CharInSlot, u8, {u8: CharId}]
 - !match
-  on: u8
-  cases:
   - [ED6MenuNew, {u8: MenuId}, u16, u16, u8]
   - [MenuAdd, {u8: MenuId}, TString]
   - [ED6MenuShow, {u8: MenuId}]
@@ -297,20 +277,14 @@ insns:
 - [_D7, u8, u32, *CharId]
 - [_D8, {u8: ObjectId}, u16]
 - !match
-  on: u8
-  cases:
   - [CutOnShow, String]
   - [CutInHide]
 - [_DA]
 - !match
-  on: u8
-  cases:
   - [TcTeamMemberEnable, {u8: NameId}]
   - [TcTeamMemberDisable, {u8: NameId}]
   - [TcTeamMember_2, u8]
 - !match
-  on: u8
-  cases:
   - [TcTeamUse, u8]
   - [TcTeamAddMember, u8, {u8: NameId}]
   - [TcTeamClear, u8]
@@ -320,8 +294,6 @@ insns:
 - [Tc_E0, *CharId, u8, u8]
 - [IndexInTeam, {u8: NameId}, u8]
 - !match
-  on: u8
-  cases:
   - [Tc_E2_0, u8]
   - [Tc_E2_1]
   - []
@@ -335,26 +307,20 @@ insns:
   - [Tc_E2_10] # a getter
   - [Tc_E2_11, u8]
 - !match
-  on: u8
-  cases:
-    - [TcEpisodeStart, u8, u32, u8]
-    - [TcEpisodeEnd, u8]
-    - []
-    - []
-    - [TcEpisode_4, u8]
+  - [TcEpisodeStart, u8, u32, u8]
+  - [TcEpisodeEnd, u8]
+  - []
+  - []
+  - [TcEpisode_4, u8]
 - []
 - !match
-  on: u8
-  cases:
-    - [Tc_E5_0, u8, u8, u16, u16]
-    - [Tc_E5_1, u8, u8, u16, u16]
-    - [Tc_E5_2, u8, u8, u32]
+  - [Tc_E5_0, u8, u8, u16, u16]
+  - [Tc_E5_1, u8, u8, u16, u16]
+  - [Tc_E5_2, u8, u8, u32]
 - !match
-  on: u8
-  cases:
-    - [Tc_E6_0, u8]
-    - [Tc_E6_1, u8]
-    - [Tc_E6_2]
+  - [Tc_E6_0, u8]
+  - [Tc_E6_1, u8]
+  - [Tc_E6_2]
 - [Tc_E7, {u8: VisId}, u8, {u32: Color}, *Time]
 - [Sc_DB]
 - [Sc_DC]

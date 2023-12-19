@@ -43,8 +43,6 @@ insns:
 - [BlurOn, *Time, {u32: Color}, u32, u8, u32]
 - [BlurOff, *Time]
 - !match
-  on: u8
-  cases:
   - []
   - []
   - [ZeroMap_2, i32, Pos2, u16, u16, u16, u16]
@@ -54,8 +52,6 @@ insns:
 - [EventEnd, u8]
 - [EntranceSetFunc, {u8: EntranceId}, {u24: FuncId}]
 - !match
-  on: u8
-  cases:
   - [ED6_1D_0, u8, u8, u8, Pos3, i32, i32, {i32: Angle32}]
   - []
   - [ED6_1D_2, u8, u8]
@@ -73,7 +69,6 @@ insns:
 - [NextFrame2]
 - !match
   head: [{u16: QuestId}]
-  on: u8
   cases:
   - []
   - [QuestTaskSet, {u16: QuestTask}]
@@ -82,7 +77,6 @@ insns:
   - [QuestFlagsSet, {u8: QuestFlags}]
 - !match
   head: [{u16: QuestId}]
-  on: u8
   cases:
   - [QuestFlagsGet, {u8: QuestFlags}]
   - [QuestTaskGet, {u16: QuestTask}]
@@ -161,7 +155,6 @@ insns:
 - [ED7_75, {u8: ObjectId}, u8, *Time]
 - !match
   head: [{u8: ObjectId}, String]
-  on: u8
   cases:
   - [ED7_76_0, u32]
   - [ED7_76_1, u32]
@@ -174,8 +167,6 @@ insns:
 - [MapColor, {u32: Color}, {u32: Color}]
 - [Shake, [u32, u32, u32], *Time]
 - !match
-  on: u8
-  cases:
   - [_7D_0, *CharId, u16, u16]
   - [_7D_1, *CharId, u16, u16]
 - [EffLoad, {u8: EffId}, String]
@@ -218,8 +209,6 @@ insns:
 - [_Char96, *CharId, Pos3, i32, i32]
 - [_Char97, *CharId, Pos2, {i32: Angle32}, u32, u16]
 - !match
-  on: u8
-  cases:
   - [CharPathNew, *CharId]
   - [CharPathAdd, Pos3]
   - [CharPathRun, *CharId, {u32: Speed}, u8]
@@ -245,13 +234,9 @@ insns:
 - []
 - []
 - !match
-  on: u8
-  cases:
   - [TriggerFlagsSet, {u8: EventId}, {u16: EventFlags}]
   - [TriggerFlagsUnset, {u8: EventId}, {u16: EventFlags}]
 - !match
-  on: u8
-  cases:
   - [VideoPlay, String, u16, u16]
   - [VideoEnd, String, u16, u16]
 - [ReturnToTitle, u8]
@@ -269,8 +254,6 @@ insns:
 - [_C1, {u16: ItemId}, u32]
 - [Tc_C2, u8, u8]
 - !match
-  on: u8
-  cases:
   - [_C4_0, u32]
   - [_C4_1, u32]
 - - VisShow
@@ -283,15 +266,11 @@ insns:
   - String
 - [VisSet, {u8: VisId}, u8, i32, i32, i32, 0]
 - !match
-  on: u8
-  cases:
   - [VisWait, {u8: VisId}, u8]
   - [VisHide, {u8: VisId}, u8]
 - [_C8, u16, u16, String, u8, u16]
 - []
 - !match
-  on: u8
-  cases:
   - [ED7MenuNew, {u8: MenuId}]
   - [MenuAdd, {u8: MenuId}, TString]
   - [ED7MenuShow, {u8: MenuId}, u16, u16, u8]
@@ -317,17 +296,12 @@ insns:
 - [ED7_E0, u8]
 - [ED7_E1, Pos3]
 - !match
-  on: u8
-  cases:
   - !match
     head: [u8]
-    on: u8
     cases:
     - [ED7NoteFishCount]
     - [ED7NoteFishMaxSize]
   - !match
-    on: u8
-    cases:
     - [ED7NoteBattleMonsterCount]
   - [ED7Note_2, u8]
   - [ED7Note_3]
