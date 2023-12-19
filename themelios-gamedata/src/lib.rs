@@ -498,13 +498,15 @@ impl Builtin {
 	}
 }
 
-#[test]
-fn test_parse() {
-	Builtin::Fc.get();
-	Builtin::Sc.get();
-	Builtin::Tc.get();
-	Builtin::Zero.get();
-	Builtin::Azure.get();
-	Builtin::ZeroEvo.get();
-	Builtin::AzureEvo.get();
+#[cfg(test)]
+#[rustfmt::skip]
+mod test {
+	use super::Builtin as B;
+	#[test] fn fc() { B::Fc.get(); }
+	#[test] fn sc() { B::Sc.get(); }
+	#[test] fn tc() { B::Tc.get(); }
+	#[test] fn zero() { B::Zero.get(); }
+	#[test] fn azure() { B::Azure.get(); }
+	#[test] fn zero_evo() { B::ZeroEvo.get(); }
+	#[test] fn azure_evo() { B::AzureEvo.get(); }
 }
