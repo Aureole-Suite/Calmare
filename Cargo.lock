@@ -648,11 +648,18 @@ dependencies = [
  "glam",
  "gospel",
  "num_enum",
+ "snafu",
+ "strict_result",
+ "themelios-gamedata",
+]
+
+[[package]]
+name = "themelios-gamedata"
+version = "0.1.0"
+dependencies = [
  "serde",
  "serde_with",
  "serde_yaml",
- "snafu",
- "strict_result",
 ]
 
 [[package]]

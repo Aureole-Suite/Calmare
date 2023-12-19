@@ -1,4 +1,4 @@
-use themelios::scena::insn_set::InsnSet;
+use themelios::gamedata::InsnSet;
 
 #[derive(Debug, Clone)]
 pub struct Printer<'src> {

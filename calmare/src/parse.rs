@@ -6,7 +6,7 @@ use bimap::BiBTreeMap;
 use std::collections::BTreeSet;
 use std::str::pattern::Pattern;
 
-use themelios::scena::insn_set::InsnSet;
+use themelios::gamedata::InsnSet;
 use themelios::types::Label;
 
 pub use diagnostic::{diagnose, Diagnostic, Emit, Level, Result};

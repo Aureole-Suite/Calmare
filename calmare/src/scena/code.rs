@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
+use themelios::gamedata as iset;
 use themelios::scena::code::{Arg, Atom, Code, Expr, Insn};
-use themelios::scena::{insn_set as iset, CharId};
+use themelios::scena::CharId;
 use themelios::types::Text;
 
 use crate::parse::{self, Diagnostic, Emit as _, Span};

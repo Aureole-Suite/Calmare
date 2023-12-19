@@ -8,3 +8,5 @@ pub use glam;
 pub mod types;
 pub mod scena;
 mod util;
+
+pub use themelios_gamedata as gamedata;

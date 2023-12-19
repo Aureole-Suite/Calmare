@@ -6,7 +6,7 @@
 pub mod print;
 use std::borrow::Cow;
 
-use themelios::scena::insn_set as iset;
+use themelios::gamedata as iset;
 
 pub use print::Printer;
 pub mod parse;

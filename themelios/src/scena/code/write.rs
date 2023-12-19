@@ -5,7 +5,7 @@ use snafu::prelude::*;
 use strict_result::Strict as _;
 
 use super::{Arg, Atom, Code, Expr, Insn};
-use crate::scena::insn_set as iset;
+use crate::gamedata as iset;
 use crate::scena::*;
 use crate::types::*;
 use crate::util::{cast, ValueError, WriterExt};

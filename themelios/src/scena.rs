@@ -1,14 +1,10 @@
 use snafu::prelude::*;
 
-use crate::{types::NameId, util::ValueError};
+use crate::{gamedata::Game, types::NameId, util::ValueError};
 
 pub mod code;
 pub mod ed6;
 pub mod ed7;
-
-pub mod insn_set;
-
-use self::insn_set::Game;
 
 #[derive(Debug, Snafu)]
 pub enum ReadError {

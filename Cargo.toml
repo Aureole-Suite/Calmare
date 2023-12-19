@@ -1,6 +1,7 @@
 [workspace]
 members = [
 	"themelios",
+	"themelios-gamedata",
 	"calmare",
 	"examples",
 ]
@@ -8,4 +9,5 @@ resolver = "2"
 
 [workspace.dependencies]
 themelios = { path = "./themelios" }
+themelios-gamedata = { path = "./themelios-gamedata" }
 calmare = { path = "./calmare" }

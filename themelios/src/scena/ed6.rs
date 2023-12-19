@@ -3,8 +3,9 @@ use gospel::write::{Le as _, Writer};
 use snafu::prelude::*;
 use strict_result::Strict;
 
+use crate::gamedata as iset;
 use crate::scena::code::{Code, InsnReader, InsnWriter};
-use crate::scena::{insn_set as iset, FuncId};
+use crate::scena::FuncId;
 use crate::types::*;
 use crate::util::{cast, list, ReaderExt as _, WriterExt as _};
 

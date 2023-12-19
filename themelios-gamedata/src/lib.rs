@@ -1,3 +1,5 @@
+#![feature(lazy_cell)]
+
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
@@ -475,7 +477,7 @@ impl Builtin {
 				match self {
 					$(Builtin::$variant => {
 						static SET: LazyLock<InsnSetInner> = LazyLock::new(|| {
-							serde_yaml::from_str(include_str!(concat!("../../insn/", $file))).unwrap()
+							serde_yaml::from_str(include_str!(concat!("../data/", $file))).unwrap()
 						});
 						&SET
 					})*
