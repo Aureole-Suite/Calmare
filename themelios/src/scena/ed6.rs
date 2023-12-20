@@ -12,7 +12,7 @@ use crate::util::{cast, list, ReaderExt as _, WriterExt as _};
 use super::{CharFlags, ChipId, EntryFlags, EventFlags, LookPointFlags};
 use super::{ReadError, WriteError};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Scena {
 	pub path: String,          // [Path; フォルダ]
 	pub map: String,           // [Map; マップファイル]
@@ -217,7 +217,7 @@ impl Scena {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Entry {
 	// [Entry]
 	pub pos: Pos3,    // [PlyX, PlyY, PlyZ; Ｘ/Ｙ/Ｚ座標(1m単位)]
@@ -280,7 +280,7 @@ impl Entry {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Npc {
 	// [Player]
 	pub name: TString,    // [Name]
@@ -328,7 +328,7 @@ impl Npc {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Monster {
 	// [Monster]
 	pub name: TString,
@@ -371,7 +371,7 @@ impl Monster {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Event {
 	// [Event]
 	pub pos1: Pos3,        // [X, Y, Z]
@@ -402,7 +402,7 @@ impl Event {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LookPoint {
 	// [LookPoint]
 	pub pos: Pos3,             // [X, Y, Z]

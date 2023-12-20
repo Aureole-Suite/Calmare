@@ -14,7 +14,7 @@ pub mod normalize;
 pub mod visit;
 pub mod visit_mut;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Code(pub Vec<Insn>);
 
 impl std::ops::Deref for Code {
@@ -31,7 +31,7 @@ impl std::ops::DerefMut for Code {
 	}
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq)]
 pub struct Insn {
 	pub name: String,
 	pub args: Vec<Arg>,
@@ -60,7 +60,7 @@ impl Insn {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Arg {
 	Label(Label),
 	Tuple(Vec<Arg>),
@@ -69,7 +69,7 @@ pub enum Arg {
 	Atom(Atom),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Atom {
 	Int(i64), // easier to have a single integer type encompassing everything
 	String(String),
@@ -178,7 +178,7 @@ pub enum AssOp {
 	OrAss = 0x1B,  // |=
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
 	Atom(Atom),
 	Bin(BinOp, Box<Expr>, Box<Expr>),

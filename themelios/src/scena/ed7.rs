@@ -360,7 +360,7 @@ impl Label {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Npc {
 	pub name: TString,
 	pub pos: Pos3,
@@ -404,7 +404,7 @@ impl Npc {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Monster {
 	pub pos: Pos3,
 	pub angle: i16,
@@ -501,7 +501,7 @@ impl Event {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LookPoint {
 	pub pos: Pos3,
 	pub radius: u32,
@@ -541,7 +541,7 @@ impl LookPoint {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Entry {
 	pub pos: Pos3,
 	pub unk1: u32,
@@ -603,7 +603,7 @@ impl Entry {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Animation {
 	pub speed: Time,
 	pub frames: Vec<u8>,
