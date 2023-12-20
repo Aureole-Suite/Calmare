@@ -51,6 +51,10 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 		self.f.pos()
 	}
 
+	pub fn into_inner(self) -> Reader<'buf> {
+		self.f
+	}
+
 	pub fn code(&mut self, end: usize) -> Result<Code> {
 		let mut insns = Vec::new();
 		while self.pos() < end {

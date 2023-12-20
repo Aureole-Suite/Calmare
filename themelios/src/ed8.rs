@@ -22,12 +22,13 @@ pub struct Script {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Function {
 	pub name: String,
+	pub pad: usize,
 	pub data: Data,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Data {
-	Code(Code, Padding),
+	Code(Code),
 	Other(Vec<u8>),
 }
 
@@ -75,6 +76,11 @@ impl Script {
 		let end = funcpos.iter().skip(1).copied().chain([f.len()]);
 		let mut iter = funcname.into_iter().zip(start.zip(end));
 		while let Some((fname, (pos, end))) = iter.next() {
+			ensure_whatever!(f.pos() <= pos, "funcpos");
+			let pad = pos - f.pos();
+			while f.pos() < pos {
+				f.check_u8(0)?;
+			}
 			let slice = &data[pos..end];
 			let data = match fname.as_str() {
 				_ if script_name == "face" => todo!(),
@@ -100,14 +106,19 @@ impl Script {
 				"AddCollision" => todo!(),
 				"" if slice.starts_with(b"b") => todo!(),
 				_ => {
-					let mut ir = InsnReader::new(f.at(pos)?, iset);
-					let code = ir.code_approx(f.len(), |f| {
+					let mut ir = InsnReader::new(f, iset);
+					let code = ir.code_approx(end, |f| {
 						f.pos() >= end || f.remaining().starts_with(b"\0")
 					})?;
-					Data::Code(code, Padding(0))
+					f = ir.into_inner();
+					Data::Code(code)
 				}
 			};
-			functions.push(Function { name: fname, data });
+			functions.push(Function {
+				name: fname,
+				data,
+				pad,
+			});
 		}
 
 		Ok(Script {
@@ -118,7 +129,7 @@ impl Script {
 
 	pub fn write(insn: &iset::InsnSet, script: &Script) -> Result<Vec<u8>, WriteError> {
 		let mut f = Writer::new();
-		let mut head_end = f.ptr32();
+		let head_end = f.ptr32();
 		let mut script_name = f.ptr32();
 		let mut funcpos = f.ptr32();
 		f.u32((script.functions.len() * 4) as u32);
@@ -129,15 +140,16 @@ impl Script {
 		f.u32(0xABCDEF00);
 
 		script_name.string(&script.name)?;
-		
+
 		for func in &script.functions {
 			funcnamepos.label16(funcname.here());
 			funcname.string(&func.name)?;
+			for _ in 0..func.pad {
+				funcbody.u8(0);
+			}
 			funcpos.label32(funcbody.here());
 			match &func.data {
-				Data::Code(code, pad) => {
-					InsnWriter::new(&mut funcbody, insn, None).code(code)?;
-				},
+				Data::Code(code) => InsnWriter::new(&mut funcbody, insn, None).code(code)?,
 				Data::Other(data) => funcbody.slice(data),
 			}
 		}
@@ -167,7 +179,7 @@ impl VisitableMut for Function {
 
 impl Visitable for Data {
 	fn accept(&self, f: &mut impl Visit) {
-		if let Data::Code(code, _) = self {
+		if let Data::Code(code) = self {
 			code.accept(f)
 		}
 	}
@@ -175,7 +187,7 @@ impl Visitable for Data {
 
 impl VisitableMut for Data {
 	fn accept_mut(&mut self, f: &mut impl VisitMut) {
-		if let Data::Code(code, _) = self {
+		if let Data::Code(code) = self {
 			code.accept_mut(f)
 		}
 	}
