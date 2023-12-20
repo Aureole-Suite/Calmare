@@ -13,7 +13,7 @@ fn main() -> anyhow::Result<()> {
 		themelios::scena::code::decompile::decompile(&mut scena.functions);
 		themelios::scena::code::normalize::normalize(&mut scena.functions).unwrap();
 		println!("{:#?}", scena);
-		//
+
 		// let output = calmare::print(&scena, &iset);
 		// print!("{}", output);
 		// let (v, diags) = calmare::parse::<Scena>(&output, &iset);
@@ -25,24 +25,24 @@ fn main() -> anyhow::Result<()> {
 		// }
 		//
 		// print_diags(&file, &output, &diags);
-		//
-		// let bytes2 = Scena::write(&iset, &scena)?;
-		// if bytes != bytes2 {
-		// 	std::fs::write(
-		// 		format!("/tmp/scena/{}", file.rsplit_once('/').unwrap().1),
-		// 		&bytes2,
-		// 	)?;
-		// 	let mut scena2 = Scena::read(&iset, &bytes2)?;
-		// 	themelios::scena::code::decompile::decompile(&mut scena2.functions);
-		// 	themelios::scena::code::normalize::normalize(&mut scena2.functions).unwrap();
-		// 	if scena == scena2 {
-		// 		println!("  {file} differs");
-		// 	} else {
-		// 		println!("{:#?}", scena);
-		// 		println!("{:#?}", scena2);
-		// 		println!("  {file} differs significantly!!!!");
-		// 	}
-		// }
+
+		let bytes2 = Script::write(&iset, &scena)?;
+		if bytes != bytes2 {
+			std::fs::write(
+				format!("/tmp/scena/{}", file.rsplit_once('/').unwrap().1),
+				&bytes2,
+			)?;
+			let mut scena2 = Script::read(&iset, &bytes2)?;
+			themelios::scena::code::decompile::decompile(&mut scena2.functions);
+			themelios::scena::code::normalize::normalize(&mut scena2.functions).unwrap();
+			if scena == scena2 {
+				println!("  {file} differs");
+			} else {
+				println!("{:#?}", scena);
+				println!("{:#?}", scena2);
+				println!("  {file} differs significantly!!!!");
+			}
+		}
 	}
 
 	Ok(())

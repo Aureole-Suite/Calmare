@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::iter::Peekable;
 
 use gospel::write::{Label as GLabel, Le as _, Writer};
 use snafu::prelude::*;
@@ -196,11 +197,11 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 	}
 
 	fn args(&mut self, args: &[Arg], iargs: &[iset::Arg]) -> Result<(), WriteError> {
-		let mut iter = args.iter();
+		let mut iter = args.iter().peekable();
 		for iarg in iargs {
 			self.arg(args, iarg, &mut iter)?;
 		}
-		if let Some(arg) = iter.next() {
+		if let Some(arg) = iter.peek() {
 			whatever!("too many arguments: {arg:?}")
 		};
 		Ok(())
@@ -210,7 +211,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 		&mut self,
 		args: &[Arg],
 		iarg: &iset::Arg,
-		iter: &mut impl Iterator<Item = &'c Arg>,
+		iter: &mut Peekable<impl Iterator<Item = &'c Arg>>,
 	) -> Result<(), WriteError> {
 		match iarg {
 			iset::Arg::Int(int, iarg) => {
@@ -263,7 +264,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 		&mut self,
 		args: &[Arg],
 		iarg: &iset::MiscArg,
-		iter: &mut impl Iterator<Item = &'c Arg>,
+		iter: &mut Peekable<impl Iterator<Item = &'c Arg>>,
 	) -> Result<(), WriteError> {
 		let f = &mut self.f;
 		use iset::MiscArg as T;
@@ -288,7 +289,13 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				expect!(Arg::Atom(Atom::String(s) | Atom::TString(TString(s))) in iter, "string");
 				f.string(s)?;
 			}
-			T::Text => text(f, iter)?,
+			T::Text => {
+				if self.iset.game >= Game::Cs1 {
+					text_ed8(f, iter)?
+				} else {
+					text(f, iter)?
+				}
+			}
 
 			T::Pos2 => {
 				expect!(Arg::Atom(Atom::Pos2(p)) in iter, "pos2");
@@ -337,8 +344,8 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 			T::SwitchTable(count, case) => {
 				expect!(Arg::Tuple(cs) in iter, "switch table");
 				self.int(*count, cs.len() as i64)?;
-				let mut iter = cs.iter();
-				while !iter.as_slice().is_empty() {
+				let mut iter = cs.iter().peekable();
+				while iter.peek().is_some() {
 					self.arg(cs, case, &mut iter)?;
 				}
 			}
@@ -429,6 +436,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 			}
 
 			T::FcPartyEquip => {
+				// TODO change these to use peek?
 				let item = int_arg(self.iset, &args[1])?;
 				let int = if matches!(&item, 600..=799) {
 					iset::IntType::u8
@@ -452,11 +460,40 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				expect!(Arg::Atom(Atom::Float(v)) in iter, "float");
 				f.f32(*v);
 			}
-			T::Cs1_13(_) => todo!(),
-			T::Cs1_22 => todo!(),
+			T::Cs1_13(a) => {
+				if iter.peek().is_some() {
+					self.arg(args, a, iter)?;
+				}
+			}
+			T::Cs1_22 => {
+				expect!(Arg::Tuple(bools) in iter, "tuple of bool");
+				for b in bools {
+					let val = int_arg(self.iset, b)?;
+					f.u8(cast(val)?);
+				}
+				expect!(Arg::Tuple(floats) in iter, "tuple of float");
+				for v in floats {
+					if let Arg::Atom(Atom::Float(v)) = v {
+						f.f32(*v);
+					} else if let Ok(v) = int_arg(self.iset, v) {
+						f.u32(cast(v)?);
+					} else {
+						whatever!("expected float or int")
+					}
+				}
+			}
 			T::Cs1_28_34 => todo!(),
-			T::Cs1_36(_, _) => todo!(),
-			T::Cs1_3C(_) => todo!(),
+			T::Cs1_36(x, a) => {
+				let val = int_arg(self.iset, &args[1])?;
+				if x.contains(&(val as u16)) {
+					self.arg(args, a, iter)?;
+				};
+			}
+			T::Cs1_3C(a) => {
+				if iter.peek().is_some() {
+					self.arg(args, a, iter)?;
+				}
+			}
 		}
 		Ok(())
 	}
@@ -491,7 +528,11 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 			}
 			Expr::Atom(A::Var(Var(v))) => {
 				self.f.u8(0x1F);
-				self.f.u16(v);
+				if self.iset.game >= Game::Cs1 {
+					self.f.u8(cast(v)?);
+				} else {
+					self.f.u16(v);
+				}
 			}
 			Expr::Atom(A::Attr(Attr(v))) => {
 				self.f.u8(0x20);
@@ -610,6 +651,82 @@ fn text_page(f: &mut Writer, s: &Text) -> Result<(), WriteError> {
 						}
 						Some('i') => {
 							f.u8(0x1F);
+							f.u16(cast(n)?);
+							break;
+						}
+						Some('x') => {
+							f.u8(cast(n)?);
+							break;
+						}
+						Some('♯') => f.slice(&falcom_sjis::encode_char('♯').unwrap()),
+						None => whatever!("unterminated escape sequence"),
+						Some(_) => whatever!("illegal escape sequence (maybe try `#`?)"),
+					}
+				}
+			}
+
+			char => {
+				if let Some(enc) = falcom_sjis::encode_char(char) {
+					f.slice(&enc)
+				} else {
+					whatever!("cannot encode as shift-jis: {char:?}");
+				}
+			}
+		}
+	}
+	Ok(())
+}
+
+fn text_ed8<'c>(f: &mut Writer, iter: impl Iterator<Item = &'c Arg>) -> Result<(), WriteError> {
+	let mut first = true;
+	for val in iter {
+		expect!(Arg::Atom(Atom::Text(t)) = val, "text");
+		if !std::mem::take(&mut first) {
+			f.u8(0x03); // page break
+		}
+		text_page_ed8(f, t)?;
+	}
+	f.u8(0);
+	Ok(())
+}
+
+fn text_page_ed8(f: &mut Writer, s: &Text) -> Result<(), WriteError> {
+	let mut iter = s.0.chars();
+	while let Some(char) = iter.next() {
+		match char {
+			'\n' => f.u8(0x01),
+			'\t' => f.u8(0x02),
+			'\r' => f.u8(0x0D),
+			'\0'..='\x1F' => whatever!("unprintable character"),
+			'♥' => f.slice(&falcom_sjis::encode_char('㈱').unwrap()),
+
+			'♯' => {
+				let mut n = 0;
+				loop {
+					match iter.next() {
+						Some(v @ ('0'..='9')) => n = n * 10 + v.to_digit(10).unwrap(),
+						Some('A') => {
+							f.u8(0x10);
+							f.u16(cast(n)?);
+							break;
+						}
+						Some('J') => {
+							f.u8(0x11);
+							f.u32(cast(n)?);
+							break;
+						}
+						Some('C') => {
+							f.u8(0x12);
+							f.u32(cast(n)?);
+							break;
+						}
+						Some('D') => {
+							f.u8(0x17);
+							f.u16(cast(n)?);
+							break;
+						}
+						Some('E') => {
+							f.u8(0x18);
 							f.u16(cast(n)?);
 							break;
 						}

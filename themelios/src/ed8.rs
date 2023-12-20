@@ -9,7 +9,7 @@ use gospel::write::{Le as _, Writer};
 use crate::gamedata as iset;
 use crate::scena::code::visit::{Visit, Visitable};
 use crate::scena::code::visit_mut::{VisitMut, VisitableMut};
-use crate::scena::code::{Code, InsnReader};
+use crate::scena::code::{Code, InsnReader, InsnWriter};
 use crate::scena::{ReadError, WriteError};
 use crate::util::{cast, list, ReaderExt as _, WriterExt as _};
 
@@ -35,16 +35,16 @@ pub enum Data {
 pub struct Padding(pub usize);
 
 impl Script {
-	pub fn read<'a>(iset: &iset::InsnSet, data: &'a [u8]) -> Result<Script, ReadError> {
+	pub fn read(iset: &iset::InsnSet, data: &[u8]) -> Result<Script, ReadError> {
 		let mut f = Reader::new(data);
 		let p = std::array::try_from_fn::<_, 7, _>(|_| Ok(f.u32()? as usize)).strict()?;
 		f.check_u32(0xABCDEF00)?;
 		ensure_whatever!(f.pos() == p[0], "p[0]");
 
-		let mut name = <&CStr>::default();
+		let mut script_name = String::default();
 		if p[0] == p[1] {
 			ensure_whatever!(f.pos() == p[1], "p[1]");
-			name = f.cstr()?;
+			script_name = f.string()?;
 		}
 
 		ensure_whatever!(f.pos() == p[2], "p[2]");
@@ -56,15 +56,14 @@ impl Script {
 			.into_iter()
 			.map(|pos| {
 				ensure_whatever!(f.pos() == pos, "funcnamepos");
-				Ok(f.cstr()?.to_string_lossy().into_owned())
+				Ok(f.string()?)
 			})
 			.collect::<Result<_, ReadError>>()?;
 
 		if p[0] != p[1] {
 			ensure_whatever!(f.pos() == p[1], "p[1]");
-			name = f.cstr()?;
+			script_name = f.string()?;
 		}
-		let script_name = name.to_string_lossy().into_owned();
 
 		ensure_whatever!(f.pos() == p[6], "p[6]");
 
@@ -117,8 +116,41 @@ impl Script {
 		})
 	}
 
-	// pub fn write(insn: &iset::InsnSet, scena: &Scena) -> Result<Vec<u8>, WriteError> {
-	// }
+	pub fn write(insn: &iset::InsnSet, script: &Script) -> Result<Vec<u8>, WriteError> {
+		let mut f = Writer::new();
+		let mut head_end = f.ptr32();
+		let mut script_name = f.ptr32();
+		let mut funcpos = f.ptr32();
+		f.u32((script.functions.len() * 4) as u32);
+		let mut funcnamepos = f.ptr32();
+		let mut funcname = Writer::new();
+		f.u32((script.functions.len()) as u32);
+		let mut funcbody = f.ptr32();
+		f.u32(0xABCDEF00);
+
+		script_name.string(&script.name)?;
+		
+		for func in &script.functions {
+			funcnamepos.label16(funcname.here());
+			funcname.string(&func.name)?;
+			funcpos.label32(funcbody.here());
+			match &func.data {
+				Data::Code(code, pad) => {
+					InsnWriter::new(&mut funcbody, insn, None).code(code)?;
+				},
+				Data::Other(data) => funcbody.slice(data),
+			}
+		}
+
+		f.append(head_end);
+		f.append(script_name);
+		f.append(funcpos);
+		f.append(funcnamepos);
+		f.append(funcname);
+		f.append(funcbody);
+
+		Ok(f.finish()?)
+	}
 }
 
 impl Visitable for Function {
@@ -126,6 +158,7 @@ impl Visitable for Function {
 		self.data.accept(f)
 	}
 }
+
 impl VisitableMut for Function {
 	fn accept_mut(&mut self, f: &mut impl VisitMut) {
 		self.data.accept_mut(f)
