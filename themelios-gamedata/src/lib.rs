@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 use serde::{de, Deserialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Game {
 	Fc,
@@ -14,6 +14,7 @@ pub enum Game {
 	Tc,
 	Zero,
 	Azure,
+	Cs1,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -48,6 +49,7 @@ pub fn get(game: Game, variant: Variant) -> InsnSet<'static> {
 		(Game::Zero, _) => Builtin::Zero,
 		(Game::Azure, Variant::Evo) => Builtin::AzureEvo,
 		(Game::Azure, _) => Builtin::Azure,
+		(Game::Cs1, _) => Builtin::Cs1,
 	};
 	InsnSet {
 		variant,
@@ -218,6 +220,14 @@ pub enum MiscArg {
 	FcPartyEquip,
 	ScPartySetSlot,
 	EffPlayPos,
+
+	#[allow(non_camel_case_types)]
+	f32,
+	Cs1_13(Box<Arg>),
+	Cs1_22,
+	Cs1_28_34,
+	Cs1_36(Vec<u16>, Box<Arg>),
+	Cs1_3C(Box<Arg>),
 }
 
 impl<'de> Deserialize<'de> for InsnSetInner {
@@ -284,7 +294,7 @@ impl<'de> Deserialize<'de> for Arg {
 
 			fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
 				let de = de::value::StrDeserializer::new(v);
-				if v.chars().next().is_some_and(|c| c.is_uppercase()) {
+				if v.chars().next().is_some_and(|c| c.is_uppercase()) || v == "f32" {
 					Ok(Arg::Misc(MiscArg::deserialize(de)?))
 				} else {
 					Ok(Arg::Int(IntType::deserialize(de)?, IntArg::Int))
@@ -493,6 +503,7 @@ pub enum Builtin {
 	Azure,
 	ZeroEvo,
 	AzureEvo,
+	Cs1,
 }
 
 impl Builtin {
@@ -518,6 +529,7 @@ impl Builtin {
 			Azure => "azure.yml",
 			ZeroEvo => "zero_evo.yml",
 			AzureEvo => "azure_evo.yml",
+			Cs1 => "cs1.yml",
 		}
 	}
 }
@@ -533,4 +545,5 @@ mod test {
 	#[test] fn azure() { B::Azure.get(); }
 	#[test] fn zero_evo() { B::ZeroEvo.get(); }
 	#[test] fn azure_evo() { B::AzureEvo.get(); }
+	#[test] fn cs1() { B::Cs1.get(); }
 }

@@ -95,6 +95,7 @@ impl std::fmt::Debug for Arg {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Atom {
 	Int(i64), // easier to have a single integer type encompassing everything
+	Float(f32),
 	String(String),
 
 	Time(Time),

@@ -10,3 +10,5 @@ pub mod scena;
 mod util;
 
 pub use themelios_gamedata as gamedata;
+
+pub mod ed8;

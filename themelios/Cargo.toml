@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 themelios-gamedata.workspace = true
-gospel = "0.1.1"
+gospel = "0.3.0"
 strict_result = "1.2.0"
 snafu = { version = "0.7.5", features = ["backtraces-impl-std"] }
 extend = "1.2.0"

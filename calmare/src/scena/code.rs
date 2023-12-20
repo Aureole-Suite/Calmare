@@ -272,6 +272,7 @@ impl Print for Atom {
 	fn print(&self, f: &mut Printer) {
 		match self {
 			Atom::Int(v) => f.val(v),
+			Atom::Float(v) => f.val(v),
 			Atom::String(v) => f.val(v),
 			Atom::Time(v) => f.val(v),
 			Atom::Angle(v) => f.val(v),
@@ -496,6 +497,13 @@ fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> p
 				out.push(f.arg(Atom::RPos3)?)
 			}
 		}
+
+		MA::f32 => todo!(),
+		MA::Cs1_13(_) => todo!(),
+		MA::Cs1_22 => todo!(),
+		MA::Cs1_28_34 => todo!(),
+		MA::Cs1_36(_, _) => todo!(),
+		MA::Cs1_3C(_) => todo!(),
 	}
 	Ok(())
 }

@@ -7,7 +7,7 @@ use crate::gamedata as iset;
 use crate::scena::code::visit::visit_labels;
 use crate::scena::*;
 use crate::types::*;
-use crate::util::cast;
+use crate::util::{cast, list};
 use crate::util::{ReaderExt, ValueError};
 
 #[derive(Debug, Snafu)]
@@ -191,7 +191,13 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 
 			T::String => out.push(Arg::Atom(A::String(f.string()?))),
 			T::TString => out.push(Arg::Atom(A::TString(TString(f.string()?)))),
-			T::Text => text(f, out)?,
+			T::Text => {
+				if self.iset.game >= Game::Cs1 {
+					text_ed8(f, out)?
+				} else {
+					text(f, out)?
+				}
+			}
 
 			T::Pos2 => out.push(Arg::Atom(A::Pos2(f.pos2()?))),
 			T::Pos3 => out.push(Arg::Atom(A::Pos3(f.pos3()?))),
@@ -336,6 +342,38 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 					out.push(Arg::Atom(A::RPos3(pos)))
 				}
 			}
+
+			T::f32 => out.push(Arg::Atom(A::Float(f.f32()?))),
+			T::Cs1_13(a) => {
+				if f.remaining().starts_with(b"\0") {
+					self.arg(out, a)?;
+				}
+			}
+			T::Cs1_22 => {
+				let p = f.pos();
+				for i in [5, 4, 3] {
+					f.seek(p)?;
+					if let Ok((a, b)) = parse_22(f, i) {
+						out.push(a);
+						out.push(b);
+						return Ok(());
+					}
+				}
+				whatever!("invalid 0x22")
+			}
+			T::Cs1_28_34 => whatever!("28_34"),
+			T::Cs1_36(x, a) => {
+				if let Arg::Atom(A::Int(v)) = &out[1] {
+					if x.contains(&(*v as u16)) {
+						self.arg(out, a)?;
+					}
+				}
+			}
+			T::Cs1_3C(a) => {
+				if out[1] == Arg::Atom(A::Int(0xFFFF)) {
+					self.arg(out, a)?;
+				}
+			}
 		}
 		Ok(())
 	}
@@ -362,7 +400,11 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 					0x01 => break,
 					0x1C => Expr::Insn(self.insn()?),
 					0x1E => Expr::Atom(A::Flag(Flag(f.u16()?))),
-					0x1F => Expr::Atom(A::Var(Var(f.u16()?))),
+					0x1F => Expr::Atom(A::Var(Var(if self.iset.game >= Game::Cs1 {
+						f.u8()? as u16
+					} else {
+						f.u16()?
+					}))),
 					0x20 => Expr::Atom(A::Attr(Attr(f.u8()?))),
 					0x21 => Expr::Atom(A::CharAttr(CharAttr(
 						CharId::from_u16(self.iset.game, f.u16()?)?,
@@ -380,6 +422,26 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 			whatever!("invalid expression stack size {}", stack.len())
 		}
 	}
+}
+
+fn parse_22(f: &mut Reader, n: usize) -> Result<(Arg, Arg)> {
+	let a = f.slice(n)?;
+	ensure_whatever!(a.iter().all(|a| [0, 1].contains(a)), "not 0/1");
+	let b = list(4, || {
+		let v = f.f32()?;
+		if v == 0. || (0.001..=1000.).contains(&v.abs()) {
+			Ok(Arg::Atom(Atom::Float(v)))
+		} else if v.to_bits() < 256 {
+			Ok(Arg::Atom(Atom::Int(v.to_bits() as i64)))
+		} else {
+			whatever!("val")
+		}
+	})
+	.strict()?;
+	Ok((
+		Arg::Tuple(a.iter().map(|v| Arg::Atom(Atom::Int(*v as i64))).collect()),
+		Arg::Tuple(b),
+	))
 }
 
 fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Atom> {
@@ -468,6 +530,46 @@ fn text_page(f: &mut Reader) -> Result<(Text, bool)> {
 			0x07 => buf.push_str(&format!("♯{}C", f.u8()?)),
 			0x0D => buf.push('\r'),
 			0x1F => buf.push_str(&format!("♯{}i", f.u16()?)),
+			ch @ (0x00..=0x1F) => buf.push_str(&format!("♯{}x", ch)),
+			ch @ 0x20.. => match falcom_sjis::decode_char_from(ch, || f.u8().ok()) {
+				Ok('♯') => buf.push_str("♯♯"),
+				Ok('㈱') => buf.push('♥'),
+				Ok(ch) => buf.push(ch),
+				Err(enc) => {
+					for ch in enc {
+						buf.push_str(&format!("♯{}x", ch))
+					}
+				}
+			},
+		}
+	};
+	Ok((Text(TString(buf)), more))
+}
+
+fn text_ed8(f: &mut Reader, out: &mut Vec<Arg>) -> Result<()> {
+	loop {
+		let (page, more) = text_page_ed8(f)?;
+		out.push(Arg::Atom(Atom::Text(page)));
+		if !more {
+			break;
+		}
+	}
+	Ok(())
+}
+
+fn text_page_ed8(f: &mut Reader) -> Result<(Text, bool)> {
+	let mut buf = String::new();
+	let more = loop {
+		match f.u8()? {
+			0x00 => break false,
+			0x01 => buf.push('\n'), // newline
+			0x02 => buf.push('\t'), // pause → tab
+			0x03 => break true,     // page break
+			0x10 => buf.push_str(&format!("♯{}A", f.u16()?)),
+			0x11 => buf.push_str(&format!("♯{}J", f.u32()?)),
+			0x12 => buf.push_str(&format!("♯{}C", f.u32()?)),
+			0x17 => buf.push_str(&format!("♯{}D", f.u16()?)),
+			0x18 => buf.push_str(&format!("♯{}E", f.u16()?)),
 			ch @ (0x00..=0x1F) => buf.push_str(&format!("♯{}x", ch)),
 			ch @ 0x20.. => match falcom_sjis::decode_char_from(ch, || f.u8().ok()) {
 				Ok('♯') => buf.push_str("♯♯"),

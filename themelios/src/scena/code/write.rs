@@ -447,6 +447,16 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				};
 				self.arg(args, &iset::Arg::Int(int, iset::IntArg::Int), iter)?;
 			}
+
+			T::f32 => {
+				expect!(Arg::Atom(Atom::Float(v)) in iter, "float");
+				f.f32(*v);
+			}
+			T::Cs1_13(_) => todo!(),
+			T::Cs1_22 => todo!(),
+			T::Cs1_28_34 => todo!(),
+			T::Cs1_36(_, _) => todo!(),
+			T::Cs1_3C(_) => todo!(),
 		}
 		Ok(())
 	}
@@ -553,7 +563,15 @@ fn int_arg(iset: &iset::InsnSet, arg: &Arg) -> Result<i64, WriteError> {
 		A::EventFlags(v) => v as i64,
 		A::CharFlags(v) => v as i64,
 		A::CharFlags2(v) => v as i64,
-		_ => whatever!("expected integer-valued argument"),
+		A::Float(_)
+		| A::String(_)
+		| A::Pos2(_)
+		| A::Pos3(_)
+		| A::RPos3(_)
+		| A::TString(_)
+		| A::Text(_) => {
+			whatever!("expected integer-valued argument")
+		}
 	})
 }
 

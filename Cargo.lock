@@ -202,7 +202,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b845aacdb8ee098d076c86f06272bf2f7f08e223b040f72c750fb3e249269ece"
 dependencies = [
  "anyhow",
- "gospel",
+ "gospel 0.1.1",
  "phf",
  "phf_codegen",
 ]
@@ -227,6 +227,16 @@ name = "gospel"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95806f9b14571299179599809fbea7820ab7541e1dbb0afa7c08fcaef571db39"
+dependencies = [
+ "paste",
+ "thiserror",
+]
+
+[[package]]
+name = "gospel"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c080efbb9f9627dfa68cdf754293f6be09328d1dedb15954405bb52938ca042"
 dependencies = [
  "paste",
  "thiserror",
@@ -646,7 +656,7 @@ dependencies = [
  "extend",
  "falcom-sjis",
  "glam",
- "gospel",
+ "gospel 0.3.0",
  "num_enum",
  "snafu",
  "strict_result",

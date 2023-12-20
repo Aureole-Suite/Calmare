@@ -1,47 +1,48 @@
 use calmare::parse;
-use themelios::scena::ed7::Scena;
-use themelios::scena::insn_set::{self, Game, Variant};
+use themelios::ed8::Script;
+use themelios::gamedata::{self, Game, Variant};
 fn main() -> anyhow::Result<()> {
 	unsafe { compact_debug::enable(true) }
 
-	let iset = insn_set::get(Game::Azure, Variant::Kai);
+	let iset = gamedata::get(Game::Cs1, Variant::Base);
 
 	for file in std::env::args().skip(1) {
 		println!("running {file}");
 		let bytes = std::fs::read(&file)?;
-		let mut scena = Scena::read(&iset, &bytes)?;
+		let mut scena = Script::read(&iset, &bytes)?;
 		themelios::scena::code::decompile::decompile(&mut scena.functions);
 		themelios::scena::code::normalize::normalize(&mut scena.functions).unwrap();
-
-		let output = calmare::print(&scena, &iset);
-		print!("{}", output);
-		let (v, diags) = calmare::parse::<Scena>(&output, &iset);
-		let v = v.unwrap();
-
-		if v != scena {
-			println!("{:#?}", scena);
-			println!("{:#?}", v);
-		}
-
-		print_diags(&file, &output, &diags);
-
-		let bytes2 = Scena::write(&iset, &scena)?;
-		if bytes != bytes2 {
-			std::fs::write(
-				format!("/tmp/scena/{}", file.rsplit_once('/').unwrap().1),
-				&bytes2,
-			)?;
-			let mut scena2 = Scena::read(&iset, &bytes2)?;
-			themelios::scena::code::decompile::decompile(&mut scena2.functions);
-			themelios::scena::code::normalize::normalize(&mut scena2.functions).unwrap();
-			if scena == scena2 {
-				println!("  {file} differs");
-			} else {
-				println!("{:#?}", scena);
-				println!("{:#?}", scena2);
-				println!("  {file} differs significantly!!!!");
-			}
-		}
+		println!("{:#?}", scena);
+		//
+		// let output = calmare::print(&scena, &iset);
+		// print!("{}", output);
+		// let (v, diags) = calmare::parse::<Scena>(&output, &iset);
+		// let v = v.unwrap();
+		//
+		// if v != scena {
+		// 	println!("{:#?}", scena);
+		// 	println!("{:#?}", v);
+		// }
+		//
+		// print_diags(&file, &output, &diags);
+		//
+		// let bytes2 = Scena::write(&iset, &scena)?;
+		// if bytes != bytes2 {
+		// 	std::fs::write(
+		// 		format!("/tmp/scena/{}", file.rsplit_once('/').unwrap().1),
+		// 		&bytes2,
+		// 	)?;
+		// 	let mut scena2 = Scena::read(&iset, &bytes2)?;
+		// 	themelios::scena::code::decompile::decompile(&mut scena2.functions);
+		// 	themelios::scena::code::normalize::normalize(&mut scena2.functions).unwrap();
+		// 	if scena == scena2 {
+		// 		println!("  {file} differs");
+		// 	} else {
+		// 		println!("{:#?}", scena);
+		// 		println!("{:#?}", scena2);
+		// 		println!("  {file} differs significantly!!!!");
+		// 	}
+		// }
 	}
 
 	Ok(())
