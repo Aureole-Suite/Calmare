@@ -39,11 +39,22 @@ pub struct Insn {
 
 impl std::fmt::Debug for Insn {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		let mut f = f.debug_tuple(&self.name);
-		for arg in &self.args {
-			f.field(arg);
+		if let ("if", [cond, a @ Arg::Code(_), b @ Arg::Code(c)]) = self.parts() {
+			f.debug_tuple(&self.name).field(cond).field(a).finish()?;
+			write!(f, " ")?;
+			if c.len() == 1 && c[0].name == "if" {
+				write!(f, "else ")?;
+				c[0].fmt(f)
+			} else {
+				f.debug_tuple("else").field(b).finish()
+			}
+		} else {
+			let mut f = f.debug_tuple(&self.name);
+			for arg in &self.args {
+				f.field(arg);
+			}
+			f.finish()
 		}
-		f.finish()
 	}
 }
 
@@ -60,13 +71,25 @@ impl Insn {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Arg {
 	Label(Label),
 	Tuple(Vec<Arg>),
 	Code(Code),
 	Expr(Box<Expr>),
 	Atom(Atom),
+}
+
+impl std::fmt::Debug for Arg {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::Label(v) => v.fmt(f),
+			Self::Tuple(v) => v.fmt(f),
+			Self::Code(v) => v.fmt(f),
+			Self::Expr(v) => f.debug_tuple("Expr").field(v).finish(),
+			Self::Atom(v) => v.fmt(f),
+		}
+	}
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -178,7 +201,7 @@ pub enum AssOp {
 	OrAss = 0x1B,  // |=
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Expr {
 	Atom(Atom),
 	Bin(BinOp, Box<Expr>, Box<Expr>),
@@ -186,4 +209,33 @@ pub enum Expr {
 	Assign(AssOp, Box<Expr>),
 	Insn(Insn),
 	Rand, // random 15-bit number
+}
+
+impl std::fmt::Debug for Expr {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::Atom(v) => v.fmt(f),
+			Self::Bin(op, a, b) => {
+				let mut tup = f.debug_tuple(&format!("{op:?}"));
+				fn rec(tup: &mut std::fmt::DebugTuple, op: BinOp, a: &Expr) {
+					match a {
+						Expr::Bin(o, a, b) if *o == op => {
+							rec(tup, op, a);
+							tup.field(b);
+						}
+						_ => {
+							tup.field(a);
+						}
+					}
+				}
+				rec(&mut tup, *op, a);
+				tup.field(b);
+				tup.finish()
+			}
+			Self::Unary(op, a) => f.debug_tuple(&format!("{op:?}")).field(a).finish(),
+			Self::Assign(op, a) => f.debug_tuple(&format!("{op:?}")).field(a).finish(),
+			Self::Insn(v) => v.fmt(f),
+			Self::Rand => write!(f, "Rand"),
+		}
+	}
 }
