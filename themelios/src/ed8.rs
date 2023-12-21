@@ -4,7 +4,7 @@ use snafu::prelude::*;
 use strict_result::Strict as _;
 
 use gospel::read::{Le as _, Reader};
-use gospel::write::{Le as _, Writer};
+use gospel::write::{Le as _, Writer, Label};
 
 use crate::gamedata as iset;
 use crate::scena::code::visit::{Visit, Visitable};
@@ -77,7 +77,7 @@ impl Script {
 		let mut iter = funcname.into_iter().zip(start.zip(end));
 		while let Some((fname, (pos, end))) = iter.next() {
 			ensure_whatever!(f.pos() <= pos, "funcpos");
-			let pad = pos - f.pos();
+			let pad = (pos - f.pos()) / 4;
 			while f.pos() < pos {
 				f.check_u8(0)?;
 			}
@@ -136,16 +136,19 @@ impl Script {
 		let mut funcnamepos = f.ptr32();
 		let mut funcname = Writer::new();
 		f.u32((script.functions.len()) as u32);
-		let mut funcbody = f.ptr32();
+		let funcnameend = Label::new();
+		f.label32(funcnameend);
 		f.u32(0xABCDEF00);
 
 		script_name.string(&script.name)?;
 
+		let mut funcbody = Writer::new();
 		for func in &script.functions {
 			funcnamepos.label16(funcname.here());
 			funcname.string(&func.name)?;
+			funcbody.align(4);
 			for _ in 0..func.pad {
-				funcbody.u8(0);
+				funcbody.u32(0);
 			}
 			funcpos.label32(funcbody.here());
 			match &func.data {
@@ -153,12 +156,14 @@ impl Script {
 				Data::Other(data) => funcbody.slice(data),
 			}
 		}
+		funcname.place(funcnameend);
 
 		f.append(head_end);
 		f.append(script_name);
 		f.append(funcpos);
 		f.append(funcnamepos);
 		f.append(funcname);
+		f.align(4);
 		f.append(funcbody);
 
 		Ok(f.finish()?)
