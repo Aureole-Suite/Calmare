@@ -3,7 +3,7 @@ address_size: u32
 _def:
  - &CharId {u16: CharId}
 insns:
-- [_nil]
+- [_nil] # hack for SenPatcher'd messages
 - [Return]
 - [Call, u8, String]
 - [_goto, Label]
@@ -12,7 +12,7 @@ insns:
 - [_switch, Expr, !SwitchTable [u8, [u16, Label]], Label]
 - [_07, u32]
 - [Attr, {u8: Attr}, Expr] # Probably, but not certain
-- [_09]
+- [_nop] # used in large amounts by SenPatcher, but I don't think it's the only
 - [Var, {u8: Var}, Expr]
 - []
 - [FlagSet, {u16: Flag}]

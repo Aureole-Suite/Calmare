@@ -24,7 +24,7 @@ pub enum WriteError {
 }
 
 pub struct InsnWriter<'iset, 'write> {
-	f: &'write mut Writer,
+	pub f: &'write mut Writer,
 	iset: &'iset iset::InsnSet<'iset>,
 	labels: BTreeMap<Label, GLabel>,
 	label_no: usize,

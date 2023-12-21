@@ -4,7 +4,7 @@ use snafu::prelude::*;
 use strict_result::Strict as _;
 
 use gospel::read::{Le as _, Reader};
-use gospel::write::{Le as _, Writer, Label};
+use gospel::write::{Label, Le as _, Writer};
 
 use crate::gamedata as iset;
 use crate::scena::code::visit::{Visit, Visitable};
@@ -108,7 +108,7 @@ impl Script {
 				_ => {
 					let mut ir = InsnReader::new(f, iset);
 					let code = ir.code_approx(end, |f| {
-						f.pos() >= end || f.remaining().starts_with(b"\0")
+						f.pos() >= end || f.data()[f.pos()..end].iter().all(|a| *a == 0)
 					})?;
 					f = ir.into_inner();
 					Data::Code(code)
@@ -143,17 +143,18 @@ impl Script {
 		script_name.string(&script.name)?;
 
 		let mut funcbody = Writer::new();
+		let mut iw = InsnWriter::new(&mut funcbody, insn, None);
 		for func in &script.functions {
 			funcnamepos.label16(funcname.here());
 			funcname.string(&func.name)?;
-			funcbody.align(4);
+			iw.f.align(4);
 			for _ in 0..func.pad {
-				funcbody.u32(0);
+				iw.f.u32(0);
 			}
-			funcpos.label32(funcbody.here());
+			funcpos.label32(iw.f.here());
 			match &func.data {
-				Data::Code(code) => InsnWriter::new(&mut funcbody, insn, None).code(code)?,
-				Data::Other(data) => funcbody.slice(data),
+				Data::Code(code) => iw.code(code)?,
+				Data::Other(data) => iw.f.slice(data),
 			}
 		}
 		funcname.place(funcnameend);

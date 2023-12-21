@@ -70,11 +70,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 		let mut extent = self.pos();
 		while self.pos() < end {
 			let i = self.read_insn(&mut insns)?;
-			if i.name == "Return"
-				&& self.pos() > extent
-				&& (self.f.clone().check_u8(0).is_ok() || valid_end(&self.f))
-			// TODO This null check is needed for a9000, and does not roundtrip. Eugh.
-			{
+			if i.name == "Return" && self.pos() > extent && valid_end(&self.f) {
 				break;
 			}
 

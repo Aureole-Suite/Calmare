@@ -132,7 +132,10 @@ impl Scena {
 			functions.push(if let Some(end) = funcpos.peek().copied() {
 				ir.code(end)?
 			} else {
-				ir.code_approx(strings_start, |f| (strings_start - f.pos()) % 8 == 0)?
+				ir.code_approx(strings_start, |f| {
+					(strings_start - f.pos()) % 8 == 0 || f.clone().check_u8(0).is_ok()
+					// This second check is needed for a9000, and does not roundtrip.
+				})?
 			});
 		}
 		crate::scena::code::normalize::normalize(&mut functions).unwrap();
