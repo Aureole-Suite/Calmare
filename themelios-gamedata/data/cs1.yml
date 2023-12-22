@@ -46,7 +46,7 @@ insns:
 - [_1E, String, String]
 - !match
   - [_1F_0, u8, u16, u32]
-  - [_1F_1, u8, String, u16]
+  - [_1F_1, u8, TString, u16]
   - [_1F_2, u8, u8, i16, i16]
   - [_1F_3, u8]
   - [_1F_4, u8, u8]
@@ -57,7 +57,7 @@ insns:
 - !match
   - [_21_0, u32, u8, u8]
   - [_21_1, u32, u8, u8, u16, u16, u16, u16]
-- [_22, u16, String, !Cs1_22, ]
+- [_22, *CharId, String, !Cs1_22, ]
 - [_23, u16, u32]
 - [_24, u8, u16, String, String]
 - [_25, u8, u16, String, String, u32, u32, u32, u32, u32, u32, f32, f32, f32]
@@ -196,15 +196,15 @@ insns:
   - [_30_06, u16]
   - [_30_07]
 - !match
-  - [_31_00, u16, f32, u16, u32, u32, u16, u16, u32, u32, u32, u32, String]
-  - [_31_01, u16, u16]
-  - [_31_02, u16]
-  - [_31_03, u16, f32, u16]
+  - [_31_00, *CharId, f32, u16, u32, f32, u16, u16, u32, u32, u32, u32, String]
+  - [_31_01, *CharId, u16]
+  - [_31_02, *CharId]
+  - [_31_03, *CharId, f32, u16]
   - !skip 46
-  - [_31_32, u16, f32, u16, u32, u32, u16, u16, u32, u32, u32, u32, String]
-  - [_31_33, u16, u16]
-  - [_31_34, u16]
-  - [_31_35, u16, f32, u16]
+  - [_31_32, *CharId, f32, u16, u32, u32, u16, u16, u32, u32, u32, u32, String]
+  - [_31_33, *CharId, u16]
+  - [_31_34, *CharId]
+  - [_31_35, *CharId, f32, u16]
   - []
   - [_31_37, u16]
   - [_31_38, u16]
@@ -222,8 +222,8 @@ insns:
   - []
   - []
   - [_32_02, u16, u8, u8, u8, u8] # or is this the same Strings as below?
-  - [_32_03, u16, String, String, String, String]
-  - [_32_04, u16, String]
+  - [_32_03, *CharId, String, String, String, String]
+  - [_32_04, *CharId, String]
   - !skip 5
   - [_32_0A, u16]
   - [_32_0B, u16]
@@ -255,7 +255,7 @@ insns:
   - [_39_FE, u16]
   - [_39_FF, u16]
 - [_3A, u16, u8, f32, u16]
-- [_3B, u16, f32, f32, f32, u16, u16]
+- [_3B, *CharId, f32, f32, f32, u16, u16]
 - [_3C, u16, u16, u16, !Cs1_3C [f32, f32, f32]]
 - !match
   - [_3D_00, String, u16]
@@ -382,7 +382,7 @@ insns:
   - [_5E_10, u16, u16, u8]
   - [_5E_11, u16] # getter
   - [_5E_12, u16, u16] # getter
-  - [_5E_13 u16, u16]
+  - [_5E_13, u16, u16] # getter
 - !match
   head: [u16]
   cases:
@@ -391,7 +391,7 @@ insns:
   - [_5F_02, f32, f32, f32]
   - [_5F_03, f32, u8, u16]
 - [_60, u8, u16, u16, f32, f32, f32]
-- [_61, u16, f32]
+- [_61, *CharId, f32]
 - [_62, String, u32, u16]
 - [_63, u16, f32, f32, f32, f32, u8]
 - [_64, u8, u16, u32]
@@ -416,7 +416,7 @@ insns:
   - [QuestFlagsUnset, {u8: QuestFlags}]
   - [QuestFlagsSet, {u8: QuestFlags}]
   - [Quest_5]
-  - [Quest_6, u16]
+  - [QuestBonusBp, u16]
 - !match
   head: [{u16: QuestId}]
   cases:
