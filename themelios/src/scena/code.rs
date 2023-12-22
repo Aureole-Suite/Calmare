@@ -90,7 +90,7 @@ impl std::fmt::Debug for Arg {
 					t.field(v);
 				}
 				t.finish()
-			},
+			}
 			Self::Code(v) => v.fmt(f),
 			Self::Expr(v) => f.debug_tuple("Expr").field(v).finish(),
 			Self::Atom(v) => v.fmt(f),
