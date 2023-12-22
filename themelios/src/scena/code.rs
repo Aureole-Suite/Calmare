@@ -84,7 +84,13 @@ impl std::fmt::Debug for Arg {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
 			Self::Label(v) => v.fmt(f),
-			Self::Tuple(v) => v.fmt(f),
+			Self::Tuple(v) => {
+				let mut t = f.debug_tuple("");
+				for v in v {
+					t.field(v);
+				}
+				t.finish()
+			},
 			Self::Code(v) => v.fmt(f),
 			Self::Expr(v) => f.debug_tuple("Expr").field(v).finish(),
 			Self::Atom(v) => v.fmt(f),
