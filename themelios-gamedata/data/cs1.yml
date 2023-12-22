@@ -5,7 +5,7 @@ _def:
 insns:
 - [_nil] # hack for SenPatcher'd messages
 - [Return]
-- [Call, u8, String]
+- [Call, [u8, String]]
 - [_goto, Label]
 - [_04, u8, String]
 - [_if, Expr, Label]
@@ -27,8 +27,8 @@ insns:
     f32, f32, f32, f32, f32, f32, f32,
     String, String, i32, u8, f32, !Cs1_13 [f32, u16],
   ]
-- [_14, u16, u8, u8, String]
-- [_15, u16, u8]
+- [ForkFunc, *CharId, {u8: ForkId}, [u8, String]]
+- [ForkWait, *CharId, {u8: ForkId}]
 - [_16, u8]
 - [_17, u8]
 - [TextMessage, *CharId, Text]
@@ -58,8 +58,8 @@ insns:
   - [_21_0, u32, u8, u8]
   - [_21_1, u32, u8, u8, u16, u16, u16, u16]
 - [_22, *CharId, String, !Cs1_22, ]
-- [_23, u16, u32]
-- [_24, u8, u16, String, String]
+- [_23, *CharId, u32]
+- [_24, u8, *CharId, String, String]
 - [_25, u8, u16, String, String, u32, u32, u32, u32, u32, u32, f32, f32, f32]
 - [_26, u8, String]
 - !match
@@ -134,7 +134,7 @@ insns:
   - [_28_65, u16]
   - [_28_66, u16]
   - !skip 4
-  - [_28_6B, u16]
+  - [_28_6B, *CharId]
   - [_28_6C, u16]
   - []
   - [_28_6E, u16, u16, u32, u32, u32] # ???
@@ -223,7 +223,7 @@ insns:
   - []
   - [_32_02, u16, u8, u8, u8, u8] # or is this the same Strings as below?
   - [_32_03, *CharId, String, String, String, String]
-  - [_32_04, *CharId, String]
+  - [_32_04, *CharId, String, u16, u8]
   - !skip 5
   - [_32_0A, u16]
   - [_32_0B, u16]
@@ -231,7 +231,7 @@ insns:
 - [_34, u16, u16, u16, u16, u8]
 - [_35, u16]
 - [_36, u16, u16, f32, f32, f32, f32, !Cs1_36 [[65026, 65027], f32], u8, u8, u8]
-- [_37, u16, u8]
+- [_37, *CharId, u8]
 - [_38, u16, u32, u32, u32, u32, u32]
 - !match
   - [_39_00, u16, f32]
@@ -254,15 +254,15 @@ insns:
   - !skip 148
   - [_39_FE, u16]
   - [_39_FF, u16]
-- [_3A, u16, u8, f32, u16]
+- [_3A, *CharId, u8, f32, u16]
 - [_3B, *CharId, f32, f32, f32, u16, u16]
-- [_3C, u16, u16, u16, !Cs1_3C [f32, f32, f32]]
+- [_3C, *CharId, u16, u16, !Cs1_3C [f32, f32, f32]]
 - !match
   - [_3D_00, String, u16]
   - [_3D_01, String, u16]
 - [_3E, u8, i16, u16, u16]
 - !match
-  - [_3F_0, u16]
+  - [_3F_0, *CharId]
   - [_3F_1, u16]
   - [_3F_2]
   - [_3F_3]
@@ -384,7 +384,7 @@ insns:
   - [_5E_12, u16, u16] # getter
   - [_5E_13, u16, u16] # getter
 - !match
-  head: [u16]
+  head: [*CharId]
   cases:
   - [_5F_00, f32, u8, u16]
   - [_5F_01]
