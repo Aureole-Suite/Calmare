@@ -1,6 +1,8 @@
 #![feature(array_try_from_fn)]
 #![feature(lazy_cell)]
 #![feature(is_sorted)]
+#![feature(decl_macro)]
+#![feature(error_generic_member_access)]
 
 pub use glam;
 

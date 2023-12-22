@@ -1,30 +1,36 @@
-use crate::types::{Pos2, Pos3};
+use std::backtrace::Backtrace;
+
 use gospel::read::{Le as _, Reader};
 use gospel::write::{Le as _, Writer};
-use snafu::prelude::*;
 use strict_result::{Strict, StrictResult};
 
-#[derive(Debug, Snafu)]
-#[snafu(display("Invalid SJIS string {text:?}"))]
+use crate::types::{Pos2, Pos3};
+
+#[derive(Debug, thiserror::Error)]
+#[error("Invalid SJIS string {text:?}")]
 pub struct DecodeError {
 	text: String,
+	backtrace: Backtrace,
 }
 
 pub fn decode(bytes: &[u8]) -> Result<String, DecodeError> {
 	falcom_sjis::decode(bytes).map_err(|_| DecodeError {
 		text: falcom_sjis::decode_lossy(bytes),
+		backtrace: Backtrace::capture(),
 	})
 }
 
-#[derive(Debug, Snafu)]
-#[snafu(display("Cannot encode {text:?} as SJIS"))]
+#[derive(Debug, thiserror::Error)]
+#[error("Invalid SJIS string {text:?}")]
 pub struct EncodeError {
 	text: String,
+	backtrace: Backtrace,
 }
 
 pub fn encode(text: &str) -> Result<Vec<u8>, EncodeError> {
 	falcom_sjis::encode(text).map_err(|_| EncodeError {
 		text: text.to_owned(),
+		backtrace: Backtrace::capture(),
 	})
 }
 
@@ -126,8 +132,8 @@ pub fn list<V, E>(n: usize, mut f: impl FnMut() -> Result<V, E>) -> Result<Vec<V
 	Ok(a)
 }
 
-#[derive(Debug, Snafu)]
-#[snafu(display("cannot represent {value} as {type_}"))]
+#[derive(Debug, thiserror::Error)]
+#[error("cannot represent {value} as {type_}")]
 pub struct ValueError {
 	type_: &'static str,
 	value: String,
@@ -150,4 +156,21 @@ where
 	a.clone()
 		.try_into()
 		.map_err(|_| ValueError::new(std::any::type_name::<B>(), format!("{:?}", a)))
+}
+
+pub macro bail {
+	($fmt:literal $(, $e:expr)* $(,)?) => { bail!(format!($fmt$(, $e)*)) },
+	($e:expr) => { { Err($e)?; loop {} } },
+}
+
+pub macro ensure {
+	($e:expr) => { ensure!($e, stringify!($e).to_owned()) },
+	($e:expr, $($t:tt)*) => { if !($e) { bail!($($t)*) } },
+}
+
+#[extend::ext]
+pub impl<T> Option<T> {
+	fn or_whatever(self, v: impl ToString) -> Result<T, String> {
+		self.ok_or_else(|| v.to_string())
+	}
 }

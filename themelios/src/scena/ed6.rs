@@ -1,13 +1,12 @@
 use gospel::read::{Le as _, Reader};
 use gospel::write::{Le as _, Writer};
-use snafu::prelude::*;
 use strict_result::Strict;
 
 use crate::gamedata as iset;
 use crate::scena::code::{Code, InsnReader, InsnWriter};
 use crate::scena::FuncId;
 use crate::types::*;
-use crate::util::{cast, list, ReaderExt as _, WriterExt as _};
+use crate::util::{cast, ensure, list, ReaderExt as _, WriterExt as _};
 
 use super::{CharFlags, ChipId, EntryFlags, EventFlags, LookPointFlags};
 use super::{ReadError, WriteError};
@@ -65,7 +64,7 @@ impl Scena {
 		let code_end = f.clone().u16()? as usize;
 		let func_table = (f.ptr16()?, f.u16()? / 2);
 
-		ensure_whatever!(strings.string()? == "@FileName", "expected @FileName");
+		ensure!(strings.string()? == "@FileName");
 
 		let (mut g, n) = ch;
 		let ch = list(n as usize, || Ok(FileId(g.u32()?))).strict()?;
@@ -87,7 +86,7 @@ impl Scena {
 
 		let (mut g, n) = func_table;
 		let func_table = list(n as usize, || Ok(g.u16()? as usize)).strict()?;
-		ensure_whatever!(
+		ensure!(
 			func_table.is_empty() || func_table[0] == code_start,
 			"Unexpected func table: {func_table:X?} does not start with {code_start:X?}"
 		);
@@ -96,13 +95,13 @@ impl Scena {
 		while f.pos() < head_end {
 			entries.push(Entry::read(&mut f)?);
 		}
-		ensure_whatever!(f.pos() == head_end, "overshot with entries");
+		ensure!(f.pos() == head_end, "overshot with entries");
 
 		let mut functions = Vec::with_capacity(func_table.len());
 		let mut funcpos = func_table.iter().copied().peekable();
 		let mut ir = InsnReader::new(f.clone().at(code_start)?, insn);
 		while let Some(start) = funcpos.next() {
-			ensure_whatever!(ir.pos() == start, "weird function start");
+			ensure!(ir.pos() == start, "weird function start");
 			functions.push(ir.code(funcpos.peek().copied().unwrap_or(code_end))?);
 		}
 		crate::scena::code::normalize::normalize(&mut functions).unwrap();

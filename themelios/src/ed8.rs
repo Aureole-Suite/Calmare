@@ -1,6 +1,3 @@
-use std::ffi::CStr;
-
-use snafu::prelude::*;
 use strict_result::Strict as _;
 
 use gospel::read::{Le as _, Reader};
@@ -11,7 +8,7 @@ use crate::scena::code::visit::{Visit, Visitable};
 use crate::scena::code::visit_mut::{VisitMut, VisitableMut};
 use crate::scena::code::{Code, InsnReader, InsnWriter};
 use crate::scena::{ReadError, WriteError};
-use crate::util::{cast, list, ReaderExt as _, WriterExt as _};
+use crate::util::{bail, ensure, list, ReaderExt as _, WriterExt as _};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Script {
@@ -40,35 +37,35 @@ impl Script {
 		let mut f = Reader::new(data);
 		let p = std::array::try_from_fn::<_, 7, _>(|_| Ok(f.u32()? as usize)).strict()?;
 		f.check_u32(0xABCDEF00)?;
-		ensure_whatever!(f.pos() == p[0], "p[0]");
+		ensure!(f.pos() == p[0]);
 
 		let mut script_name = String::default();
 		if p[0] == p[1] {
-			ensure_whatever!(f.pos() == p[1], "p[1]");
+			ensure!(f.pos() == p[1]);
 			script_name = f.string()?;
 		}
 
-		ensure_whatever!(f.pos() == p[2], "p[2]");
+		ensure!(f.pos() == p[2]);
 		let funcpos = list(p[3] / 4, || Ok(f.u32()? as usize)).strict()?;
 
-		ensure_whatever!(f.pos() == p[4], "p[4]");
+		ensure!(f.pos() == p[4]);
 		let funcname: Vec<_> = list(p[5], || Ok(f.u16()? as usize))
 			.strict()?
 			.into_iter()
 			.map(|pos| {
-				ensure_whatever!(f.pos() == pos, "funcnamepos");
+				ensure!(f.pos() == pos);
 				Ok(f.string()?)
 			})
 			.collect::<Result<_, ReadError>>()?;
 
 		if p[0] != p[1] {
-			ensure_whatever!(f.pos() == p[1], "p[1]");
+			ensure!(f.pos() == p[1]);
 			script_name = f.string()?;
 		}
 
-		ensure_whatever!(f.pos() == p[6], "p[6]");
+		ensure!(f.pos() == p[6]);
 
-		ensure_whatever!(funcpos.len() == funcname.len(), "functbl");
+		ensure!(funcpos.len() == funcname.len());
 
 		let mut functions = Vec::with_capacity(funcname.len());
 
@@ -76,7 +73,7 @@ impl Script {
 		let end = funcpos.iter().skip(1).copied().chain([f.len()]);
 		let mut iter = funcname.into_iter().zip(start.zip(end));
 		while let Some((fname, (pos, end))) = iter.next() {
-			ensure_whatever!(f.pos() <= pos, "funcpos");
+			ensure!(f.pos() <= pos);
 			let pad = (pos - f.pos()) / 4;
 			while f.pos() < pos {
 				f.check_u8(0)?;
@@ -86,9 +83,9 @@ impl Script {
 				_ if script_name == "face" => todo!(),
 				_ if script_name.ends_with("_menu") || script_name.ends_with("_menu_v") => todo!(),
 				_ if fname.starts_with("BookData") => {
-					ensure_whatever!(fname.ends_with("_99"), "invalid book name");
+					ensure!(fname.ends_with("_99"));
 					let Ok(n) = fname[8..fname.len() - 3].parse::<u16>() else {
-						whatever!("invalid book name");
+						bail!("invalid book name");
 					};
 					iter.next(); // Silence clippy for now
 					todo!()

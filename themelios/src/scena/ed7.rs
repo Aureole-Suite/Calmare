@@ -3,7 +3,6 @@ use std::collections::BTreeMap;
 use glam::{Mat4, Vec3};
 use gospel::read::{Le as _, Reader};
 use gospel::write::{Le as _, Writer};
-use snafu::prelude::*;
 use strict_result::Strict;
 
 use crate::gamedata as iset;
@@ -13,7 +12,7 @@ use crate::scena::code::{Atom, Code, InsnReader, InsnWriter};
 use crate::scena::{CharFlags, ChipId, EntryFlags, FuncId};
 use crate::scena::{ReadError, WriteError};
 use crate::types::*;
-use crate::util::{cast, list, ReaderExt as _, WriterExt as _};
+use crate::util::{cast, ensure, list, OptionTExt as _, ReaderExt as _, WriterExt as _};
 
 use self::battle::{BattleRead, BattleWrite};
 
@@ -128,7 +127,7 @@ impl Scena {
 		let mut ir = InsnReader::new(f.clone().at(func_table[0])?, iset);
 
 		while let Some(start) = funcpos.next() {
-			ensure_whatever!(ir.pos() == start, "weird function start");
+			ensure!(ir.pos() == start, "weird function start");
 			functions.push(if let Some(end) = funcpos.peek().copied() {
 				ir.code(end)?
 			} else {
@@ -228,10 +227,7 @@ impl Scena {
 		f.u8(cast(scena.look_points.len())?);
 		f.u8(cast(scena.item_use.0)?);
 		f.u8(cast(scena.item_use.1)?);
-		ensure_whatever!(
-			scena.item_use.0 == scena.unknown_function.0,
-			"item_use and unknown_function mismatch"
-		);
+		ensure!(scena.item_use.0 == scena.unknown_function.0);
 		f.u8(cast(scena.unknown_function.1)?);
 
 		let mut entries = Writer::new();
@@ -442,8 +438,7 @@ impl Monster {
 		f.label16(
 			*battle_pos
 				.get(self.battle.0 as usize)
-				.whatever_context("battle id out of bounds")
-				.strict()?,
+				.or_whatever("battle id out of bounds")?,
 		);
 		f.u16(self.flag.0);
 		f.u16(self.chip.0);
@@ -617,7 +612,7 @@ impl Animation {
 		let speed = Time(f.u16()? as u32);
 		f.check_u8(0)?;
 		let count = f.u8()? as usize;
-		ensure_whatever!(count <= 8, "too many frames: {count}");
+		ensure!(count <= 8, "too many frames: {count}");
 		let frames = f.array::<8>()?;
 		let frames = frames[..count].to_owned();
 		Ok(Animation { speed, frames })
@@ -625,7 +620,7 @@ impl Animation {
 
 	fn write(&self, f: &mut Writer) -> Result<(), WriteError> {
 		let count = self.frames.len();
-		ensure_whatever!(count <= 8, "too many frames: {count}");
+		ensure!(count <= 8, "too many frames: {count}");
 		let mut frames = [0; 8];
 		frames[..count].copy_from_slice(&self.frames);
 		f.u16(cast(self.speed.0)?);

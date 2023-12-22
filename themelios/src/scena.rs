@@ -1,4 +1,4 @@
-use snafu::prelude::*;
+use std::backtrace::Backtrace;
 
 use crate::{gamedata::Game, types::NameId, util::ValueError};
 
@@ -6,30 +6,62 @@ pub mod code;
 pub mod ed6;
 pub mod ed7;
 
-#[derive(Debug, Snafu)]
+#[derive(Debug, thiserror::Error)]
 pub enum ReadError {
-	#[snafu(context(false))]
-	Gospel { source: gospel::read::Error },
-	#[snafu(context(false))]
-	Decode { source: crate::util::DecodeError },
-	#[snafu(context(false))]
-	Code { source: code::ReadError },
-	#[snafu(whatever, display("{message}"))]
-	Whatever { message: String },
+	#[error("{source}")]
+	Gospel {
+		#[from]
+		source: gospel::read::Error,
+		backtrace: Backtrace,
+	},
+	#[error(transparent)]
+	Decode(#[from] crate::util::DecodeError),
+	#[error(transparent)]
+	Code(#[from] code::ReadError),
+	#[error("{message}")]
+	Whatever {
+		message: String,
+		backtrace: Backtrace,
+	},
 }
 
-#[derive(Debug, Snafu)]
+#[derive(Debug, thiserror::Error)]
 pub enum WriteError {
-	#[snafu(context(false))]
-	Gospel { source: gospel::write::Error },
-	#[snafu(context(false))]
-	Value { source: ValueError },
-	#[snafu(context(false))]
-	Code { source: code::WriteError },
-	#[snafu(context(false))]
-	Encode { source: crate::util::EncodeError },
-	#[snafu(whatever, display("{message}"))]
-	Whatever { message: String },
+	#[error("{source}")]
+	Gospel {
+		#[from]
+		source: gospel::write::Error,
+		backtrace: Backtrace,
+	},
+	#[error(transparent)]
+	Value(#[from] ValueError),
+	#[error(transparent)]
+	Code(#[from] code::WriteError),
+	#[error(transparent)]
+	Encode(#[from] crate::util::EncodeError),
+	#[error("{message}")]
+	Whatever {
+		message: String,
+		backtrace: Backtrace,
+	},
+}
+
+impl From<String> for ReadError {
+	fn from(message: String) -> Self {
+		Self::Whatever {
+			message,
+			backtrace: Backtrace::capture(),
+		}
+	}
+}
+
+impl From<String> for WriteError {
+	fn from(message: String) -> Self {
+		Self::Whatever {
+			message,
+			backtrace: Backtrace::capture(),
+		}
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

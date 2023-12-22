@@ -1,5 +1,6 @@
+use std::backtrace::Backtrace;
+
 use gospel::read::{Le as _, Reader};
-use snafu::prelude::*;
 use strict_result::Strict as _;
 
 use super::{Arg, Atom, Code, Expr, Insn};
@@ -7,32 +8,50 @@ use crate::gamedata as iset;
 use crate::scena::code::visit::visit_labels;
 use crate::scena::*;
 use crate::types::*;
+use crate::util::OptionTExt as _;
+use crate::util::{bail, ensure};
 use crate::util::{cast, list};
 use crate::util::{ReaderExt, ValueError};
 
-#[derive(Debug, Snafu)]
+#[derive(Debug, thiserror::Error)]
 pub enum ReadError {
-	#[snafu(context(false))]
-	Gospel { source: gospel::read::Error },
-	#[snafu(context(false))]
-	Decode { source: crate::util::DecodeError },
-	#[snafu(context(false))]
-	Value { source: crate::util::ValueError },
-	#[snafu(whatever, display("{message}"))]
-	Whatever { message: String },
-	#[snafu(display("error reading instruction at {pos}, after {context:?}"))]
+	#[error("{source}")]
+	Gospel {
+		#[from]
+		source: gospel::read::Error,
+		backtrace: Backtrace,
+	},
+	#[error(transparent)]
+	Decode(#[from] crate::util::DecodeError),
+	#[error(transparent)]
+	Value(#[from] crate::util::ValueError),
+	#[error("{message}")]
+	Whatever {
+		message: String,
+		backtrace: Backtrace,
+	},
+	#[error("error reading instruction at {pos}, after {context:?}")]
 	Insn {
 		context: Vec<Insn>,
 		pos: usize,
 		source: Box<ReadError>,
 	},
-	#[snafu(display("failed to read argument {pos} ({arg:?}) of {name}"))]
+	#[error("failed to read argument {pos} ({arg:?}) of {name}")]
 	Arg {
 		name: String,
 		pos: usize,
 		arg: iset::Arg,
 		source: Box<ReadError>,
 	},
+}
+
+impl From<String> for ReadError {
+	fn from(message: String) -> Self {
+		Self::Whatever {
+			message,
+			backtrace: Backtrace::capture(),
+		}
+	}
 }
 
 type Result<T, E = ReadError> = std::result::Result<T, E>;
@@ -60,7 +79,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 		while self.pos() < end {
 			self.read_insn(&mut insns)?;
 		}
-		ensure_whatever!(self.pos() == end, "overshot end: {} > {}", self.pos(), end);
+		ensure!(self.pos() == end, "overshot end: {} > {}", self.pos(), end);
 
 		Ok(Code(insns))
 	}
@@ -76,7 +95,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 
 			visit_labels(i, |arg| extent = extent.max(arg.0));
 		}
-		ensure_whatever!(self.pos() <= end, "overshot end: {} > {}", self.pos(), end);
+		ensure!(self.pos() <= end, "overshot end: {} > {}", self.pos(), end);
 
 		Ok(Code(insns))
 	}
@@ -84,7 +103,8 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 	fn read_insn<'a>(&mut self, insns: &'a mut Vec<Insn>) -> Result<&'a mut Insn, ReadError> {
 		let pos = self.pos();
 		insns.push(Insn::new("_label", vec![Arg::Label(Label(pos))]));
-		let insn = self.insn().map_err(Box::new).with_context(|_| InsnSnafu {
+		let insn = self.insn().map_err(|source| ReadError::Insn {
+			source: Box::new(source),
 			pos,
 			context: insns
 				.iter()
@@ -112,28 +132,26 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 		n: usize,
 	) -> Result<&'iset str> {
 		match insns.get(n) {
-			None | Some(iset::Insn::Blank) => whatever!("unknown instruction {n:02X}"),
+			None | Some(iset::Insn::Blank) => bail!("unknown instruction {n:02X}",),
 			Some(iset::Insn::Regular { name, args }) => {
 				for (i, arg) in args.iter().enumerate() {
-					self.arg(out, arg)
-						.map_err(Box::new)
-						.with_context(|_| ArgSnafu {
-							name,
-							pos: i,
-							arg: arg.clone(),
-						})?;
+					self.arg(out, arg).map_err(|source| ReadError::Arg {
+						source: Box::new(source),
+						name: name.to_owned(),
+						pos: i,
+						arg: arg.clone(),
+					})?;
 				}
 				Ok(name)
 			}
 			Some(iset::Insn::Match { head, on, cases }) => {
 				for (i, arg) in head.iter().enumerate() {
-					self.arg(out, arg)
-						.map_err(Box::new)
-						.with_context(|_| ArgSnafu {
-							name: "match head",
-							pos: i,
-							arg: arg.clone(),
-						})?;
+					self.arg(out, arg).map_err(|source| ReadError::Arg {
+						source: Box::new(source),
+						name: "match head".to_owned(),
+						pos: i,
+						arg: arg.clone(),
+					})?;
 				}
 				let n = self.int(*on)? as usize;
 				self.insn_inner(out, cases, n)
@@ -186,7 +204,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 
 			T::Const(int, w) => {
 				let v = self.int(*int)?;
-				ensure_whatever!(v == *w, "{v} != {w}");
+				ensure!(v == *w, "{v} != {w}");
 			}
 
 			T::String => out.push(Arg::Atom(A::String(f.string()?))),
@@ -222,7 +240,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 
 				let insns = [self.insn()?, self.insn()?];
 				#[rustfmt::skip]
-				ensure_whatever!(
+				ensure!(
 					insns == [
 						Insn::new(next, vec![]),
 						Insn::new("_goto", vec![Arg::Label(Label(pos))]),
@@ -359,9 +377,9 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 						return Ok(());
 					}
 				}
-				whatever!("invalid 0x22")
+				bail!("invalid 0x22")
 			}
-			T::Cs1_28_34 => whatever!("28_34"),
+			T::Cs1_28_34 => bail!("28_34"),
 			T::Cs1_36(x, a) => {
 				if let Arg::Atom(A::Int(v)) = &out[1] {
 					if x.contains(&(*v as u16)) {
@@ -385,14 +403,14 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 			let f = &mut self.f;
 			let op = f.u8()?;
 			if let Ok(op) = BinOp::try_from(op) {
-				let rhs = stack.pop().whatever_context("missing operand").strict()?;
-				let lhs = stack.pop().whatever_context("missing operand").strict()?;
+				let rhs = stack.pop().or_whatever("missing operand")?;
+				let lhs = stack.pop().or_whatever("missing operand")?;
 				stack.push(Expr::Bin(op, Box::new(lhs), Box::new(rhs)))
 			} else if let Ok(op) = UnOp::try_from(op) {
-				let arg = stack.pop().whatever_context("missing operand").strict()?;
+				let arg = stack.pop().or_whatever("missing operand")?;
 				stack.push(Expr::Unary(op, Box::new(arg)))
 			} else if let Ok(op) = AssOp::try_from(op) {
-				let arg = stack.pop().whatever_context("missing operand").strict()?;
+				let arg = stack.pop().or_whatever("missing operand")?;
 				stack.push(Expr::Assign(op, Box::new(arg)))
 			} else {
 				stack.push(match op {
@@ -419,14 +437,14 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 		if stack.len() == 1 {
 			Ok(Box::new(stack.pop().unwrap()))
 		} else {
-			whatever!("invalid expression stack size {}", stack.len())
+			bail!("invalid expression stack size {}", stack.len())
 		}
 	}
 }
 
 fn parse_22(f: &mut Reader, n: usize) -> Result<(Arg, Arg)> {
 	let a = f.slice(n)?;
-	ensure_whatever!(a.iter().all(|a| [0, 1].contains(a)), "not 0/1");
+	ensure!(a.iter().all(|a| [0, 1].contains(a)), "not 0/1");
 	let b = list(4, || {
 		let v = f.f32()?;
 		if v == 0. || (0.001..=1000.).contains(&v.abs()) {
@@ -434,7 +452,7 @@ fn parse_22(f: &mut Reader, n: usize) -> Result<(Arg, Arg)> {
 		} else if v.to_bits() < 256 {
 			Ok(Arg::Atom(Atom::Int(v.to_bits() as i64)))
 		} else {
-			whatever!("val")
+			bail!("val")
 		}
 	})
 	.strict()?;

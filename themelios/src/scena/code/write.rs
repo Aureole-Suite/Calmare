@@ -2,25 +2,40 @@ use std::collections::BTreeMap;
 use std::iter::Peekable;
 
 use gospel::write::{Label as GLabel, Le as _, Writer};
-use snafu::prelude::*;
-use strict_result::Strict as _;
 
 use super::{Arg, Atom, Code, Expr, Insn};
 use crate::gamedata as iset;
 use crate::scena::*;
 use crate::types::*;
-use crate::util::{cast, ValueError, WriterExt};
+use crate::util::OptionTExt as _;
+use crate::util::{bail, cast, ensure, ValueError, WriterExt};
 
-#[derive(Debug, Snafu)]
+#[derive(Debug, thiserror::Error)]
 pub enum WriteError {
-	#[snafu(context(false))]
-	Gospel { source: gospel::write::Error },
-	#[snafu(context(false))]
-	Encode { source: crate::util::EncodeError },
-	#[snafu(context(false))]
-	Value { source: crate::util::ValueError },
-	#[snafu(whatever, display("{message}"))]
-	Whatever { message: String },
+	#[error("{source}")]
+	Gospel {
+		#[from]
+		source: gospel::write::Error,
+		backtrace: Backtrace,
+	},
+	#[error(transparent)]
+	Encode(#[from] crate::util::EncodeError),
+	#[error(transparent)]
+	Value(#[from] crate::util::ValueError),
+	#[error("{message}")]
+	Whatever {
+		message: String,
+		backtrace: Backtrace,
+	},
+}
+
+impl From<String> for WriteError {
+	fn from(message: String) -> Self {
+		Self::Whatever {
+			message,
+			backtrace: Backtrace::capture(),
+		}
+	}
 }
 
 pub struct InsnWriter<'iset, 'write> {
@@ -40,7 +55,7 @@ macro_rules! expect {
 	($pat:pat = $val:expr, $what:expr) => {
 		let val = $val;
 		let $pat = val else {
-			whatever!("expected {}, got: {:?}", $what, val)
+			bail!("expected {}, got: {:?}", $what, val)
 		};
 	};
 }
@@ -87,7 +102,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				let label = self.label(label);
 				self.f.place(label);
 			}
-			("_label", _) => whatever!("malformed label"),
+			("_label", _) => bail!("malformed label"),
 
 			("if", [args @ .., Arg::Code(yes), Arg::Code(no)]) => {
 				let mid = self.internal_label(GLabel::new());
@@ -105,19 +120,19 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				self.code(yes)?;
 				self.insn(&Insn::new("_label", vec![Arg::Label(end)]))?;
 			}
-			("if", _) => whatever!("malformed if"),
+			("if", _) => bail!("malformed if"),
 
 			("break", []) => match self.brk {
 				Some(l) => self.insn(&Insn::new("_goto", vec![Arg::Label(l)]))?,
-				None => whatever!("can't break here"),
+				None => bail!("can't break here"),
 			},
-			("break", _) => whatever!("malformed break"),
+			("break", _) => bail!("malformed break"),
 
 			("continue", []) => match self.cont {
 				Some(l) => self.insn(&Insn::new("_goto", vec![Arg::Label(l)]))?,
-				None => whatever!("can't continue here"),
+				None => bail!("can't continue here"),
 			},
-			("continue", _) => whatever!("malformed continue"),
+			("continue", _) => bail!("malformed continue"),
 
 			("while", [args @ .., Arg::Code(body)]) => {
 				let start = self.internal_label(GLabel::new());
@@ -135,7 +150,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				self.brk = brk;
 				self.cont = cont;
 			}
-			("while", _) => whatever!("malformed while"),
+			("while", _) => bail!("malformed while"),
 
 			("switch", [args @ .., Arg::Code(body)]) => {
 				let mut body_out = Vec::new();
@@ -150,11 +165,11 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 							body_out.push((label, body));
 						}
 						("default", [Arg::Code(body)]) => {
-							ensure_whatever!(default.is_none(), "duplicate default case");
+							ensure!(default.is_none(), "duplicate default case");
 							default = Some(label);
 							body_out.push((label, body));
 						}
-						_ => whatever!("invalid switch case"),
+						_ => bail!("invalid switch case"),
 					}
 				}
 
@@ -173,11 +188,11 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 
 				self.brk = brk;
 			}
-			("switch", _) => whatever!("malformed switch"),
+			("switch", _) => bail!("malformed switch"),
 
 			(name, args) => {
 				let Some(iargs) = self.iset.insns_rev.get(name) else {
-					whatever!("unknown instruction {name}")
+					bail!("unknown instruction {name}")
 				};
 				self.args(args, iargs)?;
 			}
@@ -202,7 +217,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 			self.arg(args, iarg, &mut iter)?;
 		}
 		if let Some(arg) = iter.peek() {
-			whatever!("too many arguments: {arg:?}")
+			bail!("too many arguments: {arg:?}")
 		};
 		Ok(())
 	}
@@ -216,7 +231,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 		match iarg {
 			iset::Arg::Int(int, iarg) => {
 				let Some(val) = iter.next() else {
-					whatever!("too few arguments; expected {iarg:?}");
+					bail!("too few arguments; expected {iarg:?}");
 				};
 				let val = int_arg(self.iset, val)?;
 				self.int(*int, val)?;
@@ -249,12 +264,12 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 			iset::IntType::i16 => f.i16(cast(val)?),
 			iset::IntType::i32 => f.i32(cast(val)?),
 			iset::IntType::Const(v) => {
-				ensure_whatever!(val == v, "{val} != {v}");
+				ensure!(val == v);
 			}
 			iset::IntType::ED7Battle => match val {
 				0 => {}
 				1 => f.u32(0xFFFFFFFF),
-				_ => whatever!("invalid ED7Battle"),
+				_ => bail!("invalid ED7Battle"),
 			},
 		}
 		Ok(())
@@ -277,7 +292,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 					iset::IntType::u8 => self.f.label8(label),
 					iset::IntType::u16 => self.f.label16(label),
 					iset::IntType::u32 => self.f.label32(label),
-					_ => whatever!("can't write label as {int:?}"),
+					_ => bail!("can't write label as {int:?}"),
 				}
 			}
 
@@ -360,7 +375,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 
 			T::PartySelectMandatory => {
 				expect!(Arg::Tuple(val) in iter, "tuple of 4");
-				ensure_whatever!(val.len() == 4, "expected tuple of 4, got {val:?}");
+				ensure!(val.len() == 4, "expected tuple of 4, got {val:?}");
 				for val in val {
 					if let Arg::Atom(Atom::CharId(CharId::Null)) = val {
 						f.u16(0xFF);
@@ -376,7 +391,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				let mut n = 0;
 				for val in val {
 					let val = int_arg(self.iset, val)?;
-					ensure_whatever!(val < 32, "name[] < 32");
+					ensure!(val < 32, "name[] < 32");
 					n |= 1 << val;
 				}
 				f.u32(n);
@@ -430,8 +445,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 					.battle_pos
 					.unwrap()
 					.get(id as usize)
-					.whatever_context("battle id out of bounds")
-					.strict()?;
+					.or_whatever("battle id out of bounds")?;
 				f.label32(label);
 			}
 
@@ -478,7 +492,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 					} else if let Ok(v) = int_arg(self.iset, v) {
 						f.u32(cast(v)?);
 					} else {
-						whatever!("expected float or int")
+						bail!("expected float or int")
 					}
 				}
 			}
@@ -550,7 +564,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				self.f.u8(0x23);
 				self.f.u8(v);
 			}
-			Expr::Atom(ref v) => whatever!("cannot use {v:?} in Expr"),
+			Expr::Atom(ref v) => bail!("cannot use {v:?} in Expr"),
 		}
 		Ok(())
 	}
@@ -611,7 +625,7 @@ fn int_arg(iset: &iset::InsnSet, arg: &Arg) -> Result<i64, WriteError> {
 		| A::RPos3(_)
 		| A::TString(_)
 		| A::Text(_) => {
-			whatever!("expected integer-valued argument")
+			bail!("expected integer-valued argument")
 		}
 	})
 }
@@ -636,7 +650,7 @@ fn text_page(f: &mut Writer, s: &Text) -> Result<(), WriteError> {
 			'\n' => f.u8(0x01),
 			'\t' => f.u8(0x02),
 			'\r' => f.u8(0x0D),
-			'\0'..='\x1F' => whatever!("unprintable character"),
+			'\0'..='\x1F' => bail!("unprintable character"),
 			'♥' => f.slice(&falcom_sjis::encode_char('㈱').unwrap()),
 
 			'♯' => {
@@ -659,8 +673,8 @@ fn text_page(f: &mut Writer, s: &Text) -> Result<(), WriteError> {
 							break;
 						}
 						Some('♯') => f.slice(&falcom_sjis::encode_char('♯').unwrap()),
-						None => whatever!("unterminated escape sequence"),
-						Some(_) => whatever!("illegal escape sequence (maybe try `#`?)"),
+						None => bail!("unterminated escape sequence"),
+						Some(_) => bail!("illegal escape sequence (maybe try `#`?)"),
 					}
 				}
 			}
@@ -669,7 +683,7 @@ fn text_page(f: &mut Writer, s: &Text) -> Result<(), WriteError> {
 				if let Some(enc) = falcom_sjis::encode_char(char) {
 					f.slice(&enc)
 				} else {
-					whatever!("cannot encode as shift-jis: {char:?}");
+					bail!("cannot encode as shift-jis: {char:?}");
 				}
 			}
 		}
@@ -697,7 +711,7 @@ fn text_page_ed8(f: &mut Writer, s: &Text) -> Result<(), WriteError> {
 			'\n' => f.u8(0x01),
 			'\t' => f.u8(0x02),
 			'\r' => f.u8(0x0D),
-			'\0'..='\x1F' => whatever!("unprintable character"),
+			'\0'..='\x1F' => bail!("unprintable character"),
 			'♥' => f.slice(&falcom_sjis::encode_char('㈱').unwrap()),
 
 			'♯' => {
@@ -735,8 +749,8 @@ fn text_page_ed8(f: &mut Writer, s: &Text) -> Result<(), WriteError> {
 							break;
 						}
 						Some('♯') => f.slice(&falcom_sjis::encode_char('♯').unwrap()),
-						None => whatever!("unterminated escape sequence"),
-						Some(_) => whatever!("illegal escape sequence (maybe try `#`?)"),
+						None => bail!("unterminated escape sequence"),
+						Some(_) => bail!("illegal escape sequence (maybe try `#`?)"),
 					}
 				}
 			}
@@ -745,7 +759,7 @@ fn text_page_ed8(f: &mut Writer, s: &Text) -> Result<(), WriteError> {
 				if let Some(enc) = falcom_sjis::encode_char(char) {
 					f.slice(&enc)
 				} else {
-					whatever!("cannot encode as shift-jis: {char:?}");
+					bail!("cannot encode as shift-jis: {char:?}");
 				}
 			}
 		}

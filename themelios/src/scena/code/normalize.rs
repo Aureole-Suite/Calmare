@@ -3,17 +3,17 @@ use std::ops::ControlFlow;
 
 use crate::scena::code::visit_mut::visit_labels_mut;
 use crate::types::Label;
+use crate::util::bail;
 
 use super::visit::{Visit, Visitable};
 use super::visit_mut::{VisitMut, VisitableMut};
 use super::{Arg, Code, Insn};
-use snafu::prelude::*;
 
-#[derive(Debug, Snafu)]
+#[derive(Debug, thiserror::Error)]
 pub enum NormalizeError {
-	#[snafu(display("duplicate label: {label}"))]
+	#[error("duplicate label: {label}")]
 	DuplicateLabel { label: Label },
-	#[snafu(display("undefined label: {label}"))]
+	#[error("undefined label: {label}")]
 	UndefinedLabel { label: Label },
 }
 
@@ -57,10 +57,10 @@ fn find_used(code: &impl Visitable) -> Result<BTreeSet<Label>, NormalizeError> {
 	code.accept(&mut vis);
 
 	if let Some(label) = vis.duplicate {
-		return DuplicateLabelSnafu { label }.fail();
+		bail!(NormalizeError::DuplicateLabel { label });
 	}
 	if let Some(&label) = vis.used.difference(&vis.defined).next() {
-		return UndefinedLabelSnafu { label }.fail();
+		bail!(NormalizeError::UndefinedLabel { label });
 	}
 	Ok(vis.used)
 }

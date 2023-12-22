@@ -3,12 +3,11 @@ use std::ops::Range;
 
 use gospel::read::{Le as _, Reader};
 use gospel::write::{Label, Le as _, Writer};
-use snafu::prelude::*;
 use strict_result::Strict;
 
 use super::ReadError;
 use crate::types::*;
-use crate::util::{ReaderExt as _, WriterExt as _};
+use crate::util::{ensure, OptionTExt as _, ReaderExt as _, WriterExt as _};
 
 newtype!(SepithId(u16));
 newtype!(PlacementId(u16));
@@ -154,7 +153,7 @@ impl BattleRead {
 		while f.pos() < range.end {
 			self.get_sepith(&mut f)?;
 		}
-		snafu::ensure_whatever!(f.pos() == range.end, "overshot");
+		ensure!(f.pos() == range.end, "overshot");
 		Ok(())
 	}
 
@@ -192,7 +191,7 @@ impl BattleRead {
 			self.get_battle(&mut f)?;
 		}
 
-		snafu::ensure_whatever!(f.pos() == range.end, "overshot");
+		ensure!(f.pos() == range.end, "overshot");
 		Ok(())
 	}
 
@@ -258,15 +257,14 @@ impl BattleWrite {
 				battles.label32(
 					*sepith_pos
 						.get(s.0 as usize)
-						.whatever_context("field sepith out of bounds")
-						.strict()?,
+						.or_whatever("field sepith out of bounds")?,
 				);
 			} else {
 				battles.u32(0);
 			}
 			let mut weights = [0u8; 4];
 			let mut h = Writer::new();
-			ensure_whatever!(battle.setups.len() <= 4, "too many setups");
+			ensure!(battle.setups.len() <= 4, "too many setups");
 			for (i, (weight, setup)) in battle.setups.iter().enumerate() {
 				weights[i] = *weight;
 				for ms in &setup.enemies {
@@ -275,22 +273,19 @@ impl BattleWrite {
 				h.label16(
 					*placement_pos
 						.get(setup.placement.0 as usize)
-						.whatever_context("placement out of bounds")
-						.strict()?,
+						.or_whatever("placement out of bounds")?,
 				);
 				h.label16(
 					*placement_pos
 						.get(setup.placement_ambush.0 as usize)
-						.whatever_context("placement out of bounds")
-						.strict()?,
+						.or_whatever("placement out of bounds")?,
 				);
 				h.u16(setup.bgm.0);
 				h.u16(setup.bgm_ambush.0);
 				h.label32(
 					*at_roll_pos
 						.get(setup.at_roll.0 as usize)
-						.whatever_context("at roll out of bounds")
-						.strict()?,
+						.or_whatever("at roll out of bounds")?,
 				);
 			}
 			battles.array(weights);
