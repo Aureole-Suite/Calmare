@@ -132,8 +132,14 @@ impl Scena {
 				ir.code(end)?
 			} else {
 				ir.code_approx(strings_start, |f| {
-					(strings_start - f.pos()) % 8 == 0 || f.clone().check_u8(0).is_ok()
-					// This second check is needed for a9000, and does not roundtrip.
+					if (strings_start - f.pos()) % 8 == 0 {
+						true
+					} else if f.remaining().starts_with(&[0]) {
+						tracing::warn!("found a9000 null bytes — will not roundtrip");
+						true
+					} else {
+						false
+					}
 				})?
 			});
 		}
