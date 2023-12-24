@@ -14,10 +14,17 @@ pub struct DecodeError {
 }
 
 pub fn decode(bytes: &[u8]) -> Result<String, DecodeError> {
-	falcom_sjis::decode(bytes).map_err(|_| DecodeError {
-		text: falcom_sjis::decode_lossy(bytes),
-		backtrace: Backtrace::capture(),
-	})
+	if let Ok(s) = falcom_sjis::decode(bytes) {
+		Ok(s)
+	} else if let Ok(s) = std::str::from_utf8(bytes) {
+		tracing::warn!("unexpected utf8 string — will not roundtrip");
+		Ok(s.to_owned())
+	} else {
+		Err(DecodeError {
+			text: falcom_sjis::decode_lossy(bytes),
+			backtrace: Backtrace::capture(),
+		})
+	}
 }
 
 #[derive(Debug, thiserror::Error)]
