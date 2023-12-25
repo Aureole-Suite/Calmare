@@ -110,7 +110,7 @@ pub enum IntType {
 	i16,
 	i32,
 	Const(i64),
-	// Ugly hack for ED7Battle and ED7NpcBattle instruction.
+	// Ugly hack for ED7Battle and ED7BattleAuto instruction.
 	// Encodes 1 as `FF FF FF FF` and 0 as empty.
 	ED7Battle,
 }

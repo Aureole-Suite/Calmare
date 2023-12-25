@@ -30,7 +30,7 @@ insns:
     - u16
     - u16
     - {u16: CharId}
-  - - ED7NpcBattle
+  - - ED7BattleAuto
     - *FileId
     - u8
     - [*FileId, *FileId, *FileId, *FileId, *FileId, *FileId, *FileId, *FileId]
