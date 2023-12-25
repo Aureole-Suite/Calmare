@@ -196,7 +196,7 @@ impl Battle {
 		let unk2 = (f.u32()?, f.u32()?);
 
 		let mut setups = Vec::new();
-		loop {
+		while end - f.pos() >= 24 {
 			match f.u32()? {
 				0xFFFFFFFF => break,
 				0xFFFFFFFE => {
@@ -216,7 +216,11 @@ impl Battle {
 			}
 		}
 
-		f.check(&[0; 24])?;
+		if end - f.pos() >= 24 {
+			f.check(&[0; 24])?;
+		} else {
+			tracing::warn!("unterminated battle — will not roundtrip");
+		}
 		f.check_u8(1)?;
 		Ok(Battle {
 			battlefield,
