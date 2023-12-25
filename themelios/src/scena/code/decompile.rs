@@ -44,32 +44,35 @@ impl Context {
 
 	fn iter(&mut self) -> ContextIter<'_> {
 		ContextIter {
-			len: self.iter.as_slice().len(),
+			endlen: 0,
 			ctx: self,
 		}
 	}
 }
 
 struct ContextIter<'a> {
+	endlen: usize,
 	ctx: &'a mut Context,
-	len: usize,
 }
 
 impl<'a> ContextIter<'a> {
 	fn as_slice(&self) -> &[Insn] {
 		let slice = self.ctx.iter.as_slice();
-		&slice[..(self.len + 1).min(slice.len())]
+		&slice[..slice.len() - self.endlen]
 	}
 
 	fn until(&mut self, label: Label) -> ContextIter<'_> {
-		let len = self.lookup(label).unwrap();
-		assert!(len <= self.len);
-		self.len -= len;
-		ContextIter { ctx: self.ctx, len }
+		let pos = self.lookup(label).unwrap();
+		ContextIter {
+			endlen: self.ctx.iter.as_slice().len() - pos,
+			ctx: self.ctx,
+		}
 	}
 
 	fn lookup(&self, label: Label) -> Option<usize> {
-		self.ctx.lookup(label).filter(|i| *i <= self.len)
+		self.ctx
+			.lookup(label)
+			.filter(|i| *i <= self.as_slice().len())
 	}
 
 	fn peek(&self, pos: usize) -> Option<&Insn> {
@@ -81,10 +84,9 @@ impl<'a> Iterator for ContextIter<'a> {
 	type Item = Insn;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		if self.len == 0 {
+		if self.as_slice().is_empty() {
 			None
 		} else {
-			self.len -= 1;
 			self.ctx.iter.next()
 		}
 	}
