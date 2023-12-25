@@ -19,9 +19,17 @@ pub enum WriteError {
 		backtrace: Backtrace,
 	},
 	#[error(transparent)]
-	Encode(#[from] crate::util::EncodeError),
+	Encode(
+		#[from]
+		#[backtrace]
+		crate::util::EncodeError,
+	),
 	#[error(transparent)]
-	Value(#[from] crate::util::ValueError),
+	Value(
+		#[from]
+		#[backtrace]
+		crate::util::ValueError,
+	),
 	#[error("{message}")]
 	Whatever {
 		message: String,

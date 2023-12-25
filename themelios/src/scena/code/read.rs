@@ -22,18 +22,27 @@ pub enum ReadError {
 		backtrace: Backtrace,
 	},
 	#[error(transparent)]
-	Decode(#[from] crate::util::DecodeError),
+	Decode(
+		#[from]
+		#[backtrace]
+		crate::util::DecodeError,
+	),
 	#[error(transparent)]
-	Value(#[from] crate::util::ValueError),
+	Value(
+		#[from]
+		#[backtrace]
+		crate::util::ValueError,
+	),
 	#[error("{message}")]
 	Whatever {
 		message: String,
 		backtrace: Backtrace,
 	},
-	#[error("error reading instruction at {pos}, after {context:?}")]
+	#[error("error reading instruction at {pos}, after {context:#?}")]
 	Insn {
 		context: Vec<Insn>,
 		pos: usize,
+		#[backtrace]
 		source: Box<ReadError>,
 	},
 	#[error("failed to read argument {pos} ({arg:?}) of {name}")]
@@ -41,6 +50,7 @@ pub enum ReadError {
 		name: String,
 		pos: usize,
 		arg: iset::Arg,
+		#[backtrace]
 		source: Box<ReadError>,
 	},
 }
@@ -106,13 +116,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 		let insn = self.insn().map_err(|source| ReadError::Insn {
 			source: Box::new(source),
 			pos,
-			context: insns
-				.iter()
-				.rev()
-				.take(10)
-				.rev()
-				.cloned()
-				.collect::<Vec<_>>(),
+			context: insns.clone(),
 		})?;
 		insns.push(insn);
 		Ok(insns.last_mut().unwrap())

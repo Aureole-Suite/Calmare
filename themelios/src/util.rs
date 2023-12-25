@@ -28,7 +28,7 @@ pub fn decode(bytes: &[u8]) -> Result<String, DecodeError> {
 }
 
 #[derive(Debug, thiserror::Error)]
-#[error("Invalid SJIS string {text:?}")]
+#[error("Cannot encode {text:?} as SJIS")]
 pub struct EncodeError {
 	text: String,
 	backtrace: Backtrace,

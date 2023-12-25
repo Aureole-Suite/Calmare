@@ -15,9 +15,17 @@ pub enum ReadError {
 		backtrace: Backtrace,
 	},
 	#[error(transparent)]
-	Decode(#[from] crate::util::DecodeError),
+	Decode(
+		#[from]
+		#[backtrace]
+		crate::util::DecodeError,
+	),
 	#[error(transparent)]
-	Code(#[from] code::ReadError),
+	Code(
+		#[from]
+		#[backtrace]
+		code::ReadError,
+	),
 	#[error("{message}")]
 	Whatever {
 		message: String,
@@ -34,11 +42,23 @@ pub enum WriteError {
 		backtrace: Backtrace,
 	},
 	#[error(transparent)]
-	Value(#[from] ValueError),
+	Value(
+		#[from]
+		#[backtrace]
+		ValueError,
+	),
 	#[error(transparent)]
-	Code(#[from] code::WriteError),
+	Code(
+		#[from]
+		#[backtrace]
+		code::WriteError,
+	),
 	#[error(transparent)]
-	Encode(#[from] crate::util::EncodeError),
+	Encode(
+		#[from]
+		#[backtrace]
+		crate::util::EncodeError,
+	),
 	#[error("{message}")]
 	Whatever {
 		message: String,
