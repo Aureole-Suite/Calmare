@@ -136,7 +136,10 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 		n: usize,
 	) -> Result<&'iset str> {
 		match insns.get(n) {
-			None | Some(iset::Insn::Blank) => bail!("unknown instruction {n:02X}",),
+			None | Some(iset::Insn::Blank) => bail!(
+				"unknown instruction {n:02X}\n{:#1X}",
+				self.f.dump().start(self.f.pos().saturating_sub(9))
+			),
 			Some(iset::Insn::Regular { name, args }) => {
 				for (i, arg) in args.iter().enumerate() {
 					self.arg(out, arg).map_err(|source| ReadError::Arg {
