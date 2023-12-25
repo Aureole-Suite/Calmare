@@ -110,6 +110,7 @@ fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>, switch_t
 	while let Some(insn) = ctx.next() {
 		out.push(insn);
 		let insn = out.last_mut().unwrap();
+		let label = std::mem::replace(&mut label, as_label(insn));
 		match (insn.name.as_str(), insn.args.as_mut_slice()) {
 			("_goto", &mut [Arg::Label(l)]) => {
 				if brk == Some(l) {
@@ -216,7 +217,6 @@ fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>, switch_t
 			}
 			_ => {}
 		}
-		label = as_label(insn);
 	}
 	Code(out)
 }
