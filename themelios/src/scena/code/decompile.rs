@@ -9,7 +9,12 @@ pub fn decompile(code: &mut impl VisitableMut) {
 
 	impl VisitMut for Vis {
 		fn visit_code_mut(&mut self, code: &mut Code) -> std::ops::ControlFlow<()> {
-			*code = block(Context::new(std::mem::take(&mut code.0)).iter(), None, None);
+			*code = block(
+				Context::new(std::mem::take(&mut code.0)).iter(),
+				None,
+				None,
+				false,
+			);
 			std::ops::ControlFlow::Continue(())
 		}
 	}
@@ -69,6 +74,13 @@ impl<'a> ContextIter<'a> {
 		}
 	}
 
+	fn as_ref(&mut self) -> ContextIter<'_> {
+		ContextIter {
+			endlen: self.endlen,
+			ctx: self.ctx,
+		}
+	}
+
 	fn lookup(&self, label: Label) -> Option<usize> {
 		self.ctx
 			.lookup(label)
@@ -92,7 +104,7 @@ impl<'a> Iterator for ContextIter<'a> {
 	}
 }
 
-fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>) -> Code {
+fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>, switch_tail: bool) -> Code {
 	let mut out = Vec::new();
 	let mut label = None;
 	while let Some(insn) = ctx.next() {
@@ -100,10 +112,13 @@ fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>) -> Code 
 		let insn = out.last_mut().unwrap();
 		match (insn.name.as_str(), insn.args.as_mut_slice()) {
 			("_goto", &mut [Arg::Label(l)]) => {
-				if Some(l) == brk {
-					*insn = Insn::new("break", vec![])
-				} else if Some(l) == cont {
-					*insn = Insn::new("continue", vec![])
+				if brk == Some(l) {
+					*insn = Insn::new("break", vec![]);
+				} else if cont == Some(l) {
+					*insn = Insn::new("continue", vec![]);
+				} else if switch_tail && ctx.as_slice().first().and_then(as_label) == Some(l) {
+					*insn = Insn::new("break", vec![]);
+					break;
 				}
 			}
 
@@ -120,19 +135,19 @@ fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>) -> Code 
 					.is_some_and(|l| Some(l) == label);
 
 				if is_loop {
-					let mut body = block(ctx.until(l1), label, Some(l1));
+					let mut body = block(ctx.until(l1), label, Some(l1), false);
 					assert_eq!(body.pop().unwrap().name, "continue");
 					insn.name = "while".into();
 					insn.args.push(Arg::Code(body));
 				} else {
-					let mut body = block(ctx.until(l1), cont, brk);
+					let mut body = block(ctx.until(l1), cont, brk, false);
 					let l2 = body
 						.last()
 						.and_then(as_goto)
 						.filter(|l2| ctx.lookup(*l2).is_some());
 					if let Some(l2) = l2 {
 						body.pop();
-						let body2 = block(ctx.until(l2), cont, brk);
+						let body2 = block(ctx.until(l2), cont, brk, false);
 						insn.name = "if".into();
 						insn.args.push(Arg::Code(body));
 						insn.args.push(Arg::Code(body2));
@@ -164,25 +179,40 @@ fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>) -> Code 
 					}
 				}
 
-				// There's a couple of edge cases where the last case is the only that has a break.
-				// These are currently not handled, might improve it later.
-
 				let mut bodies = Vec::new();
 				for end in cases.iter().map(|i| i.1).skip(1).chain(switch_brk) {
-					let body = block(ctx.until(end), cont, switch_brk);
+					let body = block(ctx.until(end), cont, switch_brk, false);
 					bodies.push(body);
 				}
 
-				bodies.push(Code(vec![]));
+				let tail = if switch_brk.is_none() {
+					let body = block(ctx.as_ref(), cont, None, true);
+					if ctx.as_slice().is_empty() {
+						bodies.push(Code(vec![]));
+						Some(body)
+					} else {
+						bodies.push(body);
+						None
+					}
+				} else {
+					None
+				};
 
-				let mut out = Vec::new();
+				assert_eq!(cases.len(), bodies.len());
+
+				let mut switchbody = Vec::new();
 				for ((mut case, _), body) in std::iter::zip(cases, bodies) {
 					case.args.push(Arg::Code(body));
-					out.push(case);
+					switchbody.push(case);
 				}
 
 				insn.name = "switch".into();
-				insn.args.push(Arg::Code(Code(out)));
+				insn.args.push(Arg::Code(Code(switchbody)));
+
+				if let Some(tail) = tail {
+					out.extend(tail.0);
+					break;
+				}
 			}
 			_ => {}
 		}
