@@ -140,22 +140,23 @@ fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>, switch_t
 					assert_eq!(body.pop().unwrap().name, "continue");
 					insn.name = "while".into();
 					insn.args.push(Arg::Code(body));
+					continue;
+				}
+
+				let mut body = block(ctx.until(l1), cont, brk, false);
+				let l2 = body
+					.last()
+					.and_then(as_goto)
+					.filter(|l2| ctx.lookup(*l2).is_some());
+				if let Some(l2) = l2 {
+					body.pop();
+					let body2 = block(ctx.until(l2), cont, brk, false);
+					insn.name = "if".into();
+					insn.args.push(Arg::Code(body));
+					insn.args.push(Arg::Code(body2));
 				} else {
-					let mut body = block(ctx.until(l1), cont, brk, false);
-					let l2 = body
-						.last()
-						.and_then(as_goto)
-						.filter(|l2| ctx.lookup(*l2).is_some());
-					if let Some(l2) = l2 {
-						body.pop();
-						let body2 = block(ctx.until(l2), cont, brk, false);
-						insn.name = "if".into();
-						insn.args.push(Arg::Code(body));
-						insn.args.push(Arg::Code(body2));
-					} else {
-						insn.name = "if".into();
-						insn.args.push(Arg::Code(body));
-					}
+					insn.name = "if".into();
+					insn.args.push(Arg::Code(body));
 				}
 			}
 
