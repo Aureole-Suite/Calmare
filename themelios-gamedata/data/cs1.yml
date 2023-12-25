@@ -7,7 +7,7 @@ insns:
 - [Return]
 - [Call, [u8, String]]
 - [_goto, Label]
-- [_04, u8, String]
+- [Event, [u8, String]]
 - [_if, Expr, Label]
 - [_switch, Expr, !SwitchTable [u8, [u16, Label]], Label]
 - [_07, u32]
@@ -28,9 +28,9 @@ insns:
     String, String, i32, u8, f32, !Cs1_13 [f32, u16],
   ]
 - [ForkFunc, *CharId, {u8: ForkId}, [u8, String]]
-- [ForkWait, *CharId, {u8: ForkId}]
-- [_16, u8]
-- [_17, u8]
+- [ForkQuit, *CharId, {u8: ForkId}]
+- [EventBegin, u8]
+- [EventEnd, u8]
 - [TextMessage, *CharId, Text]
 - !match
   - [_19_0, u16, u16, u16, u16, u8]
@@ -43,30 +43,30 @@ insns:
 - [TextClose]
 - [TextWait]
 - [_1D, String, u16]
-- [_1E, String, String]
+- [NewScene, String, String]
 - !match
   - [Menu2New, {u8: MenuId}, u16, f32]
   - [Menu2Add, {u8: MenuId}, TString, u16]
   - [_Menu2_2, {u8: MenuId}, u8, i16, i16]
   - [Menu2Close, {u8: MenuId}]
-  - [Menu2Wait, {u8: MenuId}, u8]
+  - [Menu2Wait, {u8: MenuId}, {u8: Global}]
   - [_Menu2_5, {u8: MenuId}, u16, u16]
-  - [_Menu2_6, {u8: MenuId}, u16]
-  - [_Menu2_7, {u8: MenuId}, u16]
+  - [Menu2Disable, {u8: MenuId}, u16]
+  - [Menu2Disable2, {u8: MenuId}, u16]
 - [_20, u8, u16, String, String, u8]
 - !match
-  - [_21_0, u32, u8, u8]
-  - [_21_1, u32, u8, u8, u16, u16, u16, u16]
+  - [Battle, {u32: BattleId}, u8, u8]
+  - [BattleAuto, {u32: BattleId}, u8, u8, u16, u16, u16, u16]
 - [_22, *CharId, String, !Cs1_22, ]
 - [_23, *CharId, u32]
-- [_24, u8, *CharId, String, String]
+- [CharSetModel, u8, *CharId, String, String]
 - [_25, u8, u16, String, String, u32, u32, u32, u32, u32, u32, f32, f32, f32]
 - [_26, u8, String]
 - !match
   - !skip 10
-  - [_27_10, u16, u8, String]
+  - [_27_10, u16, u8, String] # .eff file
   - [_27_11, u16, u8]
-  - [_27_12, u16, u16, u16, u16, String, f32, f32, f32, f32, f32, f32, f32, f32, f32, u8]
+  - [_27_12, *CharId, u16, *CharId, u16, String, f32, f32, f32, f32, f32, f32, f32, f32, f32, u8]
   - [_27_13, u16, u8]
   - [_27_14, u16, u8]
   - [_27_15, u16, u8]
@@ -187,13 +187,13 @@ insns:
 - [_2E, *CharId, f32, f32, f32, f32]
 - [_2F, *CharId, u8, String]
 - !match
-  - [_30_00, u16, f32, u16, u32, u8]
-  - [_30_01, u16, u8]
-  - [_30_02, u8]
-  - [_30_03, f32, u16, u8]
+  - [BgmPlay, {u16: BgmId}, f32, u16, u32, u8]
+  - [BgmStop, {u16: Time}, u8]
+  - [BgmWait, u8]
+  - [BgmVolume, f32, u16, u8]
   - [_30_04, u16, f32, f32, u16, u8]
-  - [_30_05, u16, u16]
-  - [_30_06, u16]
+  - [BgmReplace, {u16: BgmId}, {u16: BgmId}]
+  - [BgmForce, {u16: BgmId}]
   - [_30_07]
 - !match
   - [_31_00, *CharId, f32, u16, u32, f32, u16, u16, u32, u32, u32, u32, String]
@@ -227,7 +227,7 @@ insns:
   - !skip 5
   - [_32_0A, u16]
   - [_32_0B, u16]
-- [_33, u16, f32, f32, u8]
+- [_33, *CharId, f32, f32, u8]
 - [_34, u16, u16, u16, u16, u8]
 - [_35, u16]
 - [_36, u16, u16, f32, f32, f32, f32, !Cs1_36 [[65026, 65027], f32], u8, u8, u8]
@@ -254,20 +254,20 @@ insns:
   - !skip 148
   - [FadeOut, u16]
   - [FadeIn, u16]
-- [_3A, *CharId, u8, f32, u16]
+- [Emote, *CharId, u8, f32, u16]
 - [_3B, *CharId, f32, f32, f32, u16, u16]
 - [_3C, *CharId, u16, u16, !Cs1_3C [f32, f32, f32]]
 - !match
   - [_3D_00, String, u16]
   - [_3D_01, String, u16]
 - !match
-  - [_3E_0, i16, u16, u16] # first i32 is same as in _5B_2, _5C_2, _5B_4, _5E_5
+  - [CharSetLevel, *CharId, u16, u16]
 - !match
-  - [_3F_0, *CharId]
-  - [_3F_1, u16]
-  - [_3F_2]
+  - [PartyAdd, *CharId]
+  - [_3F_1, *CharId]
+  - [PartyClear]
   - [_3F_3]
-  - [_3F_4, u16]
+  - [PartyLock, *CharId]
   - [PartyHasMember, *CharId] # getter, bool
   - [_3F_6, u16]
   - [_3F_7]
@@ -277,10 +277,10 @@ insns:
   - [_3F_11, u16]
 - [_40, f32, f32, f32, f32, u16, u8]
 - [_41, u16, f32, f32, f32, f32, u16, u8]
-- [_42, u16, u8]
+- [ForkWait, *CharId, {u8: ForkId}]
 - [_43, f32]
 - !match
-  - [_44_0, u16, u32, u16, u16, u32, u32]
+  - [_44_0, u16, f32, u16, u16, f32, f32]
   - [_44_1, u16]
   - [_44_2, u16, u16, u8, u8, u16, u8]
   - [_44_3, u16, f32, f32, f32, f32, u16, u8]
@@ -293,7 +293,7 @@ insns:
 - !match
   - [_49_0, u32, f32, f32, f32, f32, f32, f32, f32]
   - [_49_1, u32, f32, f32, f32, f32, f32, f32, f32]
-  - [_49_2, u32, f32, f32, f32, f32, f32, f32, f32]
+  - [MinigameBlade, {u32: NameId}, {u32: Global}, u32, u32, u32, u32, u32, u32]
   - [_49_3, u32, u32, u32, u32, u32, u32, u32, u32]
   - [_49_4, u32, u32, u32, u32, u32, u32, u32, u32]
   - !skip 5
@@ -329,16 +329,18 @@ insns:
   - [_49_38] # getter
   - []
   - [_49_40, u8, u16]
-- [_4A, u8, u16, u16, u16, u16, u16, u16, u16, u16, u16, u16, u32, u32, u32, u32, u8, String]
-- [_4B, u8, u8, u8, f32, f32, f32, f32, f32]
-- [_4C, u8, u8]
-- [_4D, u8]
+- [VisShow, {u8: VisId}, [u16, u16, u16, u16], [u16, u16, u16, u16], [u16, u16], [f32, f32, f32, f32], u8, String]
+- [VisSet, {u8: VisId}, u8, u8, f32, f32, f32, f32, f32]
+- [VisWait, {u8: VisId}, u8]
+- [VisHide, {u8: VisId}]
 - []
-- [_4F, u16, u16, String, u8, u16]
+- [PlaceShow, u16, u16, String, u8, u16]
 - []
 - [_51, u16, u8, String]
 - [_52, u16, String, f32, f32, f32, f32, f32, f32, f32, f32, f32]
-- [_53, u8, u16, u16, u32]
+- !match
+  - [BlurOn, u16, u16, f32]
+  - [BlurOff, u16, u16, f32]
 - []
 - [_55, u16, u8, String]
 - [_56, String, u16]
@@ -347,16 +349,16 @@ insns:
 - [_59, u16]
 - [_5A, u8, String, u16]
 - !match
-  - [_5B_0, u16, u16]
+  - [CharAddCraft, *CharId, {u16: MagicId}]
   - [_5B_1, u16, u16]
-  - [_5B_2, u16]
-  - [_5B_3, u16]
-  - [_5B_4, u16, u16]
+  - [_5B_2, *CharId]
+  - [_5B_3, *CharId]
+  - [_5B_4, *CharId, u16]
   - [_5B_5, u16]
 - !match
   - [_5C_0, u16, u16]
   - [_5C_1, u16, u16]
-  - [_5C_2, u16]
+  - [_5C_2, *CharId]
   - [_5C_3, u16]
 - !match
   - [_5D_0, String, u16]
@@ -370,20 +372,20 @@ insns:
   - [_5D_8, String, f32, f32, f32, u16, u8]
   - [_5D_9, String]
 - !match
-  - [_5E_0, u16, u16, u32]
-  - [_5E_1, u16]
-  - [_5E_2, u16, u16, u16]
+  - [_Link_0, *CharId, *CharId, u32]
+  - [_Link_1, u16]
+  - [_Link_2, u16, u16, u16]
   - []
-  - [_5E_4, u16]
-  - [_5E_5, u16, u16, u16]
-  - [_5E_6, u16, u16, u16, u32]
-  - [_5E_7, u16]
-  - [_5E_8, u16]
-  - [_5E_9, u16]
-  - [_5E_10, u16, u16, u8]
-  - [_5E_11, u16] # getter
-  - [_5E_12, u16, u16] # getter
-  - [_5E_13, u16, u16] # getter
+  - [_Link_4, u16]
+  - [_Link_5, *CharId, u16, u16] # Something about "friends"
+  - [_Link_6, u16, u16, u16, u32]
+  - [_Link_7, u16]
+  - [_Link_8, u16]
+  - [_Link_9, u16]
+  - [LinkPrevent, *CharId, *CharId, u8]
+  - [_Link_11, u16] # getter
+  - [_Link_12, u16, u16] # getter
+  - [_Link_13, u16, u16] # getter
 - !match
   head: [*CharId]
   cases:
@@ -396,22 +398,22 @@ insns:
 - [_62, String, u32, u16]
 - [_63, u16, f32, f32, f32, f32, u8]
 - !match # First argument is same unit as _65*
-  - [_64_0, u16, u32]
-  - [_64_1, u16, u32]
-  - [_64_2, u16, u32] # getter
-  - [_64_3, u16, u32]
+  - [ItemAdd, {u16: ItemId}, u32]
+  - [ItemRemove, {u16: ItemId}, u32]
+  - [ItemHas, {u16: ItemId}, u32] # getter
+  - [_64_3, {u16: ItemId}, u32]
 - !match
-  - [_65_00, u16, u16, u8]
-  - [_65_01, u16, u8]
-  - [_65_02, u16, u16] # getter
-  - [_65_03, u16, u16, u8]
-  - [_65_04, u16, u8]
+  - [CharEquip, *CharId, {u16: ItemId}, u8]
+  - [_65_01, *CharId, u8]
+  - [_65_02, *CharId, u16] # getter
+  - [CharSetMq, *CharId, {u16: ItemId}, u8]
+  - [_65_04, *CharId, u8]
   - []
-  - [_65_06, u16, u8, u8]
-  - [_65_07, u16, u8] # getter
-  - [_65_08, u16, u16, u16]
-  - [_65_09, u16, u8] # getter
-- [_66, u32, u16]
+  - [_65_06, *CharId, u8, u8]
+  - [CharEquipGet, *CharId, u8] # getter
+  - [_65_08, *CharId, u16, u16]
+  - [_65_09, *CharId, u8] # getter
+- [_66, f32, u16]
 - !match
   head: [{u16: QuestId}]
   cases:
@@ -420,7 +422,7 @@ insns:
   - [QuestTaskUnset, {u16: QuestTask}]
   - [QuestFlagsUnset, {u8: QuestFlags}]
   - [QuestFlagsSet, {u8: QuestFlags}]
-  - [Quest_5]
+  - [QuestCheckExpired]
   - [QuestBonusBp, u16]
 - !match
   head: [{u16: QuestId}]
@@ -441,8 +443,8 @@ insns:
   - [MenuClose, {u8: MenuId}]
   - [MenuWait, {u8: MenuId}, {u8: Global}]
   - [_Menu_5, {u8: MenuId}, u16, u16]
-  - [_Menu_6, {u8: MenuId}, u16]
-  - [_Menu_7, {u8: MenuId}, u16]
+  - [MenuDisable, {u8: MenuId}, u16]
+  - [MenuSisable2, {u8: MenuId}, u16]
 - [_6B, u16, String, String, u8]
 - [_6C, *CharId]
 - [_6D, u8, String]
@@ -464,14 +466,14 @@ insns:
   - [_6F_2, u16, String] # getter, bool
 - !match
   - []
-  - [_70_1, String, u8, u8, u8]
+  - [MoviePlay, String, u8, u8, u8]
   - [_70_2]
   - !skip 6
-  - [_70_9]
+  - [MovieWait]
 - !match
-  - [_71_0, u16, u16, u16, u16, u16]
-  - [_71_1]
-- [_72, u16]
+  - [QuestSubmit1, {u16: QuestId}, {u16: QuestId}, {u16: QuestId}, u16, u16] # possibly a variable-sized list?
+  - [QuestSubmit2]
+- [ShopOpen, {u16: ShopId}]
 - !match
   - [_73_0]
   - [_73_1]
@@ -480,7 +482,7 @@ insns:
   - [_73_4, u16]
   - [_73_5, f32]
   - [_73_6, u16]
-- [_74, u8] # ???
+- [_74, u8] # "memory removal"
 - []
 - []
 - [_77, u16, u32, u32, u32, u32, u32, u32, u32]
@@ -489,8 +491,8 @@ insns:
 - [_7A, u8, u8]
 - [_7B, u8, u16, u16, u16, u16, i16, f32, f32, f32, String]
 - []
-- [_7D, u16, u16]
-- [_7E, u16]
+- [BondPointSetIcon, u16, u16]
+- [BondPointAdd, u16]
 - !match
   - [_7F_00, u16, u16, String, String]
   - [_7F_01, u16, u16, String, String]
@@ -500,44 +502,46 @@ insns:
 - [_80, f32, f32, f32, f32, u32, u8]
 - !match
   - [_81_0, u16]
-  - [_81_1]
+  - [GameClose]
 - [_82, u16, u16, u16]
-- [_83, u16, u32, i16, u16, u16, i16]
-- [_84]
+- [CalendarMenuShow, [u16, u32, i16], [u16, u16, i16]]
+- [CalendarMenuWait]
 - [_85, String, u32]
-- [_86, u8, u16, u16]
-- [_87, u8, u16]
+- [_86, u8, u16, u16] # Something about character unlocking. What's a "lower secret"?
+- [_87, {u8: Global}, u16] # assign random party member?
 - !match
-  - [_88_00, u8]
-  - [_88_01]
+  - [SaveMenuShow, u8]
+  - [SaveMenuWait]
 - !match
-  - [_89_00, u32]
-  - [_89_01]
+  - [CampMenuShow, u32]
+  - [CampMenuWait]
 - !match
-  - [_8A_00, String, String]
-  - [_8A_01]
+  - [BookMenuShow, String, String]
+  - [BookMenuWait]
 - [_8B, u16, u8]
 - [_8C, u16]
 - [_8D, u16, f32]
 - [_8E, u16]
 - []
-- !match
+- !match # something about button presses
   - [_90_00, u16]
   - [_90_01]
   - [_90_02]
   - [_90_03]
   - [_90_04]
-- !match
+- !match # something about quests it seems
   - [_91_00, u8, u16, u16, u16, u16]
   - [_91_01]
 - [_92, u16]
-- [_93, u8]
+- !match
+  - []
+  - [FishBaitReset]
 - [_94, f32, f32, f32, f32]
-- [_95]
+- [BondPointQuit]
 - [_96, f32, f32, f32, u16, u16]
 - [_97, u16]
-- [_98, u16, u16]
-- [_99]
+- [ArcusCoverEquip, *CharId, {u16: ItemId}]
+- [_99] # "friends"
 - !match
   - []
   - []
@@ -545,7 +549,10 @@ insns:
 - [_9B, u16, u32, u32, u32]
 - []
 - [_9D, u32]
-- [_9E, u8] # getter
+- !match
+  - [NotebookBattleCount]
+  - [NotebookCharCount]
+  - [NotebookFishCount]
 - [_9F, u8, u16, u16, u16, u16, u16, u16, u16, u16, u16, u16, f32, f32, f32, f32, u8, String, String]
 - !skip 96
 
@@ -566,3 +573,9 @@ at_roll:
 - at13
 - at14
 - at15
+
+globals:
+  6: party size
+  9: bond points
+  26: sheep count !? # flag[376]
+  42: number of clears?
