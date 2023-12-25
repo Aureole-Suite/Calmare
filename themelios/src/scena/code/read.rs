@@ -418,7 +418,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 				stack.push(Expr::Assign(op, Box::new(arg)))
 			} else {
 				stack.push(match op {
-					0x00 => Expr::Atom(A::Int(f.u32()? as i64)),
+					0x00 => Expr::Atom(A::Int(f.i32()? as i64)),
 					0x01 => break,
 					0x1C => Expr::Insn(self.insn()?),
 					0x1E => Expr::Atom(A::Flag(Flag(f.u16()?))),

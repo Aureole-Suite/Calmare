@@ -525,7 +525,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 		match *expr {
 			Expr::Atom(A::Int(n)) => {
 				self.f.u8(0x00);
-				self.f.u32(cast(n)?);
+				self.f.i32(cast(n)?);
 			}
 			Expr::Bin(op, ref l, ref r) => {
 				self.expr(l)?;
