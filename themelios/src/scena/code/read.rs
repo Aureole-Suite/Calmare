@@ -437,7 +437,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 					))),
 					0x22 => Expr::Rand,
 					0x23 => Expr::Atom(A::Global(Global(f.u8()?))),
-					op => Err(ValueError::new("Expr", format!("0x{op:02X}")))?,
+					op => bail!(ValueError::<Expr>(format!("0x{op:02X}"))),
 				})
 			};
 		}

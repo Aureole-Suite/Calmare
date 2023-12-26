@@ -261,9 +261,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 			iset::IntType::u8 => f.u8(cast(val)?),
 			iset::IntType::u16 => f.u16(cast(val)?),
 			iset::IntType::u24 => {
-				if !(0..(1 << 24)).contains(&val) {
-					Err(ValueError::new("u24", val.to_string()))?
-				}
+				ensure!((0..(1 << 24)).contains(&val), ValueError::new("u24", val));
 				f.u16(val as u16);
 				f.u8((val >> 16) as u8);
 			}

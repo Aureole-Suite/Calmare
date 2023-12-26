@@ -122,7 +122,7 @@ impl CharId {
 			Ok(match v {
 				999 => CharId::Chest,
 				257.. => CharId::Name(NameId(v - 257)),
-				256 => return Err(ValueError::new("CharId", v)),
+				256 => return Err(ValueError::<CharId>(v)),
 				255 => CharId::Null,
 				254 => CharId::Self_,
 				244.. if g == Azure => CharId::Custom(v - 244),
@@ -142,7 +142,7 @@ impl CharId {
 				CharId::Null => 0xFFFF,
 				CharId::Self_ => 0xFFFE,
 				CharId::Name(v) => v.0,
-				_ => return Err(ValueError::new("u16", format!("{self:?}"))),
+				_ => return Err(ValueError::<u16>(format!("{self:?}"))),
 			})
 		} else {
 			Ok(match self {
@@ -152,7 +152,7 @@ impl CharId {
 				CharId::Party2(v) if g == Sc => 246 + v,
 				CharId::Party2(v) => 238 + v,
 				CharId::Custom(v) if g == Azure => 244 + v,
-				CharId::Custom(_) => return Err(ValueError::new("u16", format!("{self:?}"))),
+				CharId::Custom(_) => return Err(ValueError::<u16>(format!("{self:?}"))),
 				CharId::Self_ => 254,
 				CharId::Null => 255,
 				CharId::Name(v) => 257 + v.0,

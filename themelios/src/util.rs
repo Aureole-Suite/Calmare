@@ -101,12 +101,7 @@ pub impl Writer {
 		E: From<EncodeError> + From<ValueError>,
 	{
 		let s = encode(s)?;
-		if s.len() > N {
-			Err(ValueError::new(
-				std::any::type_name::<[u8; N]>(),
-				format!("{s:?}"),
-			))?
-		}
+		ensure!(s.len() <= N, ValueError::<[u8; N]>(format!("{s:?}")));
 		let mut buf = [0; N];
 		buf[..s.len()].copy_from_slice(&s);
 		self.array::<N>(buf);
@@ -155,6 +150,11 @@ impl ValueError {
 	}
 }
 
+#[allow(non_snake_case)]
+pub fn ValueError<T: ?Sized>(value: impl ToString) -> ValueError {
+	ValueError::new(std::any::type_name::<T>(), value)
+}
+
 pub fn cast<A, B>(a: A) -> Result<B, ValueError>
 where
 	A: std::fmt::Debug + Clone,
@@ -162,7 +162,7 @@ where
 {
 	a.clone()
 		.try_into()
-		.map_err(|_| ValueError::new(std::any::type_name::<B>(), format!("{:?}", a)))
+		.map_err(|_| ValueError::<B>(format!("{:?}", a)))
 }
 
 pub macro bail {
