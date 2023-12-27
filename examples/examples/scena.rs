@@ -12,19 +12,19 @@ fn main() -> anyhow::Result<()> {
 		let mut scena = Script::read(&iset, &bytes)?;
 		themelios::scena::code::decompile::decompile(&mut scena.functions);
 		themelios::scena::code::normalize::normalize(&mut scena.functions).unwrap();
-		println!("{:#?}", scena);
+		// println!("{:#?}", scena);
 
-		// let output = calmare::print(&scena, &iset);
-		// print!("{}", output);
-		// let (v, diags) = calmare::parse::<Scena>(&output, &iset);
-		// let v = v.unwrap();
-		//
-		// if v != scena {
-		// 	println!("{:#?}", scena);
-		// 	println!("{:#?}", v);
-		// }
-		//
-		// print_diags(&file, &output, &diags);
+		let output = calmare::print(&scena, &iset);
+		print!("{}", output);
+		let (v, diags) = calmare::parse::<Script>(&output, &iset);
+		let v = v.unwrap();
+
+		if v != scena {
+			println!("{:#?}", scena);
+			println!("{:#?}", v);
+		}
+
+		print_diags(&file, &output, &diags);
 
 		let bytes2 = Script::write(&iset, &scena)?;
 		if bytes != bytes2 {

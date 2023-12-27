@@ -498,12 +498,27 @@ fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> p
 			}
 		}
 
-		MA::f32 => todo!(),
-		MA::Cs1_13(_) => todo!(),
-		MA::Cs1_22 => todo!(),
+		MA::f32 => out.push(f.arg(Atom::Float)?),
+		MA::Cs1_13(a) => {
+			if f.pos().is_ok() {
+				parse_arg(out, f, a)?;
+			}
+		}
+		MA::Cs1_22 => {
+			out.push(Arg::Tuple(tuple(f, |f| f.arg(Atom::Int))?));
+			out.push(Arg::Tuple(tuple(f, |f| f.arg(Atom::Float))?));
+		}
 		MA::Cs1_28_34 => todo!(),
-		MA::Cs1_36(_, _) => todo!(),
-		MA::Cs1_3C(_) => todo!(),
+		MA::Cs1_36(x, a) => {
+			if matches!(out[1], Arg::Atom(Atom::Int(v)) if x.contains(&(v as u16))) {
+				parse_arg(out, f, a)?;
+			}
+		}
+		MA::Cs1_3C(a) => {
+			if matches!(out[1], Arg::Atom(Atom::Int(0xFFFF))) {
+				parse_arg(out, f, a)?;
+			}
+		}
 	}
 	Ok(())
 }

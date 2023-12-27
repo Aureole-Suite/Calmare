@@ -13,6 +13,7 @@ pub mod parse;
 use parse::Emit as _;
 pub use parse::Parser;
 
+mod ed8;
 mod scena;
 mod types;
 
