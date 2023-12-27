@@ -215,7 +215,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 			}
 
 			T::String => out.push(Arg::Atom(A::String(f.string()?))),
-			T::TString => out.push(Arg::Atom(A::TString(TString(f.string()?)))),
+			T::TString => out.push(Arg::Atom(A::TString(f.tstring()?))),
 			T::Text => {
 				if self.iset.game >= Game::Cs1 {
 					text_ed8(f, out)?
@@ -274,7 +274,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 			},
 
 			T::Menu => {
-				for line in f.string()?.split_terminator('\x01') {
+				for line in f.tstring()?.split_terminator('\x01') {
 					out.push(Arg::Atom(A::TString(TString(line.to_owned()))))
 				}
 			}

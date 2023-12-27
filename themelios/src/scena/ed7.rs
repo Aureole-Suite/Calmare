@@ -349,7 +349,7 @@ impl Label {
 			pos: f.vec3()?,
 			unk1: f.u16()?,
 			unk2: f.u16()?,
-			name: TString(f.ptr32()?.string()?),
+			name: f.ptr32()?.tstring()?,
 		})
 	}
 
@@ -360,7 +360,7 @@ impl Label {
 		f.u16(self.unk1);
 		f.u16(self.unk2);
 		f.label32(strings.here());
-		strings.string(self.name.as_str())?;
+		strings.tstring(&self.name)?;
 		Ok(())
 	}
 }
@@ -381,7 +381,7 @@ pub struct Npc {
 impl Npc {
 	fn read(f: &mut Reader, strings: &mut Reader) -> Result<Npc, ReadError> {
 		Ok(Npc {
-			name: TString(strings.string()?),
+			name: strings.tstring()?,
 			pos: f.pos3()?,
 			angle: Angle(f.i16()?),
 			flags: CharFlags(f.u16()?),
@@ -394,7 +394,7 @@ impl Npc {
 	}
 
 	fn write(&self, f: &mut Writer, strings: &mut Writer) -> Result<(), WriteError> {
-		strings.string(self.name.as_str())?;
+		strings.tstring(&self.name)?;
 		f.pos3(self.pos);
 		f.i16(self.angle.0);
 		f.u16(self.flags.0);

@@ -297,7 +297,7 @@ pub struct Npc {
 impl Npc {
 	fn read(f: &mut Reader, strings: &mut Reader) -> Result<Npc, ReadError> {
 		Ok(Npc {
-			name: TString(strings.string()?),
+			name: strings.tstring()?,
 			pos: f.pos3()?,
 			angle: Angle(f.i16()?),
 			x: f.u16()?,
@@ -311,7 +311,7 @@ impl Npc {
 	}
 
 	fn write(&self, f: &mut Writer, strings: &mut Writer) -> Result<(), WriteError> {
-		strings.string(self.name.as_str())?;
+		strings.tstring(&self.name)?;
 		f.pos3(self.pos);
 		f.i16(self.angle.0);
 		f.u16(self.x);
@@ -344,7 +344,7 @@ pub struct Monster {
 impl Monster {
 	fn read(f: &mut Reader, strings: &mut Reader) -> Result<Monster, ReadError> {
 		Ok(Monster {
-			name: TString(strings.string()?),
+			name: strings.tstring()?,
 			pos: f.pos3()?,
 			angle: Angle(f.i16()?),
 			chip: ChipId(f.u16()?),
@@ -357,7 +357,7 @@ impl Monster {
 	}
 
 	fn write(&self, f: &mut Writer, strings: &mut Writer) -> Result<(), WriteError> {
-		strings.string(self.name.as_str())?;
+		strings.tstring(&self.name)?;
 		f.pos3(self.pos);
 		f.i16(self.angle.0);
 		f.u16(self.chip.0);

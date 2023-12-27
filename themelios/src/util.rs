@@ -4,7 +4,7 @@ use gospel::read::{Le as _, Reader};
 use gospel::write::{Le as _, Writer};
 use strict_result::{Strict, StrictResult};
 
-use crate::types::{Pos2, Pos3};
+use crate::types::{Pos2, Pos3, TString};
 
 #[derive(Debug, thiserror::Error)]
 #[error("Invalid SJIS string {text:?}")]
@@ -51,6 +51,13 @@ pub impl Reader<'_> {
 		Ok(decode(cstr.to_bytes())?).strict()
 	}
 
+	fn tstring<E>(&mut self) -> StrictResult<TString, E>
+	where
+		E: From<gospel::read::Error> + From<DecodeError>,
+	{
+		self.string().loose().map(TString).strict()
+	}
+
 	fn sized_string<const N: usize, E>(&mut self) -> StrictResult<String, E>
 	where
 		E: From<gospel::read::Error> + From<DecodeError>,
@@ -94,6 +101,13 @@ pub impl Writer {
 		self.slice(&s);
 		self.array([0]);
 		Ok(()).strict()
+	}
+
+	fn tstring<E>(&mut self, s: &TString) -> StrictResult<(), E>
+	where
+		E: From<EncodeError>,
+	{
+		self.string(&s)
 	}
 
 	fn sized_string<const N: usize, E>(&mut self, s: &str) -> StrictResult<(), E>

@@ -306,9 +306,13 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				self.int(*int, *val)?;
 			}
 
-			T::String | T::TString => {
+			T::String => {
 				expect!(Arg::Atom(Atom::String(s) | Atom::TString(TString(s))) in iter, "string");
 				f.string(s)?;
+			}
+			T::TString => {
+				expect!(Arg::Atom(Atom::String(s) | Atom::TString(TString(s))) in iter, "string");
+				f.tstring(s.into())?;
 			}
 			T::Text => {
 				if self.iset.game >= Game::Cs1 {
@@ -425,7 +429,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 					out.push_str(s.as_str());
 					out.push('\x01');
 				}
-				f.string(&out)?;
+				f.tstring(&TString(out))?;
 			}
 
 			T::EvoSave => {
