@@ -641,23 +641,29 @@ fn text<'c>(
 	iter: impl Iterator<Item = &'c Arg>,
 	iset: &iset::InsnSet,
 ) -> Result<(), WriteError> {
+	let escape = if iset.game >= Game::Cs1 {
+		escape_ed8
+	} else {
+		escape_ed67
+	};
 	let mut first = true;
 	for val in iter {
 		expect!(Arg::Atom(Atom::Text(t)) = val, "text");
 		if !std::mem::take(&mut first) {
 			f.u8(0x03); // page break
 		}
-		if iset.game >= Game::Cs1 {
-			text_page_ed8(f, t, iset.encoding)?;
-		} else {
-			text_page(f, t, iset.encoding)?;
-		}
+		text_page(f, t, iset.encoding, escape)?;
 	}
 	f.u8(0);
 	Ok(())
 }
 
-fn text_page(f: &mut Writer, s: &Text, enc: Enc) -> Result<(), WriteError> {
+fn text_page(
+	f: &mut Writer,
+	s: &Text,
+	enc: Enc,
+	mut escape: impl FnMut(&mut Writer, char, u32) -> Result<bool, WriteError>,
+) -> Result<(), WriteError> {
 	let mut iter = s.0.chars();
 	while let (str, Some(char)) = (iter.as_str(), iter.next()) {
 		match char {
@@ -671,83 +677,16 @@ fn text_page(f: &mut Writer, s: &Text, enc: Enc) -> Result<(), WriteError> {
 				loop {
 					match iter.next() {
 						Some(v @ ('0'..='9')) => n = n * 10 + v.to_digit(10).unwrap(),
-						Some('C') => {
-							f.u8(0x07);
-							f.u8(cast(n)?);
-							break;
-						}
-						Some('i') => {
-							f.u8(0x1F);
-							f.u16(cast(n)?);
-							break;
-						}
 						Some('x') => {
 							f.u8(cast(n)?);
 							break;
 						}
 						Some('♯') => f.slice(&falcom_sjis::encode_char('♯').unwrap()),
 						None => bail!("unterminated escape sequence"),
-						Some(_) => bail!("illegal escape sequence (maybe try `#`?)"),
-					}
-				}
-			}
-
-			_ => {
-				let part = str.split(|c| c < ' ' || c == '♯').next().unwrap();
-				f.slice(&encode(part, enc)?);
-				iter = str[part.len()..].chars();
-			}
-		}
-	}
-	Ok(())
-}
-
-fn text_page_ed8(f: &mut Writer, s: &Text, enc: Enc) -> Result<(), WriteError> {
-	let mut iter = s.0.chars();
-	while let (str, Some(char)) = (iter.as_str(), iter.next()) {
-		match char {
-			'\n' => f.u8(0x01),
-			'\t' => f.u8(0x02),
-			'\r' => f.u8(0x0D),
-			'\0'..='\x1F' => bail!("unprintable character"),
-
-			'♯' => {
-				let mut n = 0;
-				loop {
-					match iter.next() {
-						Some(v @ ('0'..='9')) => n = n * 10 + v.to_digit(10).unwrap(),
-						Some('A') => {
-							f.u8(0x10);
-							f.u16(cast(n)?);
+						Some(c) => {
+							ensure!(escape(f, c, n)?, "illegal escape sequence");
 							break;
 						}
-						Some('J') => {
-							f.u8(0x11);
-							f.u32(cast(n)?);
-							break;
-						}
-						Some('C') => {
-							f.u8(0x12);
-							f.u32(cast(n)?);
-							break;
-						}
-						Some('D') => {
-							f.u8(0x17);
-							f.u16(cast(n)?);
-							break;
-						}
-						Some('E') => {
-							f.u8(0x18);
-							f.u16(cast(n)?);
-							break;
-						}
-						Some('x') => {
-							f.u8(cast(n)?);
-							break;
-						}
-						Some('♯') => f.slice(&falcom_sjis::encode_char('♯').unwrap()),
-						None => bail!("unterminated escape sequence"),
-						Some(_) => bail!("illegal escape sequence (maybe try `#`?)"),
 					}
 				}
 			}
@@ -761,4 +700,46 @@ fn text_page_ed8(f: &mut Writer, s: &Text, enc: Enc) -> Result<(), WriteError> {
 		}
 	}
 	Ok(())
+}
+
+fn escape_ed67(f: &mut Writer, char: char, n: u32) -> Result<bool, WriteError> {
+	match char {
+		'C' => {
+			f.u8(0x07);
+			f.u8(cast(n)?);
+		}
+		'i' => {
+			f.u8(0x1F);
+			f.u16(cast(n)?);
+		}
+		_ => return Ok(false),
+	}
+	Ok(true)
+}
+
+fn escape_ed8(f: &mut Writer, char: char, n: u32) -> Result<bool, WriteError> {
+	match char {
+		'A' => {
+			f.u8(0x10);
+			f.u16(cast(n)?);
+		}
+		'J' => {
+			f.u8(0x11);
+			f.u32(cast(n)?);
+		}
+		'C' => {
+			f.u8(0x12);
+			f.u32(cast(n)?);
+		}
+		'D' => {
+			f.u8(0x17);
+			f.u16(cast(n)?);
+		}
+		'E' => {
+			f.u8(0x18);
+			f.u16(cast(n)?);
+		}
+		_ => return Ok(false),
+	}
+	Ok(true)
 }
