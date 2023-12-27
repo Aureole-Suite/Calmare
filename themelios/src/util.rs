@@ -18,17 +18,19 @@ pub struct DecodeError {
 }
 
 pub fn decode(bytes: &[u8], enc: Enc) -> Result<String, DecodeError> {
-	if let Ok(s) = falcom_sjis::decode(bytes) {
-		Ok(s)
-	} else if let Ok(s) = std::str::from_utf8(bytes) {
-		tracing::warn!("unexpected utf8 string — will not roundtrip");
-		Ok(s.to_owned())
-	} else {
-		Err(DecodeError {
+	match enc {
+		Enc::Sjis => falcom_sjis::decode(bytes).map_err(|_| DecodeError {
 			enc,
 			text: falcom_sjis::decode_lossy(bytes),
 			backtrace: Backtrace::capture(),
-		})
+		}),
+		Enc::Utf8 => std::str::from_utf8(bytes)
+			.map(String::from)
+			.map_err(|_| DecodeError {
+				enc,
+				text: String::from_utf8_lossy(bytes).into_owned(),
+				backtrace: Backtrace::capture(),
+			}),
 	}
 }
 
@@ -41,11 +43,14 @@ pub struct EncodeError {
 }
 
 pub fn encode(text: &str, enc: Enc) -> Result<Vec<u8>, EncodeError> {
-	falcom_sjis::encode(text).map_err(|_| EncodeError {
-		enc,
-		text: text.to_owned(),
-		backtrace: Backtrace::capture(),
-	})
+	match enc {
+		Enc::Sjis => falcom_sjis::encode(text).map_err(|_| EncodeError {
+			enc,
+			text: text.to_owned(),
+			backtrace: Backtrace::capture(),
+		}),
+		Enc::Utf8 => Ok(text.as_bytes().to_vec()),
+	}
 }
 
 #[extend::ext(name = ReaderExt)]
