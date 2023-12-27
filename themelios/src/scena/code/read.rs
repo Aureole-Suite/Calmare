@@ -10,7 +10,7 @@ use crate::scena::*;
 use crate::types::*;
 use crate::util::OptionTExt as _;
 use crate::util::{bail, ensure};
-use crate::util::{cast, list};
+use crate::util::{cast, decode, list, Enc};
 use crate::util::{ReaderExt, ValueError};
 
 #[derive(Debug, thiserror::Error)]
@@ -216,13 +216,7 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 
 			T::String => out.push(Arg::Atom(A::String(f.string()?))),
 			T::TString => out.push(Arg::Atom(A::TString(f.tstring(self.iset)?))),
-			T::Text => {
-				if self.iset.game >= Game::Cs1 {
-					text_ed8(f, out)?
-				} else {
-					text(f, out)?
-				}
-			}
+			T::Text => text(f, out, self.iset)?,
 
 			T::Pos2 => out.push(Arg::Atom(A::Pos2(f.pos2()?))),
 			T::Pos3 => out.push(Arg::Atom(A::Pos3(f.pos3()?))),
@@ -533,9 +527,13 @@ fn int_arg(iset: &iset::InsnSet, v: i64, ty: iset::IntArg) -> Result<Atom> {
 	})
 }
 
-fn text(f: &mut Reader, out: &mut Vec<Arg>) -> Result<()> {
+fn text(f: &mut Reader, out: &mut Vec<Arg>, iset: &iset::InsnSet) -> Result<()> {
 	loop {
-		let (page, more) = text_page(f)?;
+		let (page, more) = if iset.game >= Game::Cs1 {
+			text_page_ed8(f, iset.encoding)?
+		} else {
+			text_page(f, iset.encoding)?
+		};
 		out.push(Arg::Atom(Atom::Text(page)));
 		if !more {
 			break;
@@ -544,7 +542,7 @@ fn text(f: &mut Reader, out: &mut Vec<Arg>) -> Result<()> {
 	Ok(())
 }
 
-fn text_page(f: &mut Reader) -> Result<(Text, bool)> {
+fn text_page(f: &mut Reader, enc: Enc) -> Result<(Text, bool)> {
 	let mut buf = String::new();
 	let more = loop {
 		match f.u8()? {
@@ -556,33 +554,13 @@ fn text_page(f: &mut Reader) -> Result<(Text, bool)> {
 			0x0D => buf.push('\r'),
 			0x1F => buf.push_str(&format!("♯{}i", f.u16()?)),
 			ch @ (0x00..=0x1F) => buf.push_str(&format!("♯{}x", ch)),
-			ch @ 0x20.. => match falcom_sjis::decode_char_from(ch, || f.u8().ok()) {
-				Ok('♯') => buf.push_str("♯♯"),
-				Ok('㈱') => buf.push('♥'),
-				Ok(ch) => buf.push(ch),
-				Err(enc) => {
-					for ch in enc {
-						buf.push_str(&format!("♯{}x", ch))
-					}
-				}
-			},
+			0x20.. => buf.push_str(&text_content(f, enc)?),
 		}
 	};
 	Ok((Text(TString(buf)), more))
 }
 
-fn text_ed8(f: &mut Reader, out: &mut Vec<Arg>) -> Result<()> {
-	loop {
-		let (page, more) = text_page_ed8(f)?;
-		out.push(Arg::Atom(Atom::Text(page)));
-		if !more {
-			break;
-		}
-	}
-	Ok(())
-}
-
-fn text_page_ed8(f: &mut Reader) -> Result<(Text, bool)> {
+fn text_page_ed8(f: &mut Reader, enc: Enc) -> Result<(Text, bool)> {
 	let mut buf = String::new();
 	let more = loop {
 		match f.u8()? {
@@ -596,17 +574,17 @@ fn text_page_ed8(f: &mut Reader) -> Result<(Text, bool)> {
 			0x17 => buf.push_str(&format!("♯{}D", f.u16()?)),
 			0x18 => buf.push_str(&format!("♯{}E", f.u16()?)),
 			ch @ (0x00..=0x1F) => buf.push_str(&format!("♯{}x", ch)),
-			ch @ 0x20.. => match falcom_sjis::decode_char_from(ch, || f.u8().ok()) {
-				Ok('♯') => buf.push_str("♯♯"),
-				Ok('㈱') => buf.push('♥'),
-				Ok(ch) => buf.push(ch),
-				Err(enc) => {
-					for ch in enc {
-						buf.push_str(&format!("♯{}x", ch))
-					}
-				}
-			},
+			0x20.. => buf.push_str(&text_content(f, enc)?),
 		}
 	};
 	Ok((Text(TString(buf)), more))
+}
+
+fn text_content(f: &mut Reader<'_>, enc: Enc) -> Result<String> {
+	let start = f.pos() - 1;
+	while f.remaining().first().is_some_and(|i| *i >= 0x20) {
+		f.u8()?;
+	}
+	let slice = &f.data()[start..f.pos()];
+	Ok(decode(slice, enc)?.replace('♯', "♯♯").replace('㈱', "♥"))
 }

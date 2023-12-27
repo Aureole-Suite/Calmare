@@ -8,7 +8,9 @@ use crate::gamedata as iset;
 use crate::scena::*;
 use crate::types::*;
 use crate::util::OptionTExt as _;
-use crate::util::{bail, cast, ensure, ValueError, WriterExt};
+use crate::util::{bail, ensure};
+use crate::util::{cast, encode, Enc};
+use crate::util::{ValueError, WriterExt};
 
 #[derive(Debug, thiserror::Error)]
 pub enum WriteError {
@@ -314,13 +316,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 				expect!(Arg::Atom(Atom::String(s) | Atom::TString(TString(s))) in iter, "string");
 				f.tstring(s.into(), self.iset)?;
 			}
-			T::Text => {
-				if self.iset.game >= Game::Cs1 {
-					text_ed8(f, iter)?
-				} else {
-					text(f, iter)?
-				}
-			}
+			T::Text => text(f, iter, self.iset)?,
 
 			T::Pos2 => {
 				expect!(Arg::Atom(Atom::Pos2(p)) in iter, "pos2");
@@ -640,28 +636,35 @@ fn int_arg(iset: &iset::InsnSet, arg: &Arg) -> Result<i64, WriteError> {
 	})
 }
 
-fn text<'c>(f: &mut Writer, iter: impl Iterator<Item = &'c Arg>) -> Result<(), WriteError> {
+fn text<'c>(
+	f: &mut Writer,
+	iter: impl Iterator<Item = &'c Arg>,
+	iset: &iset::InsnSet,
+) -> Result<(), WriteError> {
 	let mut first = true;
 	for val in iter {
 		expect!(Arg::Atom(Atom::Text(t)) = val, "text");
 		if !std::mem::take(&mut first) {
 			f.u8(0x03); // page break
 		}
-		text_page(f, t)?;
+		if iset.game >= Game::Cs1 {
+			text_page_ed8(f, t, iset.encoding)?;
+		} else {
+			text_page(f, t, iset.encoding)?;
+		}
 	}
 	f.u8(0);
 	Ok(())
 }
 
-fn text_page(f: &mut Writer, s: &Text) -> Result<(), WriteError> {
+fn text_page(f: &mut Writer, s: &Text, enc: Enc) -> Result<(), WriteError> {
 	let mut iter = s.0.chars();
-	while let Some(char) = iter.next() {
+	while let (str, Some(char)) = (iter.as_str(), iter.next()) {
 		match char {
 			'\n' => f.u8(0x01),
 			'\t' => f.u8(0x02),
 			'\r' => f.u8(0x0D),
 			'\0'..='\x1F' => bail!("unprintable character"),
-			'♥' => f.slice(&falcom_sjis::encode_char('㈱').unwrap()),
 
 			'♯' => {
 				let mut n = 0;
@@ -689,40 +692,24 @@ fn text_page(f: &mut Writer, s: &Text) -> Result<(), WriteError> {
 				}
 			}
 
-			char => {
-				if let Some(enc) = falcom_sjis::encode_char(char) {
-					f.slice(&enc)
-				} else {
-					bail!("cannot encode as shift-jis: {char:?}");
-				}
+			_ => {
+				let part = str.split(|c| c < ' ' || c == '♯').next().unwrap();
+				f.slice(&encode(part, enc)?);
+				iter = str[part.len()..].chars();
 			}
 		}
 	}
 	Ok(())
 }
 
-fn text_ed8<'c>(f: &mut Writer, iter: impl Iterator<Item = &'c Arg>) -> Result<(), WriteError> {
-	let mut first = true;
-	for val in iter {
-		expect!(Arg::Atom(Atom::Text(t)) = val, "text");
-		if !std::mem::take(&mut first) {
-			f.u8(0x03); // page break
-		}
-		text_page_ed8(f, t)?;
-	}
-	f.u8(0);
-	Ok(())
-}
-
-fn text_page_ed8(f: &mut Writer, s: &Text) -> Result<(), WriteError> {
+fn text_page_ed8(f: &mut Writer, s: &Text, enc: Enc) -> Result<(), WriteError> {
 	let mut iter = s.0.chars();
-	while let Some(char) = iter.next() {
+	while let (str, Some(char)) = (iter.as_str(), iter.next()) {
 		match char {
 			'\n' => f.u8(0x01),
 			'\t' => f.u8(0x02),
 			'\r' => f.u8(0x0D),
 			'\0'..='\x1F' => bail!("unprintable character"),
-			'♥' => f.slice(&falcom_sjis::encode_char('㈱').unwrap()),
 
 			'♯' => {
 				let mut n = 0;
@@ -765,12 +752,11 @@ fn text_page_ed8(f: &mut Writer, s: &Text) -> Result<(), WriteError> {
 				}
 			}
 
-			char => {
-				if let Some(enc) = falcom_sjis::encode_char(char) {
-					f.slice(&enc)
-				} else {
-					bail!("cannot encode as shift-jis: {char:?}");
-				}
+			_ => {
+				let part = str.split(|c| c < ' ' || c == '♯').next().unwrap();
+				let part = part.replace('♥', "㈱");
+				f.slice(&encode(&part, enc)?);
+				iter = str[part.len()..].chars();
 			}
 		}
 	}

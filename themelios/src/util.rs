@@ -169,6 +169,7 @@ pub fn list<V, E>(n: usize, mut f: impl FnMut() -> Result<V, E>) -> Result<Vec<V
 pub struct ValueError {
 	type_: &'static str,
 	value: String,
+	backtrace: Backtrace,
 }
 
 impl ValueError {
@@ -176,6 +177,7 @@ impl ValueError {
 		Self {
 			type_,
 			value: value.to_string(),
+			backtrace: Backtrace::capture(),
 		}
 	}
 }
