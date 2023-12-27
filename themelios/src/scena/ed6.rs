@@ -73,10 +73,10 @@ impl Scena {
 		let cp = list(n as usize, || Ok(FileId(g.u32()?))).strict()?;
 
 		let (mut g, n) = npcs;
-		let npcs = list(n as usize, || Npc::read(&mut g, &mut strings)).strict()?;
+		let npcs = list(n as usize, || Npc::read(&mut g, &mut strings, iset)).strict()?;
 
 		let (mut g, n) = monsters;
-		let monsters = list(n as usize, || Monster::read(&mut g, &mut strings)).strict()?;
+		let monsters = list(n as usize, || Monster::read(&mut g, &mut strings, iset)).strict()?;
 
 		let (mut g, n) = events;
 		let events = list(n as usize, || Event::read(&mut g)).strict()?;
@@ -182,11 +182,11 @@ impl Scena {
 		cps.u8(0xFF);
 
 		for npc in &scena.npcs {
-			npc.write(&mut npcs, &mut strings)?;
+			npc.write(&mut npcs, &mut strings, iset)?;
 		}
 
 		for monster in &scena.monsters {
-			monster.write(&mut monsters, &mut strings)?;
+			monster.write(&mut monsters, &mut strings, iset)?;
 		}
 
 		for event in &scena.events {
@@ -295,9 +295,9 @@ pub struct Npc {
 }
 
 impl Npc {
-	fn read(f: &mut Reader, strings: &mut Reader) -> Result<Npc, ReadError> {
+	fn read(f: &mut Reader, strings: &mut Reader, iset: &iset::InsnSet) -> Result<Npc, ReadError> {
 		Ok(Npc {
-			name: strings.tstring()?,
+			name: strings.tstring(iset)?,
 			pos: f.pos3()?,
 			angle: Angle(f.i16()?),
 			x: f.u16()?,
@@ -310,8 +310,13 @@ impl Npc {
 		})
 	}
 
-	fn write(&self, f: &mut Writer, strings: &mut Writer) -> Result<(), WriteError> {
-		strings.tstring(&self.name)?;
+	fn write(
+		&self,
+		f: &mut Writer,
+		strings: &mut Writer,
+		iset: &iset::InsnSet,
+	) -> Result<(), WriteError> {
+		strings.tstring(&self.name, iset)?;
 		f.pos3(self.pos);
 		f.i16(self.angle.0);
 		f.u16(self.x);
@@ -342,9 +347,13 @@ pub struct Monster {
 }
 
 impl Monster {
-	fn read(f: &mut Reader, strings: &mut Reader) -> Result<Monster, ReadError> {
+	fn read(
+		f: &mut Reader,
+		strings: &mut Reader,
+		iset: &iset::InsnSet,
+	) -> Result<Monster, ReadError> {
 		Ok(Monster {
-			name: strings.tstring()?,
+			name: strings.tstring(iset)?,
 			pos: f.pos3()?,
 			angle: Angle(f.i16()?),
 			chip: ChipId(f.u16()?),
@@ -356,8 +365,13 @@ impl Monster {
 		})
 	}
 
-	fn write(&self, f: &mut Writer, strings: &mut Writer) -> Result<(), WriteError> {
-		strings.tstring(&self.name)?;
+	fn write(
+		&self,
+		f: &mut Writer,
+		strings: &mut Writer,
+		iset: &iset::InsnSet,
+	) -> Result<(), WriteError> {
+		strings.tstring(&self.name, iset)?;
 		f.pos3(self.pos);
 		f.i16(self.angle.0);
 		f.u16(self.chip.0);

@@ -1,10 +1,10 @@
 use calmare::parse;
 use themelios::ed8::Script;
-use themelios::gamedata::{self, Game, Variant};
+use themelios::gamedata::{self, Encoding, Game, Variant};
 fn main() -> anyhow::Result<()> {
 	unsafe { compact_debug::enable(true) }
 
-	let iset = gamedata::get(Game::Cs1, Variant::Base);
+	let iset = gamedata::get(Game::Cs1, Variant::Base, Encoding::Utf8);
 
 	for file in std::env::args().skip(1) {
 		println!("running {file}");

@@ -103,7 +103,7 @@ impl Scena {
 		let chips = list(n_chips, || Ok(FileId(g.u32()?))).strict()?;
 
 		let mut g = f.clone().at(p_npcs)?;
-		let npcs = list(n_npcs, || Npc::read(&mut g, &mut strings)).strict()?;
+		let npcs = list(n_npcs, || Npc::read(&mut g, &mut strings, iset)).strict()?;
 
 		let mut g = f.clone().at(p_monsters)?;
 		let mut monsters = list(n_monsters, || Monster::read(&mut g)).strict()?;
@@ -150,7 +150,7 @@ impl Scena {
 			None
 		} else {
 			let mut g = f.clone().at(p_labels)?;
-			Some(list(n_labels, || Label::read(&mut g)).strict()?)
+			Some(list(n_labels, || Label::read(&mut g, iset)).strict()?)
 		};
 
 		// The battle stuff is not as well-delineated as the other parts, using pointers to individual parts.
@@ -245,7 +245,7 @@ impl Scena {
 		}
 
 		for npc in &scena.npcs {
-			npc.write(&mut npcs, &mut strings)?;
+			npc.write(&mut npcs, &mut strings, iset)?;
 		}
 
 		for monster in &scena.monsters {
@@ -278,7 +278,7 @@ impl Scena {
 
 		if let Some(l) = &scena.labels {
 			for l in l {
-				l.write(&mut labels, &mut strings)?;
+				l.write(&mut labels, &mut strings, iset)?;
 			}
 		}
 
@@ -344,23 +344,28 @@ pub struct Label {
 }
 
 impl Label {
-	fn read(f: &mut Reader) -> Result<Label, ReadError> {
+	fn read(f: &mut Reader, iset: &iset::InsnSet) -> Result<Label, ReadError> {
 		Ok(Label {
 			pos: f.vec3()?,
 			unk1: f.u16()?,
 			unk2: f.u16()?,
-			name: f.ptr32()?.tstring()?,
+			name: f.ptr32()?.tstring(iset)?,
 		})
 	}
 
-	fn write(&self, f: &mut Writer, strings: &mut Writer) -> Result<(), WriteError> {
+	fn write(
+		&self,
+		f: &mut Writer,
+		strings: &mut Writer,
+		iset: &iset::InsnSet,
+	) -> Result<(), WriteError> {
 		f.f32(self.pos.x);
 		f.f32(self.pos.y);
 		f.f32(self.pos.z);
 		f.u16(self.unk1);
 		f.u16(self.unk2);
 		f.label32(strings.here());
-		strings.tstring(&self.name)?;
+		strings.tstring(&self.name, iset)?;
 		Ok(())
 	}
 }
@@ -379,9 +384,9 @@ pub struct Npc {
 }
 
 impl Npc {
-	fn read(f: &mut Reader, strings: &mut Reader) -> Result<Npc, ReadError> {
+	fn read(f: &mut Reader, strings: &mut Reader, iset: &iset::InsnSet) -> Result<Npc, ReadError> {
 		Ok(Npc {
-			name: strings.tstring()?,
+			name: strings.tstring(iset)?,
 			pos: f.pos3()?,
 			angle: Angle(f.i16()?),
 			flags: CharFlags(f.u16()?),
@@ -393,8 +398,13 @@ impl Npc {
 		})
 	}
 
-	fn write(&self, f: &mut Writer, strings: &mut Writer) -> Result<(), WriteError> {
-		strings.tstring(&self.name)?;
+	fn write(
+		&self,
+		f: &mut Writer,
+		strings: &mut Writer,
+		iset: &iset::InsnSet,
+	) -> Result<(), WriteError> {
+		strings.tstring(&self.name, iset)?;
 		f.pos3(self.pos);
 		f.i16(self.angle.0);
 		f.u16(self.flags.0);

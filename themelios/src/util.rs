@@ -4,16 +4,20 @@ use gospel::read::{Le as _, Reader};
 use gospel::write::{Le as _, Writer};
 use strict_result::{Strict, StrictResult};
 
+use crate::gamedata as iset;
 use crate::types::{Pos2, Pos3, TString};
 
+pub use crate::gamedata::Encoding as Enc;
+
 #[derive(Debug, thiserror::Error)]
-#[error("Invalid SJIS string {text:?}")]
+#[error("Cannot decode {text:?} as {enc}")]
 pub struct DecodeError {
+	enc: Enc,
 	text: String,
 	backtrace: Backtrace,
 }
 
-pub fn decode(bytes: &[u8]) -> Result<String, DecodeError> {
+pub fn decode(bytes: &[u8], enc: Enc) -> Result<String, DecodeError> {
 	if let Ok(s) = falcom_sjis::decode(bytes) {
 		Ok(s)
 	} else if let Ok(s) = std::str::from_utf8(bytes) {
@@ -21,6 +25,7 @@ pub fn decode(bytes: &[u8]) -> Result<String, DecodeError> {
 		Ok(s.to_owned())
 	} else {
 		Err(DecodeError {
+			enc,
 			text: falcom_sjis::decode_lossy(bytes),
 			backtrace: Backtrace::capture(),
 		})
@@ -28,14 +33,16 @@ pub fn decode(bytes: &[u8]) -> Result<String, DecodeError> {
 }
 
 #[derive(Debug, thiserror::Error)]
-#[error("Cannot encode {text:?} as SJIS")]
+#[error("Cannot encode {text:?} as {enc}")]
 pub struct EncodeError {
+	enc: Enc,
 	text: String,
 	backtrace: Backtrace,
 }
 
-pub fn encode(text: &str) -> Result<Vec<u8>, EncodeError> {
+pub fn encode(text: &str, enc: Enc) -> Result<Vec<u8>, EncodeError> {
 	falcom_sjis::encode(text).map_err(|_| EncodeError {
+		enc,
 		text: text.to_owned(),
 		backtrace: Backtrace::capture(),
 	})
@@ -48,14 +55,15 @@ pub impl Reader<'_> {
 		E: From<gospel::read::Error> + From<DecodeError>,
 	{
 		let cstr = self.cstr()?;
-		Ok(decode(cstr.to_bytes())?).strict()
+		Ok(decode(cstr.to_bytes(), Enc::Sjis)?).strict()
 	}
 
-	fn tstring<E>(&mut self) -> StrictResult<TString, E>
+	fn tstring<E>(&mut self, iset: &iset::InsnSet) -> StrictResult<TString, E>
 	where
 		E: From<gospel::read::Error> + From<DecodeError>,
 	{
-		self.string().loose().map(TString).strict()
+		let cstr = self.cstr()?;
+		Ok(TString(decode(cstr.to_bytes(), iset.encoding)?)).strict()
 	}
 
 	fn sized_string<const N: usize, E>(&mut self) -> StrictResult<String, E>
@@ -64,7 +72,7 @@ pub impl Reader<'_> {
 	{
 		let d = self.slice(N)?;
 		let len = d.iter().position(|a| *a == 0).unwrap_or(d.len());
-		Ok(decode(&d[..len])?).strict()
+		Ok(decode(&d[..len], Enc::Sjis)?).strict()
 	}
 
 	fn pos2(&mut self) -> Result<Pos2, gospel::read::Error> {
@@ -97,24 +105,27 @@ pub impl Writer {
 	where
 		E: From<EncodeError>,
 	{
-		let s = encode(s)?;
+		let s = encode(s, Enc::Sjis)?;
 		self.slice(&s);
 		self.array([0]);
 		Ok(()).strict()
 	}
 
-	fn tstring<E>(&mut self, s: &TString) -> StrictResult<(), E>
+	fn tstring<E>(&mut self, s: &TString, iset: &iset::InsnSet) -> StrictResult<(), E>
 	where
 		E: From<EncodeError>,
 	{
-		self.string(&s)
+		let s = encode(&s, iset.encoding)?;
+		self.slice(&s);
+		self.array([0]);
+		Ok(()).strict()
 	}
 
 	fn sized_string<const N: usize, E>(&mut self, s: &str) -> StrictResult<(), E>
 	where
 		E: From<EncodeError> + From<ValueError>,
 	{
-		let s = encode(s)?;
+		let s = encode(s, Enc::Sjis)?;
 		ensure!(s.len() <= N, ValueError::<[u8; N]>(format!("{s:?}")));
 		let mut buf = [0; N];
 		buf[..s.len()].copy_from_slice(&s);
@@ -195,6 +206,7 @@ pub impl<T> Option<T> {
 	where
 		E: for<'a> From<std::fmt::Arguments<'a>>,
 	{
-		self.ok_or_else(move || E::from(format_args!("{}", v))).strict()
+		self.ok_or_else(move || E::from(format_args!("{}", v)))
+			.strict()
 	}
 }

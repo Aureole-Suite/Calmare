@@ -25,10 +25,25 @@ pub enum Variant {
 	Kai,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Encoding {
+	Sjis,
+	Utf8,
+}
+
+impl std::fmt::Display for Encoding {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.write_str(match self {
+			Encoding::Sjis => "Shift JIS",
+			Encoding::Utf8 => "UTF-8",
+		})
+	}
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InsnSet<'a> {
 	pub variant: Variant,
-	#[serde(flatten)]
+	pub encoding: Encoding,
 	inner: Cow<'a, InsnSetInner>,
 }
 
@@ -40,7 +55,7 @@ impl<'a> std::ops::Deref for InsnSet<'a> {
 	}
 }
 
-pub fn get(game: Game, variant: Variant) -> InsnSet<'static> {
+pub fn get(game: Game, variant: Variant, encoding: Encoding) -> InsnSet<'static> {
 	let builtin = match (game, variant) {
 		(Game::Fc, _) => Builtin::Fc,
 		(Game::Sc, _) => Builtin::Sc,
@@ -53,6 +68,7 @@ pub fn get(game: Game, variant: Variant) -> InsnSet<'static> {
 	};
 	InsnSet {
 		variant,
+		encoding,
 		inner: Cow::Borrowed(builtin.get()),
 	}
 }
