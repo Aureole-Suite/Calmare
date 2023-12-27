@@ -209,7 +209,7 @@ impl<'iset, 'write> InsnWriter<'iset, 'write> {
 	}
 
 	fn label(&mut self, label: &Label) -> GLabel {
-		*self.labels.entry(*label).or_insert_with(GLabel::new)
+		*self.labels.entry(*label).or_default()
 	}
 
 	fn internal_label(&mut self, label: GLabel) -> Label {
