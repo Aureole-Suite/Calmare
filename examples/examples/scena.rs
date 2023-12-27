@@ -7,7 +7,7 @@ fn main() -> anyhow::Result<()> {
 	let iset = gamedata::get(Game::Cs1, Variant::Base, Encoding::Utf8);
 
 	for file in std::env::args().skip(1) {
-		println!("running {file}");
+		eprintln!("running {file}");
 		let bytes = std::fs::read(&file)?;
 		let mut scena = Script::read(&iset, &bytes)?;
 		themelios::scena::code::decompile::decompile(&mut scena.functions);
@@ -36,11 +36,11 @@ fn main() -> anyhow::Result<()> {
 			themelios::scena::code::decompile::decompile(&mut scena2.functions);
 			themelios::scena::code::normalize::normalize(&mut scena2.functions).unwrap();
 			if scena == scena2 {
-				println!("  {file} differs");
+				eprintln!("  {file} differs");
 			} else {
-				println!("{:#?}", scena);
-				println!("{:#?}", scena2);
-				println!("  {file} differs significantly!!!!");
+				eprintln!("{:#?}", scena);
+				eprintln!("{:#?}", scena2);
+				eprintln!("  {file} differs significantly!!!!");
 			}
 		}
 	}
