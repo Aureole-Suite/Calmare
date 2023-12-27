@@ -66,19 +66,19 @@ pub enum WriteError {
 	},
 }
 
-impl From<String> for ReadError {
-	fn from(message: String) -> Self {
+impl From<std::fmt::Arguments<'_>> for ReadError {
+	fn from(message: std::fmt::Arguments<'_>) -> Self {
 		Self::Whatever {
-			message,
+			message: message.to_string(),
 			backtrace: Backtrace::capture(),
 		}
 	}
 }
 
-impl From<String> for WriteError {
-	fn from(message: String) -> Self {
+impl From<std::fmt::Arguments<'_>> for WriteError {
+	fn from(message: std::fmt::Arguments<'_>) -> Self {
 		Self::Whatever {
-			message,
+			message: message.to_string(),
 			backtrace: Backtrace::capture(),
 		}
 	}

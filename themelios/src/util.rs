@@ -166,18 +166,21 @@ where
 }
 
 pub macro bail {
-	($fmt:literal $(, $e:expr)* $(,)?) => { bail!(format!($fmt$(, $e)*)) },
+	($fmt:literal $(, $e:expr)* $(,)?) => { bail!(format_args!($fmt$(, $e)*)) },
 	($e:expr) => { { Err($e)?; loop {} } },
 }
 
 pub macro ensure {
-	($e:expr) => { ensure!($e, stringify!($e).to_owned()) },
+	($e:expr) => { ensure!($e, format_args!("{}", stringify!($e))) },
 	($e:expr, $($t:tt)*) => { if !($e) { bail!($($t)*) } },
 }
 
 #[extend::ext]
 pub impl<T> Option<T> {
-	fn or_whatever(self, v: impl ToString) -> Result<T, String> {
-		self.ok_or_else(|| v.to_string())
+	fn or_whatever<E>(self, v: impl std::fmt::Display) -> StrictResult<T, E>
+	where
+		E: for<'a> From<std::fmt::Arguments<'a>>,
+	{
+		self.ok_or_else(move || E::from(format_args!("{}", v))).strict()
 	}
 }
