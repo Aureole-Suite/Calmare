@@ -125,7 +125,7 @@ impl Script {
 		})
 	}
 
-	pub fn write(insn: &iset::InsnSet, script: &Script) -> Result<Vec<u8>, WriteError> {
+	pub fn write(iset: &iset::InsnSet, script: &Script) -> Result<Vec<u8>, WriteError> {
 		let mut f = Writer::new();
 		let head_end = f.ptr32();
 		let mut script_name = f.ptr32();
@@ -141,7 +141,7 @@ impl Script {
 		script_name.string(&script.name)?;
 
 		let mut funcbody = Writer::new();
-		let mut iw = InsnWriter::new(&mut funcbody, insn, None);
+		let mut iw = InsnWriter::new(&mut funcbody, iset, None);
 		for func in &script.functions {
 			funcnamepos.label16(funcname.here());
 			funcname.string(&func.name)?;

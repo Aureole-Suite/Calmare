@@ -188,7 +188,7 @@ impl Scena {
 		})
 	}
 
-	pub fn write(insn: &iset::InsnSet, scena: &Scena) -> Result<Vec<u8>, WriteError> {
+	pub fn write(iset: &iset::InsnSet, scena: &Scena) -> Result<Vec<u8>, WriteError> {
 		let mut f = Writer::new();
 
 		f.sized_string::<10, _>(&scena.path)?;
@@ -268,7 +268,7 @@ impl Scena {
 			anim.write(&mut animations)?;
 		}
 
-		let mut iw = InsnWriter::new(&mut code, insn, Some(&btl.battle_pos));
+		let mut iw = InsnWriter::new(&mut code, iset, Some(&btl.battle_pos));
 		for func in &scena.functions {
 			func_table.label32(iw.here());
 			iw.code(func)?;

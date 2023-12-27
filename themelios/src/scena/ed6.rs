@@ -31,7 +31,7 @@ pub struct Scena {
 }
 
 impl Scena {
-	pub fn read(insn: &iset::InsnSet, data: &[u8]) -> Result<Scena, ReadError> {
+	pub fn read(iset: &iset::InsnSet, data: &[u8]) -> Result<Scena, ReadError> {
 		let mut f = Reader::new(data);
 
 		let path = f.sized_string::<10, _>()?;
@@ -99,7 +99,7 @@ impl Scena {
 
 		let mut functions = Vec::with_capacity(func_table.len());
 		let mut funcpos = func_table.iter().copied().peekable();
-		let mut ir = InsnReader::new(f.clone().at(code_start)?, insn);
+		let mut ir = InsnReader::new(f.clone().at(code_start)?, iset);
 		while let Some(start) = funcpos.next() {
 			ensure!(ir.pos() == start, "weird function start");
 			functions.push(ir.code(funcpos.peek().copied().unwrap_or(code_end))?);
@@ -124,7 +124,7 @@ impl Scena {
 		})
 	}
 
-	pub fn write(insn: &iset::InsnSet, scena: &Scena) -> Result<Vec<u8>, WriteError> {
+	pub fn write(iset: &iset::InsnSet, scena: &Scena) -> Result<Vec<u8>, WriteError> {
 		let mut f = Writer::new();
 
 		f.sized_string::<10, _>(&scena.path)?;
@@ -197,7 +197,7 @@ impl Scena {
 			lp.write(&mut lps)?;
 		}
 
-		let mut iw = InsnWriter::new(&mut code, insn, None);
+		let mut iw = InsnWriter::new(&mut code, iset, None);
 		for func in scena.functions.iter() {
 			func_table.label16(iw.here());
 			iw.code(func)?;
