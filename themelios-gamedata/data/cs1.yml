@@ -173,7 +173,7 @@ insns:
   - []
   - [_Cam_11, u8, f32, u16]
   - [_Cam_12, u8, u16, f32, f32, f32]
-  - [_Cam_13, u8, u16, f32, f32, f32]
+  - [_Cam_13, u8, f32, f32, f32, u16]
   - []
   - [_Cam_15, u16, f32, f32, f32]
   - [_Cam_16]
@@ -230,7 +230,7 @@ insns:
 - [_33, *CharId, f32, f32, u8]
 - [_34, u16, u16, u16, u16, u8]
 - [_35, u16]
-- [_36, u16, u16, f32, f32, f32, f32, !Cs1_36 [[65026, 65027], f32], u8, u8, u8]
+- [_36, *CharId, *CharId, f32, f32, f32, f32, !Cs1_36 [[65026, 65027], f32], u8, u8, u8]
 - [_37, *CharId, u8]
 - [_38, u16, u32, u32, u32, u32, u32]
 - !match
@@ -271,7 +271,7 @@ insns:
   - [PartyHasMember, *CharId] # getter, bool
   - [_3F_6, u16]
   - [_3F_7]
-  - [_3F_8, u16, u8, u8, u16]
+  - [_3F_8, *CharId, u8, u8, u16]
   - [_3F_9, u16]
   - [_3F_10, u16]
   - [_3F_11, u16]
@@ -292,7 +292,7 @@ insns:
 - [_48, u8]
 - !match
   - [_49_0, u32, f32, f32, f32, f32, f32, f32, f32]
-  - [_49_1, u32, f32, f32, f32, f32, f32, f32, f32]
+  - [MinigameFishing, u32, f32, f32, f32, f32, f32, f32, f32]
   - [MinigameBlade, {u32: NameId}, {u32: Global}, u32, u32, u32, u32, u32, u32]
   - [_49_3, u32, u32, u32, u32, u32, u32, u32, u32]
   - [_49_4, u32, u32, u32, u32, u32, u32, u32, u32]
@@ -300,14 +300,14 @@ insns:
   - [_49_10, u32, u32, u32, u32, u32, u32, u32, u32]
   - [_49_11]
   - []
-  - [_49_13, String, String, u16, u16]
-  - [_49_14]
-  - [_49_15]
+  - [ChestSet, String, String, u16, u16]
+  - [ChestOpen] # optionally getter
+  - [ChestClose]
   - [_49_16]
   - [_49_17]
   - [_49_18]
   - []
-  - [_49_20, String, String, u16, u16, u16, u16, u16]
+  - [BreakableSet, String, String, u16, u16, u16, u16, u16]
   - [_49_21, String]
   - [_49_22]
   - [_49_23, u8, u32]
@@ -316,7 +316,7 @@ insns:
   - [_49_26]
   - [_49_27]
   - [_49_28, String, u16, u8, u8]
-  - [_49_29]
+  - [BreakableGetKind] # getter
   - [_49_30]
   - [_49_31] # getter
   - [_49_32, u8, u8]
@@ -349,17 +349,17 @@ insns:
 - [_59, u16]
 - [_5A, u8, String, u16]
 - !match
-  - [CharAddCraft, *CharId, {u16: MagicId}]
-  - [_5B_1, u16, u16]
-  - [_5B_2, *CharId]
-  - [_5B_3, *CharId]
-  - [_5B_4, *CharId, u16]
-  - [_5B_5, u16]
+  - [CharCraftAdd, *CharId, {u16: MagicId}]
+  - [_CharCraft_1, u16, u16]
+  - [_CharCraft_2, *CharId]
+  - [CharCraftClear, *CharId]
+  - [CharCraftSetSBreak, *CharId, {u16: MagicId}]
+  - [_CharCraft_5, u16]
 - !match
   - [_5C_0, u16, u16]
   - [_5C_1, u16, u16]
   - [_5C_2, *CharId]
-  - [_5C_3, u16]
+  - [_5C_3, *CharId]
 - !match
   - [_5D_0, String, u16]
   - [_5D_1, String, u16]
@@ -374,7 +374,7 @@ insns:
 - !match
   - [_Link_0, *CharId, *CharId, u32]
   - [_Link_1, u16]
-  - [_Link_2, u16, u16, u16]
+  - [LinkSetLevel, *CharId, *CharId, u16]
   - []
   - [_Link_4, u16]
   - [_Link_5, *CharId, u16, u16] # Something about "friends"
@@ -390,9 +390,9 @@ insns:
   head: [*CharId]
   cases:
   - [_5F_00, f32, u8, u16]
-  - [_5F_01]
-  - [_5F_02, f32, f32, f32]
-  - [_5F_03, f32, u8, u16]
+  - [CharPathNew]
+  - [CharPathAdd, [f32, f32, f32]]
+  - [CharPathRun, f32, u8, u16]
 - [_60, u8, u16, u16, f32, f32, f32]
 - [_61, *CharId, f32]
 - [_62, String, u32, u16]
@@ -401,16 +401,20 @@ insns:
   - [ItemAdd, {u16: ItemId}, u32]
   - [ItemRemove, {u16: ItemId}, u32]
   - [ItemHas, {u16: ItemId}, u32] # getter
-  - [_64_3, {u16: ItemId}, u32]
+  - [ItemSet, {u16: ItemId}, u32]
+  - [MiraAdd, {u16: ItemId}, u32]
+  - []
+  - []
+  - [SepithAdd, {u16: ItemId}, u32]
 - !match
-  - [CharEquip, *CharId, {u16: ItemId}, u8]
+  - [CharEquipItem, *CharId, {u16: ItemId}, u8]
   - [_65_01, *CharId, u8]
   - [_65_02, *CharId, u16] # getter
-  - [CharSetMq, *CharId, {u16: ItemId}, u8]
+  - [CharEquipQuartz, *CharId, {u16: ItemId}, u8] # I think slot 0 is mq and others are other quartz
   - [_65_04, *CharId, u8]
   - []
-  - [_65_06, *CharId, u8, u8]
-  - [CharEquipGet, *CharId, u8] # getter
+  - [CharSetSlot, *CharId, u8, u8]
+  - [CharEquipGetItem, *CharId, u8] # getter
   - [_65_08, *CharId, u16, u16]
   - [_65_09, *CharId, u8] # getter
 - [_66, f32, u16]
@@ -420,8 +424,8 @@ insns:
   - []
   - [QuestTaskSet, {u16: QuestTask}]
   - [QuestTaskUnset, {u16: QuestTask}]
-  - [QuestFlagsUnset, {u8: QuestFlags}]
   - [QuestFlagsSet, {u8: QuestFlags}]
+  - [QuestFlagsUnset, {u8: QuestFlags}]
   - [QuestCheckExpired]
   - [QuestBonusBp, u16]
 - !match
@@ -448,20 +452,20 @@ insns:
 - [_6B, u16, String, String, u8]
 - [_6C, *CharId]
 - [_6D, u8, String]
-- !match
+- !match # related to fast travel
   - [_6E_0, u16]
   - [_6E_1, u16]
   - [_6E_2, u16]
   - [_6E_3, u16]
   - [_6E_4, u16]
-  - [_6E_5, u16, u16, u16, u16]
+  - [_6E_5, u16, u16, {u16: ItemId}, {u16: ItemId}] # First argument seems to be charid+1
   - [_6E_6, u16]
   - [_6E_7, u16]
   - []
   - [_6E_9, u16]
   - [_6E_10, u16]
 - !match
-  - [_6F_0, String] # getter
+  - [IsScena, String] # getter, bool
   - [_6F_1, u16, String] # getter, bool
   - [_6F_2, u16, String] # getter, bool
 - !match
@@ -507,7 +511,9 @@ insns:
 - [CalendarMenuShow, [u16, u32, i16], [u16, u16, i16]]
 - [CalendarMenuWait]
 - [_85, String, u32]
-- [_86, u8, u16, u16] # Something about character unlocking. What's a "lower secret"?
+- !match
+  - [CharNoteAdd, u16, u16]
+  - [_CharNote_1, u16, u16]
 - [_87, {u8: Global}, u16] # assign random party member?
 - !match
   - [SaveMenuShow, u8]
@@ -519,9 +525,9 @@ insns:
   - [BookMenuShow, String, String]
   - [BookMenuWait]
 - [_8B, u16, u8]
-- [_8C, u16]
+- [_8C, u16] # Something with recipes
 - [_8D, u16, f32]
-- [_8E, u16]
+- [_8E, u16] # Something with recipes
 - []
 - !match # something about button presses
   - [_90_00, u16]
@@ -539,7 +545,7 @@ insns:
 - [_94, f32, f32, f32, f32]
 - [BondPointQuit]
 - [_96, f32, f32, f32, u16, u16]
-- [_97, u16]
+- [_97, {u16: RecipeId}] # getter
 - [ArcusCoverEquip, *CharId, {u16: ItemId}]
 - [_99] # "friends"
 - !match

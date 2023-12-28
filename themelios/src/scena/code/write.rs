@@ -719,7 +719,7 @@ fn escape_ed67(f: &mut Writer, char: char, n: u32) -> Result<bool, WriteError> {
 
 fn escape_ed8(f: &mut Writer, char: char, n: u32) -> Result<bool, WriteError> {
 	match char {
-		'A' => {
+		'i' => {
 			f.u8(0x10);
 			f.u16(cast(n)?);
 		}

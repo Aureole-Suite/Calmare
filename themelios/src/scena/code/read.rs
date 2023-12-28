@@ -382,10 +382,8 @@ impl<'iset, 'buf> InsnReader<'iset, 'buf> {
 			}
 			T::Cs1_28_34 => bail!("28_34"),
 			T::Cs1_36(x, a) => {
-				if let Arg::Atom(A::Int(v)) = &out[1] {
-					if x.contains(&(*v as u16)) {
-						self.arg(out, a)?;
-					}
+				if matches!(out[1], Arg::Atom(Atom::CharId(CharId::Name(v))) if x.contains(&v.0)) {
+					self.arg(out, a)?;
 				}
 			}
 			T::Cs1_3C(a) => {
@@ -568,7 +566,7 @@ fn text_page_ed8(f: &mut Reader, enc: Enc) -> Result<(Text, bool)> {
 			0x01 => buf.push('\n'), // newline
 			0x02 => buf.push('\t'), // pause → tab
 			0x03 => break true,     // page break
-			0x10 => buf.push_str(&format!("♯{}A", f.u16()?)),
+			0x10 => buf.push_str(&format!("♯{}i", f.u16()?)),
 			0x11 => buf.push_str(&format!("♯{}J", f.u32()?)),
 			0x12 => buf.push_str(&format!("♯{}C", f.u32()?)),
 			0x17 => buf.push_str(&format!("♯{}D", f.u16()?)),

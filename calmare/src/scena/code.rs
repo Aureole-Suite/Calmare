@@ -510,7 +510,7 @@ fn parse_misc_arg(out: &mut Vec<Arg>, f: &mut Parser, iarg: &iset::MiscArg) -> p
 		}
 		MA::Cs1_28_34 => todo!(),
 		MA::Cs1_36(x, a) => {
-			if matches!(out[1], Arg::Atom(Atom::Int(v)) if x.contains(&(v as u16))) {
+			if matches!(out[1], Arg::Atom(Atom::CharId(CharId::Name(v))) if x.contains(&v.0)) {
 				parse_arg(out, f, a)?;
 			}
 		}
