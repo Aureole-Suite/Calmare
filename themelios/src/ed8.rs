@@ -181,11 +181,12 @@ pub struct Battle {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum BattleSetup {
-	Normal {
-		n: u32,
-		monsters: [String; 8],
-		chance: [u8; 8],
-	},
+	Normal { n: u32, monsters: [(String, u8); 8] },
+}
+
+fn array_zip<T, U, const N: usize>(x: [T; N], y: [U; N]) -> [(T, U); N] {
+	let mut iter = std::iter::zip(x, y);
+	std::array::from_fn(|_| iter.next().unwrap())
 }
 
 impl Battle {
@@ -203,14 +204,13 @@ impl Battle {
 					todo!() // cs2 only
 				}
 				n => {
-					let monsters =
+					let mut monsters =
 						std::array::try_from_fn(|_| Ok(f.sized_string::<16, _>()?)).strict()?;
 					let chance = f.array()?;
 					f.check(&[0; 8])?;
 					setups.push(BattleSetup::Normal {
 						n,
-						monsters,
-						chance,
+						monsters: array_zip(monsters, chance),
 					});
 				}
 			}
@@ -244,13 +244,14 @@ impl Battle {
 				BattleSetup::Normal {
 					n,
 					monsters,
-					chance,
 				} => {
 					f.u32(*n);
-					for m in monsters {
+					for (m, _) in monsters {
 						f.sized_string::<16, _>(m)?;
 					}
-					f.slice(chance);
+					for (_, c) in monsters {
+						f.u8(*c);
+					}
 					f.slice(&[0; 8]);
 				}
 			}
