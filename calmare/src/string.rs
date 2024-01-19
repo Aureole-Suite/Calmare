@@ -80,7 +80,7 @@ impl Print for Text {
 					'\r' if iter.peek() == Some(&'\n') => write!(f, "♯r").line(),
 					'\r' => write!(f, "♯r♯").line(),
 					' ' | '　' if f.is_line() => write!(f, "♯{ch}"),
-					'{' | '}' | '♯' => write!(f, "♯{ch}"),
+					'{' | '}' => write!(f, "♯{ch}"),
 					ch => write!(f, "{ch}"),
 				};
 			}
@@ -115,24 +115,14 @@ impl Parse for Text {
 				match f.any_char() {
 					'\n' => break,
 					'♯' => {
-						let n = f.pat_mul(|c: char| char::is_ascii_digit(&c));
-						if n.is_empty() {
-							match f.any_char() {
-								'A' => auto = Some((string.len(), f.raw_span(pos))),
-								'W' => string.push('\t'),
-								'r' => string.push('\r'),
-								'♯' => string.push('♯'),
-								'\n' => skip_line = 1,
-								ch @ (' ' | '　' | '{' | '}') => string.push(ch),
-								_ => Diagnostic::error(f.raw_span(pos), "invalid escape sequence")
-									.emit(),
-							}
-						} else {
-							match f.any_char() {
-								'C' | 'i' | 'x' => string.push_str(f.text_since(pos)),
-								_ => Diagnostic::error(f.raw_span(pos), "invalid escape sequence")
-									.emit(),
-							}
+						match f.any_char() {
+							'A' => auto = Some((string.len(), f.raw_span(pos))),
+							'W' => string.push('\t'),
+							'r' => string.push('\r'),
+							'\n' => skip_line = 1,
+							ch @ (' ' | '　' | '{' | '}' | '0' ..= '9' | '♯') => string.push(ch),
+							_ => Diagnostic::error(f.raw_span(pos), "invalid escape sequence")
+								.emit(),
 						}
 					}
 					ch => string.push(ch),
