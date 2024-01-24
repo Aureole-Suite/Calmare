@@ -241,10 +241,7 @@ impl Battle {
 		f.u32(battle.unk2.1);
 		for setup in &battle.setups {
 			match setup {
-				BattleSetup::Normal {
-					n,
-					monsters,
-				} => {
+				BattleSetup::Normal { n, monsters } => {
 					f.u32(*n);
 					for (m, _) in monsters {
 						f.sized_string::<16, _>(m)?;

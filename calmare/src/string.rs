@@ -114,17 +114,14 @@ impl Parse for Text {
 				let pos = f.raw_pos();
 				match f.any_char() {
 					'\n' => break,
-					'♯' => {
-						match f.any_char() {
-							'A' => auto = Some((string.len(), f.raw_span(pos))),
-							'W' => string.push('\t'),
-							'r' => string.push('\r'),
-							'\n' => skip_line = 1,
-							ch @ (' ' | '　' | '{' | '}' | '0' ..= '9' | '♯') => string.push(ch),
-							_ => Diagnostic::error(f.raw_span(pos), "invalid escape sequence")
-								.emit(),
-						}
-					}
+					'♯' => match f.any_char() {
+						'A' => auto = Some((string.len(), f.raw_span(pos))),
+						'W' => string.push('\t'),
+						'r' => string.push('\r'),
+						'\n' => skip_line = 1,
+						ch @ (' ' | '　' | '{' | '}' | '0'..='9' | '♯') => string.push(ch),
+						_ => Diagnostic::error(f.raw_span(pos), "invalid escape sequence").emit(),
+					},
 					ch => string.push(ch),
 				}
 			}
