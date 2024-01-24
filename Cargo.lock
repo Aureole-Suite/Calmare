@@ -68,8 +68,11 @@ checksum = "7f30e7476521f6f8af1a1c4c0b8cc94f0bee37d91763d0ca2665f299b6cd8aec"
 name = "calmare"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "bimap",
+ "compact-debug",
  "extend",
+ "similar-asserts",
  "themelios",
  "unicode-ident",
 ]
