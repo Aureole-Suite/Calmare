@@ -169,16 +169,7 @@ fn block(mut ctx: ContextIter, cont: Option<Label>, brk: Option<Label>, switch_t
 
 				let mut switch_brk = None;
 				for case_end in cases.iter().map(|a| &a.1).skip(1) {
-					if let Some(end) = ctx
-						.lookup(*case_end)
-						.and_then(|p| p.checked_sub(1))
-						.and_then(|p| ctx.peek(p))
-						.and_then(as_goto)
-					{
-						if ctx.lookup(end).is_some() {
-							switch_brk = Some(end);
-						}
-					}
+					switch_brk = find_switch_brk(&ctx, *case_end).or(switch_brk);
 				}
 
 				let mut bodies = Vec::new();
@@ -252,6 +243,15 @@ fn find_cases(ctx: &ContextIter, cases: &mut [Arg], default: &Label) -> Option<V
 	let idx = out.partition_point(|a| ctx.lookup(a.1).unwrap() < default_pos);
 	out.insert(idx, (Insn::new("default", vec![]), *default));
 	Some(out)
+}
+
+fn find_switch_brk(ctx: &ContextIter<'_>, end: Label) -> Option<Label> {
+	let endpos = ctx.lookup(end)?;
+	let end = as_goto(ctx.peek(endpos.checked_sub(1)?)?)?;
+	if ctx.lookup(end)? >= endpos {
+		return Some(end);
+	}
+	None
 }
 
 fn as_goto(insn: &Insn) -> Option<Label> {
