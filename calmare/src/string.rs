@@ -119,7 +119,11 @@ impl Parse for Text {
 						'W' => string.push('\t'),
 						'r' => string.push('\r'),
 						'\n' => skip_line = 1,
-						ch @ (' ' | '　' | '{' | '}' | '0'..='9' | '♯') => string.push(ch),
+						ch @ (' ' | '　' | '{' | '}') => string.push(ch),
+						ch @ ('0'..='9' | '♯') => {
+							string.push('♯');
+							string.push(ch);
+						}
 						_ => Diagnostic::error(f.raw_span(pos), "invalid escape sequence").emit(),
 					},
 					ch => string.push(ch),
