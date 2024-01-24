@@ -579,10 +579,32 @@ fn text_page_ed8(f: &mut Reader, enc: Enc) -> Result<(Text, bool)> {
 }
 
 fn text_content(f: &mut Reader<'_>, enc: Enc) -> Result<String> {
-	let start = f.pos() - 1;
-	while f.remaining().first().is_some_and(|i| *i >= 0x20) {
-		f.u8()?;
+	f.seek(f.pos() - 1).unwrap();
+	use std::fmt::Write;
+	fn next(f: &mut Reader<'_>) -> Option<u8> {
+		match f.remaining().first() {
+			Some(0x20..) => f.u8().ok(),
+			_ => None,
+		}
 	}
-	let slice = &f.data()[start..f.pos()];
-	Ok(decode(slice, enc)?.replace('♯', "♯♯").replace('㈱', "♥"))
+	match enc {
+		Enc::Sjis => {
+			let mut out = String::new();
+			while let Some(b1) = next(f) {
+				match falcom_sjis::decode_char_from(b1, || next(f)) {
+					Ok('♯') => out.push_str("♯♯"),
+					Ok('㈱') => out.push('♥'),
+					Ok(char) => out.push(char),
+					Err(e) => e.into_iter().for_each(|ch| write!(out, "♯{ch}x").unwrap()),
+				}
+			}
+			Ok(out)
+		}
+		Enc::Utf8 => {
+			let start = f.pos();
+			while next(f).is_some() {}
+			let slice = &f.data()[start..f.pos()];
+			Ok(decode(slice, enc)?.replace('♯', "♯♯").replace('㈱', "♥"))
+		}
+	}
 }
