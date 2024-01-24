@@ -4,7 +4,7 @@ use super::visit_mut::{VisitMut, VisitableMut};
 use super::{Arg, Code, Insn};
 use crate::types::Label;
 
-pub fn decompile(code: &mut impl VisitableMut) {
+pub fn decompile(code: &mut (impl VisitableMut + ?Sized)) {
 	struct Vis;
 
 	impl VisitMut for Vis {
