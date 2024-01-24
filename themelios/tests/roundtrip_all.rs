@@ -17,7 +17,7 @@ static ROOT: LazyLock<&Path> = LazyLock::new(|| Path::new("/home/large/kiseki"))
 
 type Ret = anyhow::Result<ExitCode>;
 
-fn ed67<T>(
+fn ed67<T: PartialEq + std::fmt::Debug>(
 	dir: &str,
 	ext: &str,
 	read: impl Fn(&[u8]) -> Result<T, ReadError>,
@@ -45,7 +45,11 @@ fn ed67<T>(
 			}
 		};
 		let bytes2 = write(&scena)?;
-		assert!(bytes == bytes2);
+		if bytes != bytes2 {
+			let scena2 = read(&bytes2)?;
+			similar_asserts::assert_eq!(scena, scena2);
+			assert!(bytes == bytes2);
+		};
 		themelios::scena::code::decompile::decompile(funcs(&mut scena));
 		themelios::scena::code::normalize::normalize(funcs(&mut scena))?;
 		assert!(bytes2 == write(&scena)?);
