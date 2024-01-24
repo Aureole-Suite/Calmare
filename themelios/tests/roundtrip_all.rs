@@ -1,12 +1,12 @@
 #![feature(lazy_cell)]
 
-use std::sync::LazyLock;
-use std::{path::Path, ffi::OsStr};
 use std::process::ExitCode;
+use std::sync::LazyLock;
+use std::{ffi::OsStr, path::Path};
 
 use themelios::gamedata::{self, Encoding, Game, Variant};
-use themelios::scena::{ReadError, WriteError};
 use themelios::scena::code::Code;
+use themelios::scena::{ReadError, WriteError};
 
 fn compact() {
 	static ONCE: std::sync::Once = std::sync::Once::new();
@@ -30,7 +30,7 @@ fn ed67<T>(
 	for file in dir.read_dir()? {
 		let file = file?;
 		if file.path().extension() != Some(OsStr::new(ext)) {
-			continue
+			continue;
 		}
 		let bytes = std::fs::read(file.path())?;
 		let mut scena = match read(&bytes) {
@@ -42,7 +42,7 @@ fn ed67<T>(
 				eprintln!("{:#}", anyhow::Error::from(err));
 				failed = true;
 				continue;
-			},
+			}
 		};
 		let bytes2 = write(&scena)?;
 		assert!(bytes == bytes2);
@@ -50,19 +50,35 @@ fn ed67<T>(
 		themelios::scena::code::normalize::normalize(funcs(&mut scena))?;
 		assert!(bytes2 == write(&scena)?);
 	}
-	Ok(if failed { ExitCode::FAILURE } else { ExitCode::SUCCESS })
+	Ok(if failed {
+		ExitCode::FAILURE
+	} else {
+		ExitCode::SUCCESS
+	})
 }
 
 fn ed6(dir: &str, game: Game, variant: Variant, ext: &str) -> Ret {
 	use themelios::scena::ed6::Scena;
 	let iset = gamedata::get(game, variant, Encoding::Sjis);
-	ed67(dir, ext, |d| Scena::read(&iset, d), |s| Scena::write(&iset, s), |s| &mut s.functions)
+	ed67(
+		dir,
+		ext,
+		|d| Scena::read(&iset, d),
+		|s| Scena::write(&iset, s),
+		|s| &mut s.functions,
+	)
 }
 
 fn ed7(dir: &str, game: Game, variant: Variant) -> Ret {
 	use themelios::scena::ed7::Scena;
 	let iset = gamedata::get(game, variant, Encoding::Sjis);
-	ed67(dir, "bin", |d| Scena::read(&iset, d), |s| Scena::write(&iset, s), |s| &mut s.functions)
+	ed67(
+		dir,
+		"bin",
+		|d| Scena::read(&iset, d),
+		|s| Scena::write(&iset, s),
+		|s| &mut s.functions,
+	)
 }
 
 #[rustfmt::skip]
