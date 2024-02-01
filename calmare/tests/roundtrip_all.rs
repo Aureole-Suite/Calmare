@@ -4,7 +4,7 @@ use std::process::ExitCode;
 use std::sync::LazyLock;
 use std::{ffi::OsStr, path::Path};
 
-use themelios::gamedata::{self, Encoding, Game, Variant, InsnSet};
+use themelios::gamedata::{self, Encoding, Game, InsnSet, Variant};
 use themelios::scena::code::Code;
 use themelios::scena::{ReadError, WriteError};
 
@@ -38,15 +38,17 @@ fn ed67<T: PartialEq + std::fmt::Debug + calmare::PrintBlock + calmare::ParseBlo
 		themelios::scena::code::decompile::decompile(funcs(&mut scena));
 		themelios::scena::code::normalize::normalize(funcs(&mut scena))?;
 		let output = calmare::print(&scena, iset);
-		let (scena2, diags) = calmare::parse::<T>(&output, iset);
+		let (scena2, mut diags) = calmare::parse::<T>(&output, iset);
+		diags.retain(|v| v.level == calmare::parse::Level::Error);
+		if !diags.is_empty() {
+			eprintln!("{:#?}", diags);
+		}
 		let scena2 = scena2.unwrap();
 
 		if scena != scena2 {
 			let output2 = calmare::print(&scena2, iset);
-			// println!("{:#?}", scena);
-			// println!("{:#?}", scena2);
+			similar_asserts::assert_eq!(output, output2);
 			similar_asserts::assert_eq!(scena, scena2);
-			assert!(scena == scena2);
 		}
 	}
 	Ok(if failed {
