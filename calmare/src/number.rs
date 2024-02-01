@@ -53,7 +53,7 @@ macro int($($type:ty),*) {
 macro float($($type:ty),*) {
 	$(impl Print for $type {
 		fn print(&self, f: &mut Printer) {
-			write!(f, "{:?}", self);
+			write!(f, "{}", self);
 		}
 	})*
 
