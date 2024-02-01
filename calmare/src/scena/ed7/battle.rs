@@ -217,7 +217,7 @@ impl Field for Setups {
 	}
 
 	fn is_present(&self) -> bool {
-		!self.value.is_empty()
+		true
 	}
 
 	fn get(self) -> Option<Self::Value> {
