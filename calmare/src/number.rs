@@ -28,10 +28,19 @@ fn number<'src>(f: &mut Parser<'src>) -> parse::Result<&'src str> {
 	Ok(f.text_since(pos))
 }
 
+fn is_hex(v: i64) -> bool {
+	[0x7FFF, 0xFFFF, 0xFFFFFF, 0x7FFFFFFF, 0xFFFFFFFF].contains(&v)
+		|| v.count_ones() == 1 && v >= 0x2000
+}
+
 macro int($($type:ty),*) {
 	$(impl Print for $type {
 		fn print(&self, f: &mut Printer) {
-			write!(f, "{:?}", self);
+			if is_hex(*self as i64) {
+				write!(f, "{:#X}", self);
+			} else {
+				write!(f, "{}", self);
+			}
 		}
 	})*
 
