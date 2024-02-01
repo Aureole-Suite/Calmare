@@ -77,7 +77,7 @@ impl Print for Text {
 				match ch {
 					'\n' => f.line(),
 					'\t' => write!(f, "♯W"),
-					'\r' if iter.peek() == Some(&'\n') => write!(f, "♯r").line(),
+					'\r' if iter.peek() == Some(&'\n') => write!(f, "♯r"),
 					'\r' => write!(f, "♯r♯").line(),
 					' ' | '　' if f.is_line() => write!(f, "♯{ch}"),
 					'{' | '}' => write!(f, "♯{ch}"),
