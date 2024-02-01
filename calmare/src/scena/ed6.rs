@@ -79,12 +79,7 @@ impl ParseBlock for ed6::Scena {
 			match word {
 				"scena" => head.insert(f.span(pos), f.val_block()),
 				"entry" => entries.push(f.val_block()?),
-				"chip" => chcps.insert(f, word, |f| {
-					// TODO handle null
-					let ch = f.val::<FileId>()?;
-					let cp = f.val::<FileId>()?;
-					Ok((ch, cp))
-				}),
+				"chip" => chcps.insert(f, word, |f| Ok((f.val()?, f.val()?))),
 				"npc" => actors.insert(f, word, |f| f.val_block().map(Actor::Npc)),
 				"monster" => actors.insert(f, word, |f| f.val_block().map(Actor::Monster)),
 				"event" => events.insert(f, word, |f| f.val_block()),
@@ -95,7 +90,7 @@ impl ParseBlock for ed6::Scena {
 			Ok(())
 		});
 
-		let (ch, cp) = chcps.finish().into_iter().unzip();
+		let (ch, cp) = split_chcp(chcps);
 		let (npcs, monsters) = super::split_actors(actors);
 		let events = events.finish();
 		let look_points = look_points.finish();
@@ -126,6 +121,10 @@ impl ParseBlock for ed6::Scena {
 			functions,
 		})
 	}
+}
+
+fn split_chcp(chcps: PackedIndices<(FileId, FileId)>) -> (Vec<FileId>, Vec<FileId>) {
+	chcps.finish().into_iter().unzip()
 }
 
 struct Head<'a> {
