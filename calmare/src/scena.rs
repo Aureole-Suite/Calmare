@@ -163,16 +163,22 @@ impl<V> PackedIndices<V> {
 		&self.items
 	}
 
+	pub fn into_items(self) -> BTreeMap<usize, Slot<V>> {
+		self.items
+	}
+
 	pub fn finish(self) -> Vec<V> {
-		let mut vs = Vec::with_capacity(self.items.len());
+		Self::finish_on(self.name, self.items)
+	}
+
+	pub fn finish_on(name: &str, items: impl IntoIterator<Item = (usize, Slot<V>)>) -> Vec<V> {
+		let items = items.into_iter();
+		let mut vs = Vec::with_capacity(items.size_hint().0);
 		let mut expect = 0;
-		for (k, slot) in self.items {
+		for (k, slot) in items {
 			if k != expect {
-				Diagnostic::error(
-					slot.span().unwrap(),
-					format!("missing {}[{expect}]", self.name),
-				)
-				.emit();
+				Diagnostic::error(slot.span().unwrap(), format!("missing {}[{expect}]", name))
+					.emit();
 			}
 			expect = k + 1;
 			vs.extend(slot.get())

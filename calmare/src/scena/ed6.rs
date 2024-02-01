@@ -123,8 +123,30 @@ impl ParseBlock for ed6::Scena {
 	}
 }
 
-fn split_chcp(chcps: PackedIndices<(FileId, FileId)>) -> (Vec<FileId>, Vec<FileId>) {
-	chcps.finish().into_iter().unzip()
+fn split_chcp(
+	chcps: PackedIndices<(Option<FileId>, Option<FileId>)>,
+) -> (Vec<FileId>, Vec<FileId>) {
+	fn extract<A, B>(
+		a: &(usize, Slot<A>),
+		f: impl FnOnce(&A) -> Option<B>,
+	) -> Option<(usize, Slot<B>)> {
+		if let (id, Slot(Some((span, Some(ref v))))) = *a {
+			f(v).map(|v| (id, Slot(Some((span, Some(v))))))
+		} else {
+			None
+		}
+	}
+
+	let (ch, cp): (Vec<_>, Vec<_>) = chcps
+		.into_items()
+		.into_iter()
+		.map(|a| (extract(&a, |a| a.0), extract(&a, |a| a.1)))
+		.unzip();
+
+	(
+		PackedIndices::finish_on("ch", ch.into_iter().flatten()),
+		PackedIndices::finish_on("cp", cp.into_iter().flatten()),
+	)
 }
 
 struct Head<'a> {

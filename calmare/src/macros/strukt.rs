@@ -67,7 +67,7 @@ pub macro strukt($(struct $type:ty {
 }
 
 #[derive(Debug, Clone)]
-pub struct Slot<T>(Option<(Span, Option<T>)>);
+pub struct Slot<T>(pub Option<(Span, Option<T>)>);
 
 impl<T> Slot<T> {
 	pub fn new() -> Slot<T> {
